@@ -4,13 +4,19 @@ import {
   NavLink,
   Box,
   Group,
+  Badge,
 } from '@mantine/core'
 import {
   IconBrandAsana,
   IconAddressBook, 
   IconMap2,
   IconBuildingStore,
+  IconReportMoney,
+  IconChevronDown,
 } from '@tabler/icons-react'
+
+// Logo image from Figma design
+const autopassLogo = "http://localhost:3845/assets/f564a984a27b36affc579301d82091401db71514.svg"
 
 export function Navigation() {
   const [active, setActive] = useState('vendors')
@@ -19,27 +25,54 @@ export function Navigation() {
     <Stack gap={0} h="100%" style={{ height: '901px' }}>
       {/* Logo 區域 - 純展示，不可點擊 */}
       <Box
+        mx="12px"
+        mb="0"
         style={{
           height: '56px',
-          width: '240px',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'flex-start',
+          justifyContent: 'space-between',
           padding: '12px',
           backgroundColor: '#ffffff',
+          borderRadius: '4px',
+          width: 'calc(100% - 24px)', // 確保不會超出容器寬度
+          maxWidth: '216px',
+          minWidth: '192px', // 設定最小寬度避免太窄
+          overflow: 'hidden', // 防止內容溢出
         }}
       >
-        <Group justify="flex-start" w="100%">
-          <img 
-            src="/Nav Link.png" 
-            alt="Autopass" 
-            style={{ 
-              height: '42px',
-              width: 'auto',
-              objectFit: 'contain'
-            }} 
-          />
-        </Group>
+        <img 
+          src={autopassLogo} 
+          alt="Autopass" 
+          style={{ 
+            height: '24px',
+            width: 'auto',
+            maxWidth: '112px', // 限制 logo 最大寬度
+            objectFit: 'contain',
+            flexShrink: 0, // 防止 logo 被壓縮
+          }} 
+        />
+        <Badge
+          variant="light"
+          size="sm"
+          styles={{
+            root: {
+              backgroundColor: 'rgba(34,139,230,0.1)',
+              color: '#228be6',
+              fontSize: '12px',
+              fontWeight: 500,
+              lineHeight: '16px',
+              fontFamily: 'Noto Sans TC, sans-serif',
+              borderRadius: '16px',
+              padding: '2px 12px',
+              border: 'none',
+              flexShrink: 0, // 防止 badge 被壓縮
+              whiteSpace: 'nowrap', // 防止文字換行
+            }
+          }}
+        >
+          v2.0.0
+        </Badge>
       </Box>
 
       {/* 導航項目區域 */}
@@ -155,6 +188,38 @@ export function Navigation() {
               marginBottom: 0,
               backgroundColor: active === 'stores' ? 'rgba(34,139,230,0.1)' : '#ffffff',
               color: active === 'stores' ? '#228be6' : '#000000',
+            },
+            label: {
+              fontWeight: 700,
+              fontSize: '14px',
+              lineHeight: '20px',
+              fontFamily: 'Noto Sans TC, sans-serif',
+            },
+            section: {
+              marginRight: '12px',
+            }
+          }}
+        />
+
+        {/* 財務管理 */}
+        <NavLink
+          href="#"
+          label="財務管理"
+          leftSection={<IconReportMoney size={16} />}
+          rightSection={<IconChevronDown size={16} />}
+          active={active === 'finance'}
+          onClick={() => setActive('finance')}
+          styles={{
+            root: {
+              borderRadius: 4,
+              padding: '12px',
+              height: '50px',
+              width: '216px',
+              display: 'flex',
+              alignItems: 'center',
+              marginBottom: 0,
+              backgroundColor: active === 'finance' ? 'rgba(34,139,230,0.1)' : '#ffffff',
+              color: active === 'finance' ? '#228be6' : '#000000',
             },
             label: {
               fontWeight: 700,

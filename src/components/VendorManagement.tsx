@@ -115,6 +115,10 @@ export function VendorManagement({ onViewVendor }: VendorManagementProps) {
     if (newVendorName.trim()) {
       // 這裡之後會連接到後端 API
       console.log('新增業者:', newVendorName);
+      // 導航到空的業者詳情頁
+      if (onViewVendor) {
+        onViewVendor(newVendorName);
+      }
       setNewVendorName('');
       setIsAddModalOpen(false);
     }

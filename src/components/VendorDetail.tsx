@@ -15,6 +15,7 @@ import {
   Stack,
   Select,
   Radio,
+  Menu,
 } from '@mantine/core'
 import {
   IconChevronLeft,
@@ -56,12 +57,56 @@ const EditIcon = () => (
   </svg>
 )
 
+// Empty database icon
+const DatabaseOffIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+    <path 
+      d="M12 2C16.97 2 22 3.79 22 6C22 8.21 16.97 10 12 10C7.03 10 2 8.21 2 6C2 3.79 7.03 2 12 2ZM2 8.5C2 10.71 7.03 12.5 12 12.5C16.97 12.5 22 10.71 22 8.5V11C22 13.21 16.97 15 12 15C7.03 15 2 13.21 2 11V8.5ZM2 13.5C2 15.71 7.03 17.5 12 17.5C16.97 17.5 22 15.71 22 13.5V16C22 18.21 16.97 20 12 20C7.03 20 2 18.21 2 16V13.5ZM3 3L21 21L19.59 22.41L17 19.82C15.5 19.94 13.8 20 12 20C7.03 20 2 18.21 2 16V13.5L1.59 13.09L3 3Z" 
+      fill="#868E96"
+    />
+  </svg>
+)
+
+// EmptyState component
+interface EmptyStateProps {
+  message: string;
+}
+
+function EmptyState({ message }: EmptyStateProps) {
+  return (
+    <Box style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '140px', gap: '16px' }}>
+      <Box style={{ 
+        width: '40px', 
+        height: '40px', 
+        backgroundColor: '#e9ecef', 
+        borderRadius: '20px', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center' 
+      }}>
+        <DatabaseOffIcon />
+      </Box>
+      <Text style={{ 
+        color: '#868e96', 
+        fontSize: '14px', 
+        fontFamily: 'Noto Sans TC', 
+        fontWeight: 400, 
+        lineHeight: '20px', 
+        textAlign: 'center' 
+      }}>
+        {message}
+      </Text>
+    </Box>
+  );
+}
+
 interface VendorDetailProps {
   vendorName: string;
   onBack: () => void;
+  isNewVendor?: boolean; // 是否為新增業者（顯示空狀態）
 }
 
-export function VendorDetail({ vendorName, onBack }: VendorDetailProps) {
+export function VendorDetail({ vendorName, onBack, isNewVendor = false }: VendorDetailProps) {
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedVendorName, setEditedVendorName] = useState(vendorName);
   const [currentVendorName, setCurrentVendorName] = useState(vendorName);
@@ -90,7 +135,7 @@ export function VendorDetail({ vendorName, onBack }: VendorDetailProps) {
           leftSection={<IconChevronLeft size={16} />}
           onClick={onBack}
           style={{
-            marginBottom: '28px',
+            marginBottom: '16px',
             fontSize: '14px',
             fontFamily: 'Noto Sans TC',
             fontWeight: 400,
@@ -101,15 +146,15 @@ export function VendorDetail({ vendorName, onBack }: VendorDetailProps) {
         </Button>
 
         {/* Vendor Name */}
-        <Group align="center" gap="12px" style={{ marginBottom: '30px', paddingLeft: '15px' }}>
+        <Group align="center" gap="12px" style={{ marginBottom: '16px', paddingLeft: '15px' }}>
           <Title
             order={1}
             style={{
               color: 'black',
-              fontSize: '32px',
+              fontSize: '24px',
               fontFamily: 'Noto Sans TC',
               fontWeight: 700,
-              lineHeight: '40px',
+              lineHeight: '32px',
               margin: 0,
             }}
           >
@@ -146,7 +191,7 @@ export function VendorDetail({ vendorName, onBack }: VendorDetailProps) {
             background: 'white',
             boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.05)',
             borderRadius: '16px',
-            marginBottom: '25px',
+            marginBottom: '16px',
           }}
         >
           {/* Section Header */}
@@ -155,10 +200,10 @@ export function VendorDetail({ vendorName, onBack }: VendorDetailProps) {
               order={3}
               style={{
                 color: 'black',
-                fontSize: '24px',
+                fontSize: '20px',
                 fontFamily: 'Noto Sans TC',
                 fontWeight: 700,
-                lineHeight: '32px',
+                lineHeight: '24px',
               }}
             >
               合約管理
@@ -183,29 +228,31 @@ export function VendorDetail({ vendorName, onBack }: VendorDetailProps) {
           {/* Tabs */}
           <Box px="15px">
             <Tabs defaultValue="active" variant="default">
-              <Tabs.List>
-                <Tabs.Tab
-                  value="active"
-                  style={{
-                    color: '#228BE6',
+              <Tabs.List
+                styles={{
+                  list: {
+                    borderBottom: '1px solid #dee2e6',
+                  },
+                  tab: {
+                    padding: '12px',
                     fontSize: '12px',
-                    fontFamily: 'Noto Sans TC',
+                    fontFamily: 'Noto Sans TC, sans-serif',
                     fontWeight: 400,
                     lineHeight: '16px',
-                  }}
-                >
+                    border: 'none',
+                    borderBottom: '1px solid #dee2e6',
+                    color: '#adb5bd',
+                    '&[data-active]': {
+                      color: '#000000',
+                      borderBottomColor: '#000000',
+                    },
+                  },
+                }}
+              >
+                <Tabs.Tab value="active">
                   執行中合約（4）
                 </Tabs.Tab>
-                <Tabs.Tab
-                  value="expired"
-                  style={{
-                    color: 'black',
-                    fontSize: '12px',
-                    fontFamily: 'Noto Sans TC',
-                    fontWeight: 400,
-                    lineHeight: '16px',
-                  }}
-                >
+                <Tabs.Tab value="expired">
                   已到期合約（2）
                 </Tabs.Tab>
               </Tabs.List>
@@ -343,17 +390,86 @@ export function VendorDetail({ vendorName, onBack }: VendorDetailProps) {
 }
 
 // Contract table component
-function ContractTable() {
+interface ContractTableProps {
+  isEmpty?: boolean;
+}
+
+function ContractTable({ isEmpty = false }: ContractTableProps) {
+  if (isEmpty) {
+    return (
+      <Box mt="20px" pb="25px">
+        {/* Tabs Header */}
+        <Tabs defaultValue="active" variant="default">
+          <Tabs.List
+            styles={{
+              list: {
+                borderBottom: '1px solid #dee2e6',
+              },
+              tab: {
+                padding: '12px',
+                fontSize: '12px',
+                fontFamily: 'Noto Sans TC, sans-serif',
+                fontWeight: 400,
+                lineHeight: '16px',
+                border: 'none',
+                borderBottom: '1px solid #dee2e6',
+                color: '#adb5bd',
+                '&[data-active]': {
+                  color: '#adb5bd',
+                  borderBottomColor: '#dee2e6',
+                },
+              },
+            }}
+          >
+            <Tabs.Tab value="active">
+              執行中合約（0）
+            </Tabs.Tab>
+            <Tabs.Tab value="expired">
+              已到期合約（0）
+            </Tabs.Tab>
+          </Tabs.List>
+        </Tabs>
+        
+        <EmptyState message="目前還沒有任何合約，點擊「新增合約」開始建立！" />
+      </Box>
+    );
+  }
+
   return (
     <Box mt="20px" pb="25px">
-      <Table>
+      <Table
+        styles={{
+          table: {
+            backgroundColor: '#ffffff',
+          },
+          thead: {
+            backgroundColor: '#ffffff',
+          },
+          th: {
+            color: '#868e96',
+            fontWeight: 400,
+            fontSize: '14px',
+            lineHeight: '20px',
+            padding: '12px 15px',
+            borderBottom: '1px solid #dee2e6',
+            fontFamily: 'Noto Sans TC, sans-serif',
+          },
+          td: {
+            padding: '12px 15px',
+            borderBottom: '1px solid #dee2e6',
+            fontSize: '14px',
+            fontFamily: 'Noto Sans TC, sans-serif',
+            color: '#000000',
+          },
+        }}
+      >
         <Table.Thead>
           <Table.Tr>
-            <Table.Th style={{ color: '#868E96', fontSize: '14px' }}>合約類型</Table.Th>
-            <Table.Th style={{ color: '#868E96', fontSize: '14px' }}>服務類型</Table.Th>
-            <Table.Th style={{ color: '#868E96', fontSize: '14px' }}>適用場站數</Table.Th>
-            <Table.Th style={{ color: '#868E96', fontSize: '14px' }}>合約起迄時間</Table.Th>
-            <Table.Th style={{ color: '#868E96', fontSize: '14px', textAlign: 'center' }}>操作</Table.Th>
+            <Table.Th>合約類型</Table.Th>
+            <Table.Th>服務類型</Table.Th>
+            <Table.Th>適用場站數</Table.Th>
+            <Table.Th>合約起迄時間</Table.Th>
+            <Table.Th style={{ textAlign: 'center', width: '120px' }}>操作</Table.Th>
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
@@ -366,32 +482,51 @@ function ContractTable() {
             <Table.Tr key={index}>
               <Table.Td>
                 <Badge
-                  style={{
-                    backgroundColor: `rgba(${
-                      contract.type === '停車場' ? '76,110,245' : 
-                      contract.type === '加油站' ? '250,82,82' : 
-                      '18,184,134'
-                    },0.1)`,
-                    color: '#212529',
-                    fontSize: '12px',
-                    borderRadius: '16px',
+                  styles={{
+                    root: {
+                      backgroundColor: `rgba(${
+                        contract.type === '停車場' ? '76,110,245' : 
+                        contract.type === '加油站' ? '250,82,82' : 
+                        '18,184,134'
+                      },0.1)`,
+                      color: '#212529',
+                      fontSize: '12px',
+                      lineHeight: '16px',
+                      fontWeight: 400,
+                      padding: '4px 8px',
+                      borderRadius: '16px',
+                      border: 'none',
+                      fontFamily: 'Noto Sans TC, sans-serif',
+                    },
                   }}
                 >
                   {contract.type}
                 </Badge>
               </Table.Td>
-              <Table.Td style={{ fontSize: '14px', color: 'black' }}>{contract.service}</Table.Td>
-              <Table.Td style={{ fontSize: '14px', color: 'black' }}>{contract.stations}</Table.Td>
-              <Table.Td style={{ fontSize: '14px', color: 'black' }}>{contract.period}</Table.Td>
-              <Table.Td>
-                <Group justify="center" gap="15px">
-                  <ActionIcon variant="transparent" size="20px">
+              <Table.Td>{contract.service}</Table.Td>
+              <Table.Td>{contract.stations}</Table.Td>
+              <Table.Td>{contract.period}</Table.Td>
+              <Table.Td style={{ width: '120px' }}>
+                <Group justify="center" gap="8px" wrap="nowrap">
+                  <ActionIcon 
+                    variant="transparent" 
+                    size={20}
+                    style={{ cursor: 'pointer', minWidth: '20px' }}
+                  >
                     <ViewIcon />
                   </ActionIcon>
-                  <ActionIcon variant="transparent" size="20px">
+                  <ActionIcon 
+                    variant="transparent" 
+                    size={20}
+                    style={{ cursor: 'pointer', minWidth: '20px' }}
+                  >
                     <EditIcon />
                   </ActionIcon>
-                  <ActionIcon variant="transparent" size="20px">
+                  <ActionIcon 
+                    variant="transparent" 
+                    size={20}
+                    style={{ cursor: 'pointer', minWidth: '20px' }}
+                  >
                     <DeleteIcon />
                   </ActionIcon>
                 </Group>
@@ -405,40 +540,51 @@ function ContractTable() {
 }
 
 // Contact info section component
-function ContactInfoSection() {
+interface ContactInfoSectionProps {
+  isEmpty?: boolean;
+}
+
+function ContactInfoSection({ isEmpty = false }: ContactInfoSectionProps) {
   const [isAddPersonModalOpen, setIsAddPersonModalOpen] = useState(false);
   const [isEditPersonModalOpen, setIsEditPersonModalOpen] = useState(false);
   const [isDeletePersonModalOpen, setIsDeletePersonModalOpen] = useState(false);
   const [selectedPerson, setSelectedPerson] = useState<any>(null);
+  const [personnelType, setPersonnelType] = useState<'accountant' | 'admin'>('accountant');
   const [newPerson, setNewPerson] = useState({
     name: '',
-    role: '',
-    isAccountant: '',
-    phone: '',
     email: '',
   });
-  const [contactList, setContactList] = useState([
-    { name: 'Walter Chang', role: '管理員', isAccountant: '是', phone: '0911111111', email: 'walter51004@pklotcorp.com' },
-    { name: 'Rex Yen', role: '檢視者', isAccountant: '否', phone: '02-12345678 #123', email: 'rexyen@pklotcorp.com' },
-  ]);
+  const [contactList, setContactList] = useState(
+    isEmpty 
+      ? [] 
+      : [
+          { name: 'Walter Chang', role: '管理員', isAccountant: '是', phone: '0911111111', email: 'walter51004@pklotcorp.com' },
+          { name: 'Rex Yen', role: '檢視者', isAccountant: '否', phone: '02-12345678 #123', email: 'rexyen@pklotcorp.com' },
+        ]
+  );
 
   const handleAddPerson = () => {
     setContactList([...contactList, newPerson]);
-    setNewPerson({ name: '', role: '', isAccountant: '', phone: '', email: '' });
+    setNewPerson({ name: '', email: '' });
     setIsAddPersonModalOpen(false);
+  };
+
+  const handleAddPersonType = (type: 'accountant' | 'admin') => {
+    setPersonnelType(type);
+    setIsAddPersonModalOpen(true);
   };
 
   const handleEditPerson = (person: any, index: number) => {
     setSelectedPerson({ ...person, index });
-    setNewPerson(person);
+    setNewPerson({ name: person.name, email: person.email });
     setIsEditPersonModalOpen(true);
   };
 
   const handleSaveEditPerson = () => {
     const updatedList = [...contactList];
-    updatedList[selectedPerson.index] = newPerson;
+    updatedList[selectedPerson.index] = { ...updatedList[selectedPerson.index], ...newPerson };
     setContactList(updatedList);
-    setNewPerson({ name: '', role: '', isAccountant: '', phone: '', email: '' });
+    setNewPerson({ name: '', email: '' });
     setSelectedPerson(null);
     setIsEditPersonModalOpen(false);
   };
@@ -456,7 +602,7 @@ function ContactInfoSection() {
   };
 
   const handleCancelModal = () => {
-    setNewPerson({ name: '', role: '', isAccountant: '', phone: '', email: '' });
+    setNewPerson({ name: '', email: '' });
     setSelectedPerson(null);
     setIsAddPersonModalOpen(false);
     setIsEditPersonModalOpen(false);
@@ -478,85 +624,122 @@ function ContactInfoSection() {
           order={3}
           style={{
             color: 'black',
-            fontSize: '24px',
+            fontSize: '20px',
             fontFamily: 'Noto Sans TC',
             fontWeight: 700,
-            lineHeight: '32px',
-          }}
-        >
-          聯絡資訊與權限管理
-        </Title>
-        <Button
-          leftSection={<IconPlus size={16} />}
-          onClick={() => setIsAddPersonModalOpen(true)}
-          style={{
-            background: '#228BE6',
-            color: 'white',
-            fontSize: '16px',
-            fontFamily: 'Noto Sans TC',
-            fontWeight: 400,
             lineHeight: '24px',
-            borderRadius: '4px',
-            padding: '8px 20px',
           }}
         >
-          新增人員
-        </Button>
+          人員管理
+        </Title>
+        <Menu shadow="md" width={200}>
+          <Menu.Target>
+            <Button
+              leftSection={<IconPlus size={16} />}
+              style={{
+                background: '#228BE6',
+                color: 'white',
+                fontSize: '16px',
+                fontFamily: 'Noto Sans TC',
+                fontWeight: 400,
+                lineHeight: '24px',
+                borderRadius: '4px',
+                padding: '8px 20px',
+              }}
+            >
+              新增人員
+            </Button>
+          </Menu.Target>
+          
+          <Menu.Dropdown>
+            <Menu.Item onClick={() => handleAddPersonType('accountant')}>
+              會計人員
+            </Menu.Item>
+            <Menu.Item onClick={() => handleAddPersonType('admin')}>
+              廠商後台管理員
+            </Menu.Item>
+          </Menu.Dropdown>
+        </Menu>
       </Group>
 
-      <Box px="15px" pb="20px">
-        <Table>
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th style={{ color: '#868E96', fontSize: '14px' }}>聯絡人名稱</Table.Th>
-              <Table.Th style={{ color: '#868E96', fontSize: '14px' }}>後台權限</Table.Th>
-              <Table.Th style={{ color: '#868E96', fontSize: '14px' }}>是否為會計</Table.Th>
-              <Table.Th style={{ color: '#868E96', fontSize: '14px' }}>聯絡電話</Table.Th>
-              <Table.Th style={{ color: '#868E96', fontSize: '14px' }}>Email</Table.Th>
-              <Table.Th style={{ color: '#868E96', fontSize: '14px', textAlign: 'center' }}>操作</Table.Th>
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {contactList.map((contact, index) => (
-              <Table.Tr key={index}>
-                <Table.Td style={{ fontSize: '14px', color: 'black' }}>{contact.name}</Table.Td>
-                <Table.Td>
-                  <Badge
-                    style={{
-                      backgroundColor: 'rgba(134, 142, 150, 0.10)',
-                      color: '#212529',
-                      fontSize: '12px',
-                      borderRadius: '16px',
-                    }}
-                  >
-                    {contact.role}
-                  </Badge>
-                </Table.Td>
-                <Table.Td style={{ fontSize: '14px', color: 'black' }}>{contact.isAccountant}</Table.Td>
-                <Table.Td style={{ fontSize: '14px', color: 'black' }}>{contact.phone}</Table.Td>
-                <Table.Td style={{ fontSize: '14px', color: 'black' }}>{contact.email}</Table.Td>
-                <Table.Td>
-                  <Group justify="center" gap="15px">
-                    <ActionIcon 
-                      variant="transparent" 
-                      size="20px"
-                      onClick={() => handleEditPerson(contact, index)}
-                    >
-                      <EditIcon />
-                    </ActionIcon>
-                    <ActionIcon 
-                      variant="transparent" 
-                      size="20px"
-                      onClick={() => handleDeletePerson(contact, index)}
-                    >
-                      <DeleteIcon />
-                    </ActionIcon>
-                  </Group>
-                </Table.Td>
-              </Table.Tr>
-            ))}
-          </Table.Tbody>
-        </Table>
+      {/* Tabs for Personnel Management */}
+      <Box px="15px">
+        {isEmpty ? (
+          <>
+            <Tabs defaultValue="accountant" variant="default">
+              <Tabs.List
+                styles={{
+                  list: {
+                    borderBottom: '1px solid #dee2e6',
+                  },
+                  tab: {
+                    padding: '12px',
+                    fontSize: '12px',
+                    fontFamily: 'Noto Sans TC, sans-serif',
+                    fontWeight: 400,
+                    lineHeight: '16px',
+                    border: 'none',
+                    borderBottom: '1px solid #dee2e6',
+                    color: '#adb5bd',
+                    '&[data-active]': {
+                      color: '#adb5bd',
+                      borderBottomColor: '#dee2e6',
+                    },
+                  },
+                }}
+              >
+                <Tabs.Tab value="accountant">
+                  會計人員（0）
+                </Tabs.Tab>
+                <Tabs.Tab value="admin">
+                  廠商後台管理員（0）
+                </Tabs.Tab>
+              </Tabs.List>
+            </Tabs>
+            <Box mt="20px" pb="25px">
+              <EmptyState message="目前還沒有任何人員，點擊「新增人員」開始建立！" />
+            </Box>
+          </>
+        ) : (
+          <Tabs defaultValue="accountant" variant="default">
+            <Tabs.List
+              styles={{
+                list: {
+                  borderBottom: '1px solid #dee2e6',
+                },
+                tab: {
+                  padding: '12px',
+                  fontSize: '12px',
+                  fontFamily: 'Noto Sans TC, sans-serif',
+                  fontWeight: 400,
+                  lineHeight: '16px',
+                  border: 'none',
+                  borderBottom: '1px solid #dee2e6',
+                  color: '#adb5bd',
+                  '&[data-active]': {
+                    color: '#000000',
+                    borderBottomColor: '#000000',
+                  },
+                },
+              }}
+            >
+              <Tabs.Tab value="accountant">
+                會計人員（2）
+              </Tabs.Tab>
+              <Tabs.Tab value="admin">
+                廠商後台管理員（2）
+              </Tabs.Tab>
+            </Tabs.List>
+
+            <Tabs.Panel value="accountant">
+              <PersonnelTable contactList={contactList} onEdit={handleEditPerson} onDelete={handleDeletePerson} />
+            </Tabs.Panel>
+
+            <Tabs.Panel value="admin">
+              <PersonnelTable contactList={contactList} onEdit={handleEditPerson} onDelete={handleDeletePerson} />
+            </Tabs.Panel>
+          </Tabs>
+        )}
       </Box>
 
       {/* 新增人員 Modal */}
@@ -568,82 +751,147 @@ function ContactInfoSection() {
         size="md"
         padding="24px"
         styles={{
-          content: { background: 'white', boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.05)', borderRadius: '4px' },
+          content: { 
+            background: 'white', 
+            boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.05)', 
+            borderRadius: '4px',
+            width: '512px',
+          },
           header: { display: 'none' },
           body: { paddingTop: '24px' },
         }}
       >
         <Stack gap="24px">
-          <Title order={4} style={{ color: 'black', fontSize: '16px', fontFamily: 'Noto Sans TC', fontWeight: 700, lineHeight: '20px' }}>
-            新增人員
+          <Title 
+            order={4} 
+            style={{ 
+              color: 'black', 
+              fontSize: '16px', 
+              fontFamily: 'Noto Sans TC', 
+              fontWeight: 700, 
+              lineHeight: '20px' 
+            }}
+          >
+            新增{personnelType === 'accountant' ? '會計' : '廠商後台管理'}人員
           </Title>
+          
           <Stack gap="16px">
             <Box>
-              <Group gap="0" mb="4px">
-                <Text style={{ color: 'black', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 400, lineHeight: '20px' }}>聯絡人名稱 </Text>
-                <Text style={{ color: '#FA5252', fontSize: '12px', fontFamily: 'Noto Sans TC', fontWeight: 500, lineHeight: '16px' }}>*</Text>
-              </Group>
+              <Text 
+                mb="4px"
+                style={{ 
+                  color: 'black', 
+                  fontSize: '14px', 
+                  fontFamily: 'Noto Sans TC', 
+                  fontWeight: 400, 
+                  lineHeight: '20px' 
+                }}
+              >
+                人員名稱
+              </Text>
               <TextInput
-                placeholder="請輸入聯絡人名稱"
+                placeholder="請輸入人員名稱"
                 value={newPerson.name}
                 onChange={(event) => setNewPerson({ ...newPerson, name: event.currentTarget.value })}
-                styles={{ input: { paddingLeft: '12px', paddingRight: '12px', paddingTop: '6px', paddingBottom: '6px', background: 'white', borderRadius: '4px', border: '1px solid #DEE2E6', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 400, lineHeight: '20px', '&::placeholder': { color: '#ADB5BD' } } }}
+                styles={{ 
+                  input: { 
+                    paddingLeft: '12px', 
+                    paddingRight: '12px', 
+                    paddingTop: '8px', 
+                    paddingBottom: '8px', 
+                    background: 'white', 
+                    borderRadius: '4px', 
+                    border: '1px solid #DEE2E6', 
+                    fontSize: '14px', 
+                    fontFamily: 'Noto Sans TC', 
+                    fontWeight: 400, 
+                    lineHeight: '20px', 
+                    height: '40px',
+                    '&::placeholder': { color: '#ADB5BD' } 
+                  } 
+                }}
               />
             </Box>
+            
             <Box>
-              <Group gap="0" mb="4px">
-                <Text style={{ color: 'black', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 400, lineHeight: '20px' }}>後台權限 </Text>
-                <Text style={{ color: '#FA5252', fontSize: '12px', fontFamily: 'Noto Sans TC', fontWeight: 500, lineHeight: '16px' }}>*</Text>
-              </Group>
-              <Select
-                placeholder="請選擇後台權限"
-                value={newPerson.role}
-                onChange={(value) => setNewPerson({ ...newPerson, role: value || '' })}
-                data={[{ value: '管理員', label: '管理員' },{ value: '編輯者', label: '編輯者' }, { value: '檢視者', label: '檢視者' }]}
-                styles={{ input: { paddingLeft: '12px', paddingRight: '12px', paddingTop: '6px', paddingBottom: '6px', background: 'white', borderRadius: '4px', border: '1px solid #DEE2E6', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 400, lineHeight: '20px' } }}
-              />
-            </Box>
-            <Box>
-              <Group gap="0" mb="4px">
-                <Text style={{ color: 'black', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 400, lineHeight: '20px' }}>是否為會計 </Text>
-                <Text style={{ color: '#FA5252', fontSize: '12px', fontFamily: 'Noto Sans TC', fontWeight: 500, lineHeight: '16px' }}>*</Text>
-              </Group>
-              <Select
-                placeholder="請選擇是否為會計"
-                value={newPerson.isAccountant}
-                onChange={(value) => setNewPerson({ ...newPerson, isAccountant: value || '' })}
-                data={[{ value: '是', label: '是' }, { value: '否', label: '否' }]}
-                styles={{ input: { paddingLeft: '12px', paddingRight: '12px', paddingTop: '6px', paddingBottom: '6px', background: 'white', borderRadius: '4px', border: '1px solid #DEE2E6', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 400, lineHeight: '20px' } }}
-              />
-            </Box>
-            <Box>
-              <Group gap="0" mb="4px">
-                <Text style={{ color: 'black', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 400, lineHeight: '20px' }}>聯絡電話 </Text>
-                <Text style={{ color: '#FA5252', fontSize: '12px', fontFamily: 'Noto Sans TC', fontWeight: 500, lineHeight: '16px' }}>*</Text>
-              </Group>
-              <TextInput
-                placeholder="請輸入聯絡電話"
-                value={newPerson.phone}
-                onChange={(event) => setNewPerson({ ...newPerson, phone: event.currentTarget.value })}
-                styles={{ input: { paddingLeft: '12px', paddingRight: '12px', paddingTop: '6px', paddingBottom: '6px', background: 'white', borderRadius: '4px', border: '1px solid #DEE2E6', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 400, lineHeight: '20px', '&::placeholder': { color: '#ADB5BD' } } }}
-              />
-            </Box>
-            <Box>
-              <Group gap="0" mb="4px">
-                <Text style={{ color: 'black', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 400, lineHeight: '20px' }}>Email </Text>
-                <Text style={{ color: '#FA5252', fontSize: '12px', fontFamily: 'Noto Sans TC', fontWeight: 500, lineHeight: '16px' }}>*</Text>
-              </Group>
+              <Text 
+                mb="4px"
+                style={{ 
+                  color: 'black', 
+                  fontSize: '14px', 
+                  fontFamily: 'Noto Sans TC', 
+                  fontWeight: 400, 
+                  lineHeight: '20px' 
+                }}
+              >
+                Email
+              </Text>
               <TextInput
                 placeholder="請輸入Email"
                 value={newPerson.email}
                 onChange={(event) => setNewPerson({ ...newPerson, email: event.currentTarget.value })}
-                styles={{ input: { paddingLeft: '12px', paddingRight: '12px', paddingTop: '6px', paddingBottom: '6px', background: 'white', borderRadius: '4px', border: '1px solid #DEE2E6', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 400, lineHeight: '20px', '&::placeholder': { color: '#ADB5BD' } } }}
+                styles={{ 
+                  input: { 
+                    paddingLeft: '12px', 
+                    paddingRight: '12px', 
+                    paddingTop: '8px', 
+                    paddingBottom: '8px', 
+                    background: 'white', 
+                    borderRadius: '4px', 
+                    border: '1px solid #DEE2E6', 
+                    fontSize: '14px', 
+                    fontFamily: 'Noto Sans TC', 
+                    fontWeight: 400, 
+                    lineHeight: '20px', 
+                    height: '40px',
+                    '&::placeholder': { color: '#ADB5BD' } 
+                  } 
+                }}
               />
             </Box>
           </Stack>
+          
           <Group justify="flex-end" gap="16px">
-            <Button variant="outline" onClick={handleCancelModal} style={{ paddingLeft: '16px', paddingRight: '16px', paddingTop: '6px', paddingBottom: '6px', background: 'white', borderRadius: '4px', border: '1px solid #DEE2E6', color: '#212529', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 400, lineHeight: '20px' }}>取消</Button>
-            <Button onClick={handleAddPerson} style={{ paddingLeft: '16px', paddingRight: '16px', paddingTop: '6px', paddingBottom: '6px', background: '#228BE6', borderRadius: '4px', color: 'white', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 400, lineHeight: '20px' }}>新增</Button>
+            <Button 
+              variant="outline" 
+              onClick={handleCancelModal} 
+              style={{ 
+                paddingLeft: '16px', 
+                paddingRight: '16px', 
+                paddingTop: '8px', 
+                paddingBottom: '8px', 
+                background: 'white', 
+                borderRadius: '4px', 
+                border: '1px solid #DEE2E6', 
+                color: '#212529', 
+                fontSize: '14px', 
+                fontFamily: 'Noto Sans TC', 
+                fontWeight: 400, 
+                lineHeight: '20px',
+                height: '40px',
+              }}
+            >
+              取消
+            </Button>
+            <Button 
+              onClick={handleAddPerson} 
+              style={{ 
+                paddingLeft: '16px', 
+                paddingRight: '16px', 
+                paddingTop: '8px', 
+                paddingBottom: '8px', 
+                background: '#228BE6', 
+                borderRadius: '4px', 
+                color: 'white', 
+                fontSize: '14px', 
+                fontFamily: 'Noto Sans TC', 
+                fontWeight: 400, 
+                lineHeight: '20px',
+                height: '40px',
+              }}
+            >
+              新增
+            </Button>
           </Group>
         </Stack>
       </Modal>
@@ -657,77 +905,143 @@ function ContactInfoSection() {
         size="md"
         padding="24px"
         styles={{
-          content: { background: 'white', boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.05)', borderRadius: '4px' },
+          content: { 
+            background: 'white', 
+            boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.05)', 
+            borderRadius: '4px',
+            width: '512px',
+          },
           header: { display: 'none' },
           body: { paddingTop: '24px' },
         }}
       >
         <Stack gap="24px">
-          <Title order={4} style={{ color: 'black', fontSize: '16px', fontFamily: 'Noto Sans TC', fontWeight: 700, lineHeight: '20px' }}>
+          <Title 
+            order={4} 
+            style={{ 
+              color: 'black', 
+              fontSize: '16px', 
+              fontFamily: 'Noto Sans TC', 
+              fontWeight: 700, 
+              lineHeight: '20px' 
+            }}
+          >
             編輯人員
           </Title>
+          
           <Stack gap="16px">
             <Box>
-              <Group gap="0" mb="4px">
-                <Text style={{ color: 'black', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 400, lineHeight: '20px' }}>聯絡人名稱 </Text>
-                <Text style={{ color: '#FA5252', fontSize: '12px', fontFamily: 'Noto Sans TC', fontWeight: 500, lineHeight: '16px' }}>*</Text>
-              </Group>
+              <Text 
+                mb="4px"
+                style={{ 
+                  color: 'black', 
+                  fontSize: '14px', 
+                  fontFamily: 'Noto Sans TC', 
+                  fontWeight: 400, 
+                  lineHeight: '20px' 
+                }}
+              >
+                人員名稱
+              </Text>
               <TextInput
                 value={newPerson.name}
                 onChange={(event) => setNewPerson({ ...newPerson, name: event.currentTarget.value })}
-                styles={{ input: { paddingLeft: '12px', paddingRight: '12px', paddingTop: '6px', paddingBottom: '6px', background: 'white', borderRadius: '4px', border: '1px solid #DEE2E6', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 400, lineHeight: '20px' } }}
+                styles={{ 
+                  input: { 
+                    paddingLeft: '12px', 
+                    paddingRight: '12px', 
+                    paddingTop: '8px', 
+                    paddingBottom: '8px', 
+                    background: 'white', 
+                    borderRadius: '4px', 
+                    border: '1px solid #DEE2E6', 
+                    fontSize: '14px', 
+                    fontFamily: 'Noto Sans TC', 
+                    fontWeight: 400, 
+                    lineHeight: '20px', 
+                    height: '40px',
+                  } 
+                }}
               />
             </Box>
+            
             <Box>
-              <Group gap="0" mb="4px">
-                <Text style={{ color: 'black', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 400, lineHeight: '20px' }}>後台權限 </Text>
-                <Text style={{ color: '#FA5252', fontSize: '12px', fontFamily: 'Noto Sans TC', fontWeight: 500, lineHeight: '16px' }}>*</Text>
-              </Group>
-              <Select
-                value={newPerson.role}
-                onChange={(value) => setNewPerson({ ...newPerson, role: value || '' })}
-                data={[{ value: '管理員', label: '管理員' },{ value: '編輯者', label: '編輯者' }, { value: '檢視者', label: '檢視者' }]}
-                styles={{ input: { paddingLeft: '12px', paddingRight: '12px', paddingTop: '6px', paddingBottom: '6px', background: 'white', borderRadius: '4px', border: '1px solid #DEE2E6', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 400, lineHeight: '20px' } }}
-              />
-            </Box>
-            <Box>
-              <Group gap="0" mb="4px">
-                <Text style={{ color: 'black', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 400, lineHeight: '20px' }}>是否為會計 </Text>
-                <Text style={{ color: '#FA5252', fontSize: '12px', fontFamily: 'Noto Sans TC', fontWeight: 500, lineHeight: '16px' }}>*</Text>
-              </Group>
-              <Select
-                value={newPerson.isAccountant}
-                onChange={(value) => setNewPerson({ ...newPerson, isAccountant: value || '' })}
-                data={[{ value: '是', label: '是' }, { value: '否', label: '否' }]}
-                styles={{ input: { paddingLeft: '12px', paddingRight: '12px', paddingTop: '6px', paddingBottom: '6px', background: 'white', borderRadius: '4px', border: '1px solid #DEE2E6', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 400, lineHeight: '20px' } }}
-              />
-            </Box>
-            <Box>
-              <Group gap="0" mb="4px">
-                <Text style={{ color: 'black', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 400, lineHeight: '20px' }}>聯絡電話 </Text>
-                <Text style={{ color: '#FA5252', fontSize: '12px', fontFamily: 'Noto Sans TC', fontWeight: 500, lineHeight: '16px' }}>*</Text>
-              </Group>
-              <TextInput
-                value={newPerson.phone}
-                onChange={(event) => setNewPerson({ ...newPerson, phone: event.currentTarget.value })}
-                styles={{ input: { paddingLeft: '12px', paddingRight: '12px', paddingTop: '6px', paddingBottom: '6px', background: 'white', borderRadius: '4px', border: '1px solid #DEE2E6', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 400, lineHeight: '20px' } }}
-              />
-            </Box>
-            <Box>
-              <Group gap="0" mb="4px">
-                <Text style={{ color: 'black', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 400, lineHeight: '20px' }}>Email </Text>
-                <Text style={{ color: '#FA5252', fontSize: '12px', fontFamily: 'Noto Sans TC', fontWeight: 500, lineHeight: '16px' }}>*</Text>
-              </Group>
+              <Text 
+                mb="4px"
+                style={{ 
+                  color: 'black', 
+                  fontSize: '14px', 
+                  fontFamily: 'Noto Sans TC', 
+                  fontWeight: 400, 
+                  lineHeight: '20px' 
+                }}
+              >
+                Email
+              </Text>
               <TextInput
                 value={newPerson.email}
                 onChange={(event) => setNewPerson({ ...newPerson, email: event.currentTarget.value })}
-                styles={{ input: { paddingLeft: '12px', paddingRight: '12px', paddingTop: '6px', paddingBottom: '6px', background: 'white', borderRadius: '4px', border: '1px solid #DEE2E6', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 400, lineHeight: '20px' } }}
+                styles={{ 
+                  input: { 
+                    paddingLeft: '12px', 
+                    paddingRight: '12px', 
+                    paddingTop: '8px', 
+                    paddingBottom: '8px', 
+                    background: 'white', 
+                    borderRadius: '4px', 
+                    border: '1px solid #DEE2E6', 
+                    fontSize: '14px', 
+                    fontFamily: 'Noto Sans TC', 
+                    fontWeight: 400, 
+                    lineHeight: '20px', 
+                    height: '40px',
+                  } 
+                }}
               />
             </Box>
           </Stack>
+          
           <Group justify="flex-end" gap="16px">
-            <Button variant="outline" onClick={handleCancelModal} style={{ paddingLeft: '16px', paddingRight: '16px', paddingTop: '6px', paddingBottom: '6px', background: 'white', borderRadius: '4px', border: '1px solid #DEE2E6', color: '#212529', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 400, lineHeight: '20px' }}>取消</Button>
-            <Button onClick={handleSaveEditPerson} style={{ paddingLeft: '16px', paddingRight: '16px', paddingTop: '6px', paddingBottom: '6px', background: '#228BE6', borderRadius: '4px', color: 'white', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 400, lineHeight: '20px' }}>確認</Button>
+            <Button 
+              variant="outline" 
+              onClick={handleCancelModal} 
+              style={{ 
+                paddingLeft: '16px', 
+                paddingRight: '16px', 
+                paddingTop: '8px', 
+                paddingBottom: '8px', 
+                background: 'white', 
+                borderRadius: '4px', 
+                border: '1px solid #DEE2E6', 
+                color: '#212529', 
+                fontSize: '14px', 
+                fontFamily: 'Noto Sans TC', 
+                fontWeight: 400, 
+                lineHeight: '20px',
+                height: '40px',
+              }}
+            >
+              取消
+            </Button>
+            <Button 
+              onClick={handleSaveEditPerson} 
+              style={{ 
+                paddingLeft: '16px', 
+                paddingRight: '16px', 
+                paddingTop: '8px', 
+                paddingBottom: '8px', 
+                background: '#228BE6', 
+                borderRadius: '4px', 
+                color: 'white', 
+                fontSize: '14px', 
+                fontFamily: 'Noto Sans TC', 
+                fontWeight: 400, 
+                lineHeight: '20px',
+                height: '40px',
+              }}
+            >
+              確認
+            </Button>
           </Group>
         </Stack>
       </Modal>
@@ -764,7 +1078,115 @@ function ContactInfoSection() {
 }
 
 // Bank info section component
-function BankInfoSection() {
+interface BankInfoSectionProps {
+  isEmpty?: boolean;
+}
+
+function BankInfoSection({ isEmpty = false }: BankInfoSectionProps) {
+  const [isAddBankModalOpen, setIsAddBankModalOpen] = useState(false);
+  const [isEditBankModalOpen, setIsEditBankModalOpen] = useState(false);
+  const [isDeleteBankModalOpen, setIsDeleteBankModalOpen] = useState(false);
+  const [selectedBank, setSelectedBank] = useState<any>(null);
+  const [newBankInfo, setNewBankInfo] = useState({
+    type: '',
+    bankCode: '',
+    bank: '',
+    branch: '',
+    account: '',
+    accountName: '',
+    feeMode: '',
+  });
+  const [bankList, setBankList] = useState(
+    isEmpty
+      ? []
+      : [
+          { 
+            type: '預設', 
+            bankCode: '000', 
+            bankBranch: '廣吉銀行/和平分行', 
+            account: '000000000000', 
+            accountName: '廣吉科技', 
+            feeMode: '不內扣',
+            highlight: false
+          },
+          { 
+            type: '指定場站', 
+            bankCode: '013', 
+            bankBranch: '國泰世華銀行/和平分行', 
+            account: '000000000000', 
+            accountName: '廣吉科技', 
+            feeMode: '內扣',
+            highlight: true
+          },
+        ]
+  );
+
+  const handleAddBank = () => {
+    setBankList([...bankList, {
+      type: newBankInfo.type,
+      bankCode: newBankInfo.bankCode,
+      bankBranch: `${newBankInfo.bank}/${newBankInfo.branch}`,
+      account: newBankInfo.account,
+      accountName: newBankInfo.accountName,
+      feeMode: newBankInfo.feeMode,
+      highlight: false
+    }]);
+    setNewBankInfo({ type: '', bankCode: '', bank: '', branch: '', account: '', accountName: '', feeMode: '' });
+    setIsAddBankModalOpen(false);
+  };
+
+  const handleEditBank = (bank: any, index: number) => {
+    const [bankName, branchName] = bank.bankBranch.split('/');
+    setSelectedBank({ ...bank, index });
+    setNewBankInfo({
+      type: bank.type,
+      bankCode: bank.bankCode,
+      bank: bankName || '',
+      branch: branchName || '',
+      account: bank.account,
+      accountName: bank.accountName,
+      feeMode: bank.feeMode,
+    });
+    setIsEditBankModalOpen(true);
+  };
+
+  const handleSaveEditBank = () => {
+    const updatedList = [...bankList];
+    updatedList[selectedBank.index] = {
+      ...updatedList[selectedBank.index],
+      type: newBankInfo.type,
+      bankCode: newBankInfo.bankCode,
+      bankBranch: `${newBankInfo.bank}/${newBankInfo.branch}`,
+      account: newBankInfo.account,
+      accountName: newBankInfo.accountName,
+      feeMode: newBankInfo.feeMode,
+    };
+    setBankList(updatedList);
+    setNewBankInfo({ type: '', bankCode: '', bank: '', branch: '', account: '', accountName: '', feeMode: '' });
+    setSelectedBank(null);
+    setIsEditBankModalOpen(false);
+  };
+
+  const handleDeleteBank = (bank: any, index: number) => {
+    setSelectedBank({ ...bank, index });
+    setIsDeleteBankModalOpen(true);
+  };
+
+  const handleConfirmDeleteBank = () => {
+    const updatedList = bankList.filter((_, index) => index !== selectedBank.index);
+    setBankList(updatedList);
+    setSelectedBank(null);
+    setIsDeleteBankModalOpen(false);
+  };
+
+  const handleCancelBankModal = () => {
+    setNewBankInfo({ type: '', bankCode: '', bank: '', branch: '', account: '', accountName: '', feeMode: '' });
+    setSelectedBank(null);
+    setIsAddBankModalOpen(false);
+    setIsEditBankModalOpen(false);
+    setIsDeleteBankModalOpen(false);
+  };
+
   return (
     <Paper
       style={{
@@ -779,16 +1201,17 @@ function BankInfoSection() {
           order={3}
           style={{
             color: 'black',
-            fontSize: '24px',
+            fontSize: '20px',
             fontFamily: 'Noto Sans TC',
             fontWeight: 700,
-            lineHeight: '32px',
+            lineHeight: '24px',
           }}
         >
           匯款資訊
         </Title>
         <Button
           leftSection={<IconPlus size={16} />}
+          onClick={() => setIsAddBankModalOpen(true)}
           style={{
             background: '#228BE6',
             color: 'white',
@@ -800,59 +1223,910 @@ function BankInfoSection() {
             padding: '8px 20px',
           }}
         >
-          新增人員
+          新增匯款資訊
         </Button>
       </Group>
 
       <Box px="15px" pb="20px">
-        <Table>
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th style={{ color: '#868E96', fontSize: '14px' }}>人員名稱</Table.Th>
-              <Table.Th style={{ color: '#868E96', fontSize: '14px' }}>後台權限</Table.Th>
-              <Table.Th style={{ color: '#868E96', fontSize: '14px' }}>是否為會計</Table.Th>
-              <Table.Th style={{ color: '#868E96', fontSize: '14px' }}>聯絡電話</Table.Th>
-              <Table.Th style={{ color: '#868E96', fontSize: '14px' }}>Email</Table.Th>
-              <Table.Th style={{ color: '#868E96', fontSize: '14px', textAlign: 'center' }}>操作</Table.Th>
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {[
-              { name: 'Walter Chang', role: '管理員', isAccountant: '是', phone: '0911111111', email: 'walter51004@pklotcorp.com' },
-              { name: 'Rex Yen', role: '檢視者', isAccountant: '否', phone: '02-12345678 #123', email: 'rexyen@pklotcorp.com' },
-            ].map((contact, index) => (
-              <Table.Tr key={index}>
-                <Table.Td style={{ fontSize: '14px', color: 'black' }}>{contact.name}</Table.Td>
-                <Table.Td>
-                  <Badge
-                    style={{
-                      backgroundColor: 'rgba(134, 142, 150, 0.10)',
-                      color: '#212529',
-                      fontSize: '12px',
-                      borderRadius: '16px',
-                    }}
-                  >
-                    {contact.role}
-                  </Badge>
-                </Table.Td>
-                <Table.Td style={{ fontSize: '14px', color: 'black' }}>{contact.isAccountant}</Table.Td>
-                <Table.Td style={{ fontSize: '14px', color: 'black' }}>{contact.phone}</Table.Td>
-                <Table.Td style={{ fontSize: '14px', color: 'black' }}>{contact.email}</Table.Td>
-                <Table.Td>
-                  <Group justify="center" gap="15px">
-                    <ActionIcon variant="transparent" size="20px">
-                      <EditIcon />
-                    </ActionIcon>
-                    <ActionIcon variant="transparent" size="20px">
-                      <DeleteIcon />
-                    </ActionIcon>
-                  </Group>
-                </Table.Td>
+        {isEmpty ? (
+          <>
+            {/* Empty state with table headers */}
+            <Table
+              styles={{
+                table: {
+                  backgroundColor: '#ffffff',
+                },
+                thead: {
+                  backgroundColor: '#ffffff',
+                },
+                th: {
+                  color: '#868e96',
+                  fontWeight: 400,
+                  fontSize: '14px',
+                  lineHeight: '20px',
+                  padding: '12px 15px',
+                  borderBottom: '1px solid #dee2e6',
+                  fontFamily: 'Noto Sans TC, sans-serif',
+                },
+              }}
+            >
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>適用類型</Table.Th>
+                  <Table.Th>銀行代碼</Table.Th>
+                  <Table.Th>銀行/分行</Table.Th>
+                  <Table.Th>帳號</Table.Th>
+                  <Table.Th>戶名</Table.Th>
+                  <Table.Th>手續費模式</Table.Th>
+                  <Table.Th style={{ textAlign: 'center', width: '120px' }}>操作</Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+            </Table>
+            <EmptyState message="目前還沒有任何匯款資訊，點擊「新增匯款資訊」開始建立！" />
+          </>
+        ) : (
+          <Table
+            styles={{
+              table: {
+                backgroundColor: '#ffffff',
+              },
+              thead: {
+                backgroundColor: '#ffffff',
+              },
+              th: {
+                color: '#868e96',
+                fontWeight: 400,
+                fontSize: '14px',
+                lineHeight: '20px',
+                padding: '12px 15px',
+                borderBottom: '1px solid #dee2e6',
+                fontFamily: 'Noto Sans TC, sans-serif',
+              },
+              td: {
+                padding: '12px 15px',
+                borderBottom: '1px solid #dee2e6',
+                fontSize: '14px',
+                fontFamily: 'Noto Sans TC, sans-serif',
+                color: '#000000',
+              },
+            }}
+          >
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>適用類型</Table.Th>
+                <Table.Th>銀行代碼</Table.Th>
+                <Table.Th>銀行/分行</Table.Th>
+                <Table.Th>帳號</Table.Th>
+                <Table.Th>戶名</Table.Th>
+                <Table.Th>手續費模式</Table.Th>
+                <Table.Th style={{ textAlign: 'center', width: '120px' }}>操作</Table.Th>
               </Table.Tr>
-            ))}
-          </Table.Tbody>
-        </Table>
+            </Table.Thead>
+            <Table.Tbody>
+              {bankList.map((bankInfo, index) => (
+                <Table.Tr key={index}>
+                  <Table.Td>
+                    {bankInfo.highlight ? (
+                      <Text style={{ color: '#228BE6', fontSize: '14px' }}>
+                        {bankInfo.type}
+                      </Text>
+                    ) : (
+                      bankInfo.type
+                    )}
+                  </Table.Td>
+                  <Table.Td>{bankInfo.bankCode}</Table.Td>
+                  <Table.Td>{bankInfo.bankBranch}</Table.Td>
+                  <Table.Td>{bankInfo.account}</Table.Td>
+                  <Table.Td>{bankInfo.accountName}</Table.Td>
+                  <Table.Td>{bankInfo.feeMode}</Table.Td>
+                  <Table.Td style={{ width: '120px' }}>
+                    <Group justify="center" gap="8px" wrap="nowrap">
+                      <ActionIcon 
+                        variant="transparent" 
+                        size={20}
+                        onClick={() => handleEditBank(bankInfo, index)}
+                        style={{ cursor: 'pointer', minWidth: '20px' }}
+                      >
+                        <EditIcon />
+                      </ActionIcon>
+                      <ActionIcon 
+                        variant="transparent" 
+                        size={20}
+                        onClick={() => handleDeleteBank(bankInfo, index)}
+                        style={{ cursor: 'pointer', minWidth: '20px' }}
+                      >
+                        <DeleteIcon />
+                      </ActionIcon>
+                    </Group>
+                  </Table.Td>
+                </Table.Tr>
+              ))}
+            </Table.Tbody>
+          </Table>
+        )}
       </Box>
+
+      {/* 新增匯款資訊 Modal */}
+      <Modal
+        opened={isAddBankModalOpen}
+        onClose={handleCancelBankModal}
+        title=""
+        centered
+        size="md"
+        padding="16px"
+        styles={{
+          content: {
+            background: 'white',
+            boxShadow: '0px 7px 7px -5px rgba(0,0,0,0.04), 0px 10px 15px -5px rgba(0,0,0,0.1), 0px 1px 3px 0px rgba(0,0,0,0.05)',
+            borderRadius: '4px',
+            width: '440px',
+          },
+          header: {
+            display: 'none',
+          },
+          body: {
+            paddingTop: '16px',
+          },
+        }}
+      >
+        <Stack gap="24px">
+          <Title
+            order={4}
+            style={{
+              color: 'black',
+              fontSize: '16px',
+              fontFamily: 'Noto Sans TC',
+              fontWeight: 700,
+              lineHeight: '24px',
+            }}
+          >
+            新增匯款資訊
+          </Title>
+
+          <Stack gap="16px">
+            {/* 匯款資訊類型 */}
+            <Box>
+              <Group gap="0" mb="4px">
+                <Text style={{ color: 'black', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 500, lineHeight: '20px' }}>匯款資訊類型</Text>
+                <Text style={{ color: '#fa5252', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 500, lineHeight: '20px' }}>*</Text>
+              </Group>
+              <Select
+                placeholder="預設"
+                data={['預設', '指定場站']}
+                value={newBankInfo.type}
+                onChange={(value) => setNewBankInfo({ ...newBankInfo, type: value || '' })}
+                styles={{
+                  input: {
+                    paddingLeft: '12px',
+                    paddingRight: '12px',
+                    paddingTop: '6px',
+                    paddingBottom: '6px',
+                    background: newBankInfo.type ? 'white' : '#e9ecef',
+                    borderRadius: '4px',
+                    border: '1px solid #dee2e6',
+                    fontSize: '14px',
+                    fontFamily: 'Noto Sans TC',
+                    fontWeight: 400,
+                    lineHeight: '20px',
+                    height: '32px',
+                    '&::placeholder': {
+                      color: '#adb5bd',
+                    },
+                  },
+                }}
+              />
+            </Box>
+
+            {/* 銀行代碼 */}
+            <Box>
+              <Group gap="0" mb="4px">
+                <Text style={{ color: 'black', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 500, lineHeight: '20px' }}>銀行代碼 </Text>
+                <Text style={{ color: '#fa5252', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 500, lineHeight: '20px' }}>*</Text>
+              </Group>
+              <TextInput
+                placeholder="請輸入銀行代碼"
+                value={newBankInfo.bankCode}
+                onChange={(event) => setNewBankInfo({ ...newBankInfo, bankCode: event.currentTarget.value })}
+                styles={{
+                  input: {
+                    paddingLeft: '12px',
+                    paddingRight: '12px',
+                    paddingTop: '6px',
+                    paddingBottom: '6px',
+                    background: 'white',
+                    borderRadius: '4px',
+                    border: '1px solid #dee2e6',
+                    fontSize: '14px',
+                    fontFamily: 'Noto Sans TC',
+                    fontWeight: 400,
+                    lineHeight: '20px',
+                    height: '32px',
+                    '&::placeholder': {
+                      color: '#adb5bd',
+                    },
+                  },
+                }}
+              />
+            </Box>
+
+            {/* 銀行 + 銀行分行 */}
+            <Group gap="16px" grow>
+              <Box>
+                <Group gap="0" mb="4px">
+                  <Text style={{ color: 'black', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 500, lineHeight: '20px' }}>銀行</Text>
+                  <Text style={{ color: '#fa5252', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 500, lineHeight: '20px' }}>*</Text>
+                </Group>
+                <TextInput
+                  placeholder="請輸入銀行"
+                  value={newBankInfo.bank}
+                  onChange={(event) => setNewBankInfo({ ...newBankInfo, bank: event.currentTarget.value })}
+                  styles={{
+                    input: {
+                      paddingLeft: '12px',
+                      paddingRight: '12px',
+                      paddingTop: '6px',
+                      paddingBottom: '6px',
+                      background: 'white',
+                      borderRadius: '4px',
+                      border: '1px solid #dee2e6',
+                      fontSize: '14px',
+                      fontFamily: 'Noto Sans TC',
+                      fontWeight: 400,
+                      lineHeight: '20px',
+                      height: '32px',
+                      '&::placeholder': {
+                        color: '#adb5bd',
+                      },
+                    },
+                  }}
+                />
+              </Box>
+              <Box>
+                <Group gap="0" mb="4px">
+                  <Text style={{ color: 'black', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 500, lineHeight: '20px' }}>銀行分行</Text>
+                  <Text style={{ color: '#fa5252', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 500, lineHeight: '20px' }}>*</Text>
+                </Group>
+                <TextInput
+                  placeholder="請輸入銀行分行"
+                  value={newBankInfo.branch}
+                  onChange={(event) => setNewBankInfo({ ...newBankInfo, branch: event.currentTarget.value })}
+                  styles={{
+                    input: {
+                      paddingLeft: '12px',
+                      paddingRight: '12px',
+                      paddingTop: '6px',
+                      paddingBottom: '6px',
+                      background: 'white',
+                      borderRadius: '4px',
+                      border: '1px solid #dee2e6',
+                      fontSize: '14px',
+                      fontFamily: 'Noto Sans TC',
+                      fontWeight: 400,
+                      lineHeight: '20px',
+                      height: '32px',
+                      '&::placeholder': {
+                        color: '#adb5bd',
+                      },
+                    },
+                  }}
+                />
+              </Box>
+            </Group>
+
+            {/* 帳號 */}
+            <Box>
+              <Group gap="0" mb="4px">
+                <Text style={{ color: 'black', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 500, lineHeight: '20px' }}>帳號</Text>
+                <Text style={{ color: '#fa5252', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 500, lineHeight: '20px' }}>*</Text>
+              </Group>
+              <TextInput
+                placeholder="請輸入帳號"
+                value={newBankInfo.account}
+                onChange={(event) => setNewBankInfo({ ...newBankInfo, account: event.currentTarget.value })}
+                styles={{
+                  input: {
+                    paddingLeft: '12px',
+                    paddingRight: '12px',
+                    paddingTop: '6px',
+                    paddingBottom: '6px',
+                    background: 'white',
+                    borderRadius: '4px',
+                    border: '1px solid #dee2e6',
+                    fontSize: '14px',
+                    fontFamily: 'Noto Sans TC',
+                    fontWeight: 400,
+                    lineHeight: '20px',
+                    height: '32px',
+                    '&::placeholder': {
+                      color: '#adb5bd',
+                    },
+                  },
+                }}
+              />
+            </Box>
+
+            {/* 戶名 */}
+            <Box>
+              <Group gap="0" mb="4px">
+                <Text style={{ color: 'black', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 500, lineHeight: '20px' }}>戶名</Text>
+                <Text style={{ color: '#fa5252', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 500, lineHeight: '20px' }}>*</Text>
+              </Group>
+              <TextInput
+                placeholder="請輸入戶名"
+                value={newBankInfo.accountName}
+                onChange={(event) => setNewBankInfo({ ...newBankInfo, accountName: event.currentTarget.value })}
+                styles={{
+                  input: {
+                    paddingLeft: '12px',
+                    paddingRight: '12px',
+                    paddingTop: '6px',
+                    paddingBottom: '6px',
+                    background: 'white',
+                    borderRadius: '4px',
+                    border: '1px solid #dee2e6',
+                    fontSize: '14px',
+                    fontFamily: 'Noto Sans TC',
+                    fontWeight: 400,
+                    lineHeight: '20px',
+                    height: '32px',
+                    '&::placeholder': {
+                      color: '#adb5bd',
+                    },
+                  },
+                }}
+              />
+            </Box>
+
+            {/* 手續費模式 */}
+            <Box>
+              <Group gap="0" mb="4px">
+                <Text style={{ color: 'black', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 500, lineHeight: '20px' }}>手續費模式</Text>
+                <Text style={{ color: '#fa5252', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 500, lineHeight: '20px' }}>*</Text>
+              </Group>
+              <Select
+                placeholder="請選擇手續費模式"
+                data={['內扣', '不內扣']}
+                value={newBankInfo.feeMode}
+                onChange={(value) => setNewBankInfo({ ...newBankInfo, feeMode: value || '' })}
+                styles={{
+                  input: {
+                    paddingLeft: '12px',
+                    paddingRight: '12px',
+                    paddingTop: '6px',
+                    paddingBottom: '6px',
+                    background: 'white',
+                    borderRadius: '4px',
+                    border: '1px solid #dee2e6',
+                    fontSize: '14px',
+                    fontFamily: 'Noto Sans TC',
+                    fontWeight: 400,
+                    lineHeight: '20px',
+                    height: '32px',
+                    '&::placeholder': {
+                      color: '#adb5bd',
+                    },
+                  },
+                }}
+              />
+            </Box>
+          </Stack>
+
+          <Group justify="flex-end" gap="16px">
+            <Button
+              variant="outline"
+              onClick={handleCancelBankModal}
+              style={{
+                paddingLeft: '16px',
+                paddingRight: '16px',
+                paddingTop: '6px',
+                paddingBottom: '6px',
+                background: 'white',
+                borderRadius: '4px',
+                border: '1px solid #dee2e6',
+                color: '#212529',
+                fontSize: '14px',
+                fontFamily: 'Noto Sans TC',
+                fontWeight: 400,
+                lineHeight: '20px',
+              }}
+            >
+              取消
+            </Button>
+            <Button
+              onClick={handleAddBank}
+              style={{
+                paddingLeft: '16px',
+                paddingRight: '16px',
+                paddingTop: '6px',
+                paddingBottom: '6px',
+                background: '#228be6',
+                borderRadius: '4px',
+                color: 'white',
+                fontSize: '14px',
+                fontFamily: 'Noto Sans TC',
+                fontWeight: 400,
+                lineHeight: '20px',
+              }}
+            >
+              新增
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      {/* 編輯匯款資訊 Modal */}
+      <Modal
+        opened={isEditBankModalOpen}
+        onClose={handleCancelBankModal}
+        title=""
+        centered
+        size="md"
+        padding="16px"
+        styles={{
+          content: {
+            background: 'white',
+            boxShadow: '0px 7px 7px -5px rgba(0,0,0,0.04), 0px 10px 15px -5px rgba(0,0,0,0.1), 0px 1px 3px 0px rgba(0,0,0,0.05)',
+            borderRadius: '4px',
+            width: '440px',
+          },
+          header: {
+            display: 'none',
+          },
+          body: {
+            paddingTop: '16px',
+          },
+        }}
+      >
+        <Stack gap="24px">
+          <Title
+            order={4}
+            style={{
+              color: 'black',
+              fontSize: '16px',
+              fontFamily: 'Noto Sans TC',
+              fontWeight: 700,
+              lineHeight: '24px',
+            }}
+          >
+            編輯匯款資訊
+          </Title>
+
+          <Stack gap="16px">
+            {/* 匯款資訊類型 */}
+            <Box>
+              <Group gap="0" mb="4px">
+                <Text style={{ color: 'black', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 500, lineHeight: '20px' }}>匯款資訊類型</Text>
+                <Text style={{ color: '#fa5252', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 500, lineHeight: '20px' }}>*</Text>
+              </Group>
+              <Select
+                placeholder="預設"
+                data={['預設', '指定場站']}
+                value={newBankInfo.type}
+                onChange={(value) => setNewBankInfo({ ...newBankInfo, type: value || '' })}
+                styles={{
+                  input: {
+                    paddingLeft: '12px',
+                    paddingRight: '12px',
+                    paddingTop: '6px',
+                    paddingBottom: '6px',
+                    background: newBankInfo.type ? 'white' : '#e9ecef',
+                    borderRadius: '4px',
+                    border: '1px solid #dee2e6',
+                    fontSize: '14px',
+                    fontFamily: 'Noto Sans TC',
+                    fontWeight: 400,
+                    lineHeight: '20px',
+                    height: '32px',
+                    '&::placeholder': {
+                      color: '#adb5bd',
+                    },
+                  },
+                }}
+              />
+            </Box>
+
+            {/* 銀行代碼 */}
+            <Box>
+              <Group gap="0" mb="4px">
+                <Text style={{ color: 'black', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 500, lineHeight: '20px' }}>銀行代碼 </Text>
+                <Text style={{ color: '#fa5252', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 500, lineHeight: '20px' }}>*</Text>
+              </Group>
+              <TextInput
+                placeholder="請輸入銀行代碼"
+                value={newBankInfo.bankCode}
+                onChange={(event) => setNewBankInfo({ ...newBankInfo, bankCode: event.currentTarget.value })}
+                styles={{
+                  input: {
+                    paddingLeft: '12px',
+                    paddingRight: '12px',
+                    paddingTop: '6px',
+                    paddingBottom: '6px',
+                    background: 'white',
+                    borderRadius: '4px',
+                    border: '1px solid #dee2e6',
+                    fontSize: '14px',
+                    fontFamily: 'Noto Sans TC',
+                    fontWeight: 400,
+                    lineHeight: '20px',
+                    height: '32px',
+                    '&::placeholder': {
+                      color: '#adb5bd',
+                    },
+                  },
+                }}
+              />
+            </Box>
+
+            {/* 銀行 + 銀行分行 */}
+            <Group gap="16px" grow>
+              <Box>
+                <Group gap="0" mb="4px">
+                  <Text style={{ color: 'black', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 500, lineHeight: '20px' }}>銀行</Text>
+                  <Text style={{ color: '#fa5252', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 500, lineHeight: '20px' }}>*</Text>
+                </Group>
+                <TextInput
+                  placeholder="請輸入銀行"
+                  value={newBankInfo.bank}
+                  onChange={(event) => setNewBankInfo({ ...newBankInfo, bank: event.currentTarget.value })}
+                  styles={{
+                    input: {
+                      paddingLeft: '12px',
+                      paddingRight: '12px',
+                      paddingTop: '6px',
+                      paddingBottom: '6px',
+                      background: 'white',
+                      borderRadius: '4px',
+                      border: '1px solid #dee2e6',
+                      fontSize: '14px',
+                      fontFamily: 'Noto Sans TC',
+                      fontWeight: 400,
+                      lineHeight: '20px',
+                      height: '32px',
+                      '&::placeholder': {
+                        color: '#adb5bd',
+                      },
+                    },
+                  }}
+                />
+              </Box>
+              <Box>
+                <Group gap="0" mb="4px">
+                  <Text style={{ color: 'black', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 500, lineHeight: '20px' }}>銀行分行</Text>
+                  <Text style={{ color: '#fa5252', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 500, lineHeight: '20px' }}>*</Text>
+                </Group>
+                <TextInput
+                  placeholder="請輸入銀行分行"
+                  value={newBankInfo.branch}
+                  onChange={(event) => setNewBankInfo({ ...newBankInfo, branch: event.currentTarget.value })}
+                  styles={{
+                    input: {
+                      paddingLeft: '12px',
+                      paddingRight: '12px',
+                      paddingTop: '6px',
+                      paddingBottom: '6px',
+                      background: 'white',
+                      borderRadius: '4px',
+                      border: '1px solid #dee2e6',
+                      fontSize: '14px',
+                      fontFamily: 'Noto Sans TC',
+                      fontWeight: 400,
+                      lineHeight: '20px',
+                      height: '32px',
+                      '&::placeholder': {
+                        color: '#adb5bd',
+                      },
+                    },
+                  }}
+                />
+              </Box>
+            </Group>
+
+            {/* 帳號 */}
+            <Box>
+              <Group gap="0" mb="4px">
+                <Text style={{ color: 'black', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 500, lineHeight: '20px' }}>帳號</Text>
+                <Text style={{ color: '#fa5252', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 500, lineHeight: '20px' }}>*</Text>
+              </Group>
+              <TextInput
+                placeholder="請輸入帳號"
+                value={newBankInfo.account}
+                onChange={(event) => setNewBankInfo({ ...newBankInfo, account: event.currentTarget.value })}
+                styles={{
+                  input: {
+                    paddingLeft: '12px',
+                    paddingRight: '12px',
+                    paddingTop: '6px',
+                    paddingBottom: '6px',
+                    background: 'white',
+                    borderRadius: '4px',
+                    border: '1px solid #dee2e6',
+                    fontSize: '14px',
+                    fontFamily: 'Noto Sans TC',
+                    fontWeight: 400,
+                    lineHeight: '20px',
+                    height: '32px',
+                    '&::placeholder': {
+                      color: '#adb5bd',
+                    },
+                  },
+                }}
+              />
+            </Box>
+
+            {/* 戶名 */}
+            <Box>
+              <Group gap="0" mb="4px">
+                <Text style={{ color: 'black', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 500, lineHeight: '20px' }}>戶名</Text>
+                <Text style={{ color: '#fa5252', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 500, lineHeight: '20px' }}>*</Text>
+              </Group>
+              <TextInput
+                placeholder="請輸入戶名"
+                value={newBankInfo.accountName}
+                onChange={(event) => setNewBankInfo({ ...newBankInfo, accountName: event.currentTarget.value })}
+                styles={{
+                  input: {
+                    paddingLeft: '12px',
+                    paddingRight: '12px',
+                    paddingTop: '6px',
+                    paddingBottom: '6px',
+                    background: 'white',
+                    borderRadius: '4px',
+                    border: '1px solid #dee2e6',
+                    fontSize: '14px',
+                    fontFamily: 'Noto Sans TC',
+                    fontWeight: 400,
+                    lineHeight: '20px',
+                    height: '32px',
+                    '&::placeholder': {
+                      color: '#adb5bd',
+                    },
+                  },
+                }}
+              />
+            </Box>
+
+            {/* 手續費模式 */}
+            <Box>
+              <Group gap="0" mb="4px">
+                <Text style={{ color: 'black', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 500, lineHeight: '20px' }}>手續費模式</Text>
+                <Text style={{ color: '#fa5252', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 500, lineHeight: '20px' }}>*</Text>
+              </Group>
+              <Select
+                placeholder="請選擇手續費模式"
+                data={['內扣', '不內扣']}
+                value={newBankInfo.feeMode}
+                onChange={(value) => setNewBankInfo({ ...newBankInfo, feeMode: value || '' })}
+                styles={{
+                  input: {
+                    paddingLeft: '12px',
+                    paddingRight: '12px',
+                    paddingTop: '6px',
+                    paddingBottom: '6px',
+                    background: 'white',
+                    borderRadius: '4px',
+                    border: '1px solid #dee2e6',
+                    fontSize: '14px',
+                    fontFamily: 'Noto Sans TC',
+                    fontWeight: 400,
+                    lineHeight: '20px',
+                    height: '32px',
+                    '&::placeholder': {
+                      color: '#adb5bd',
+                    },
+                  },
+                }}
+              />
+            </Box>
+          </Stack>
+
+          <Group justify="flex-end" gap="16px">
+            <Button
+              variant="outline"
+              onClick={handleCancelBankModal}
+              style={{
+                paddingLeft: '16px',
+                paddingRight: '16px',
+                paddingTop: '6px',
+                paddingBottom: '6px',
+                background: 'white',
+                borderRadius: '4px',
+                border: '1px solid #dee2e6',
+                color: '#212529',
+                fontSize: '14px',
+                fontFamily: 'Noto Sans TC',
+                fontWeight: 400,
+                lineHeight: '20px',
+              }}
+            >
+              取消
+            </Button>
+            <Button
+              onClick={handleSaveEditBank}
+              style={{
+                paddingLeft: '16px',
+                paddingRight: '16px',
+                paddingTop: '6px',
+                paddingBottom: '6px',
+                background: '#228be6',
+                borderRadius: '4px',
+                color: 'white',
+                fontSize: '14px',
+                fontFamily: 'Noto Sans TC',
+                fontWeight: 400,
+                lineHeight: '20px',
+              }}
+            >
+              確認
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      {/* 刪除匯款資訊確認 Modal */}
+      <Modal
+        opened={isDeleteBankModalOpen}
+        onClose={handleCancelBankModal}
+        title=""
+        centered
+        size="sm"
+        padding="24px"
+        styles={{
+          content: {
+            background: 'white',
+            boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.05)',
+            borderRadius: '4px',
+            width: '440px',
+          },
+          header: {
+            display: 'none',
+          },
+          body: {
+            paddingTop: '24px',
+          },
+        }}
+      >
+        <Stack gap="24px">
+          <Title
+            order={4}
+            style={{
+              color: 'black',
+              fontSize: '16px',
+              fontFamily: 'Noto Sans TC',
+              fontWeight: 700,
+              lineHeight: '20px',
+            }}
+          >
+            刪除匯款資訊
+          </Title>
+          <Text
+            style={{
+              color: 'black',
+              fontSize: '14px',
+              fontFamily: 'Noto Sans TC',
+              fontWeight: 400,
+              lineHeight: '20px',
+            }}
+          >
+            是否確認刪除該匯款資訊？
+          </Text>
+          <Group justify="flex-end" gap="16px">
+            <Button
+              variant="outline"
+              onClick={handleCancelBankModal}
+              style={{
+                paddingLeft: '16px',
+                paddingRight: '16px',
+                paddingTop: '6px',
+                paddingBottom: '6px',
+                background: 'white',
+                borderRadius: '4px',
+                border: '1px solid #dee2e6',
+                color: '#212529',
+                fontSize: '14px',
+                fontFamily: 'Noto Sans TC',
+                fontWeight: 400,
+                lineHeight: '20px',
+              }}
+            >
+              取消
+            </Button>
+            <Button
+              onClick={handleConfirmDeleteBank}
+              style={{
+                paddingLeft: '16px',
+                paddingRight: '16px',
+                paddingTop: '6px',
+                paddingBottom: '6px',
+                background: '#228be6',
+                borderRadius: '4px',
+                color: 'white',
+                fontSize: '14px',
+                fontFamily: 'Noto Sans TC',
+                fontWeight: 400,
+                lineHeight: '20px',
+              }}
+            >
+              確認
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
     </Paper>
+  )
+}
+
+// Personnel table component for tabs
+interface PersonnelTableProps {
+  contactList: any[];
+  onEdit: (contact: any, index: number) => void;
+  onDelete: (contact: any, index: number) => void;
+}
+
+function PersonnelTable({ contactList, onEdit, onDelete }: PersonnelTableProps) {
+  return (
+    <Box mt="20px" pb="25px">
+      <Table
+        styles={{
+          table: {
+            backgroundColor: '#ffffff',
+          },
+          thead: {
+            backgroundColor: '#ffffff',
+          },
+          th: {
+            color: '#868e96',
+            fontWeight: 400,
+            fontSize: '14px',
+            lineHeight: '20px',
+            padding: '12px 15px',
+            borderBottom: '1px solid #dee2e6',
+            fontFamily: 'Noto Sans TC, sans-serif',
+          },
+          td: {
+            padding: '12px 15px',
+            borderBottom: '1px solid #dee2e6',
+            fontSize: '14px',
+            fontFamily: 'Noto Sans TC, sans-serif',
+            color: '#000000',
+          },
+        }}
+      >
+        <Table.Thead>
+          <Table.Tr>
+            <Table.Th>人員名稱</Table.Th>
+            <Table.Th>Email</Table.Th>
+            <Table.Th style={{ textAlign: 'center', width: '120px' }}>操作</Table.Th>
+          </Table.Tr>
+        </Table.Thead>
+        <Table.Tbody>
+          {contactList.map((contact, index) => (
+            <Table.Tr key={index}>
+              <Table.Td>{contact.name}</Table.Td>
+              <Table.Td>{contact.email}</Table.Td>
+              <Table.Td style={{ width: '120px' }}>
+                <Group justify="center" gap="8px" wrap="nowrap">
+                  <ActionIcon 
+                    variant="transparent" 
+                    size={20}
+                    onClick={() => onEdit(contact, index)}
+                    style={{ cursor: 'pointer', minWidth: '20px' }}
+                  >
+                    <EditIcon />
+                  </ActionIcon>
+                  <ActionIcon 
+                    variant="transparent" 
+                    size={20}
+                    onClick={() => onDelete(contact, index)}
+                    style={{ cursor: 'pointer', minWidth: '20px' }}
+                  >
+                    <DeleteIcon />
+                  </ActionIcon>
+                </Group>
+              </Table.Td>
+            </Table.Tr>
+          ))}
+        </Table.Tbody>
+      </Table>
+    </Box>
   )
 }
