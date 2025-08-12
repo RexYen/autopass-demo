@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { AppShell } from '@mantine/core'
+import { Notifications } from '@mantine/notifications'
 import { VendorManagement } from './components/VendorManagement'
 import { VendorDetail } from './components/VendorDetail'
 import { Navigation } from './components/Navigation'
+import { NotificationProvider } from './hooks/useNotification'
 
 type CurrentView = 'vendor-list' | 'vendor-detail'
 
@@ -39,28 +41,38 @@ function App() {
   };
 
   return (
-    <AppShell
-      navbar={{ width: 240, breakpoint: 'sm', collapsed: { desktop: false } }}
-      padding='md'
-      styles={{
-        main: {
-          backgroundColor: '#f8f9fa',
-          minHeight: '100vh',
-        },
-        navbar: {
-          backgroundColor: '#ffffff',
-          borderRight: 'none',
-        }
-      }}
-    >
-      <AppShell.Navbar p={0}>
-        <Navigation />
-      </AppShell.Navbar>
+    <NotificationProvider>
+      <AppShell
+        navbar={{ width: 240, breakpoint: 'sm', collapsed: { desktop: false } }}
+        padding='md'
+        styles={{
+          main: {
+            backgroundColor: '#f8f9fa',
+            minHeight: '100vh',
+          },
+          navbar: {
+            backgroundColor: '#ffffff',
+            borderRight: 'none',
+          }
+        }}
+      >
+        <AppShell.Navbar p={0}>
+          <Navigation />
+        </AppShell.Navbar>
 
-      <AppShell.Main>
-        {renderMainContent()}
-      </AppShell.Main>
-    </AppShell>
+        <AppShell.Main>
+          {renderMainContent()}
+        </AppShell.Main>
+      </AppShell>
+      <Notifications 
+        position="bottom-right" 
+        styles={{
+          root: {
+            right: '20px !important',
+          }
+        }}
+      />
+    </NotificationProvider>
   )
 }
 

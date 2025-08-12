@@ -20,6 +20,7 @@ import {
   IconPlus,
 } from '@tabler/icons-react'
 import { useState } from 'react'
+import { useNotification } from '../hooks/useNotification'
 
 // Custom icons from VendorManagement
 const ViewIcon = () => (
@@ -537,6 +538,8 @@ function ContactInfoSection({ isEmpty = false }: ContactInfoSectionProps) {
           { name: 'Rex Yen', role: '檢視者', isAccountant: '否', phone: '02-12345678 #123', email: 'rexyen@pklotcorp.com' },
         ]
   );
+  
+  const { showSuccess } = useNotification();
 
   const handleAddPerson = () => {
     const fullPersonData = {
@@ -578,6 +581,10 @@ function ContactInfoSection({ isEmpty = false }: ContactInfoSectionProps) {
   const handleConfirmDeletePerson = () => {
     const updatedList = contactList.filter((_, index) => index !== selectedPerson.index);
     setContactList(updatedList);
+    
+    // 顯示刪除成功通知
+    showSuccess(`已刪除人員「${selectedPerson.name}」`, '刪除人員成功');
+    
     setSelectedPerson(null);
     setIsDeletePersonModalOpen(false);
   };
@@ -1084,6 +1091,8 @@ function BankInfoSection({ isEmpty = false }: BankInfoSectionProps) {
           },
         ]
   );
+  
+  const { showSuccess } = useNotification();
 
   const handleAddBank = () => {
     setBankList([...bankList, {
@@ -1139,6 +1148,10 @@ function BankInfoSection({ isEmpty = false }: BankInfoSectionProps) {
   const handleConfirmDeleteBank = () => {
     const updatedList = bankList.filter((_, index) => index !== selectedBank.index);
     setBankList(updatedList);
+    
+    // 顯示刪除成功通知
+    showSuccess(`已刪除匯款資訊「${selectedBank.type}」`, '刪除匯款資訊成功');
+    
     setSelectedBank(null);
     setIsDeleteBankModalOpen(false);
   };

@@ -42,6 +42,7 @@ const DeleteIcon = () => (
   </svg>
 )
 import { useState } from 'react'
+import { useNotification } from '../hooks/useNotification'
 
 // Mock data for vendors - matches Figma design
 const mockVendors = [
@@ -108,11 +109,17 @@ export function VendorManagement({ onViewVendor }: VendorManagementProps) {
   const [newVendorName, setNewVendorName] = useState('');
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [vendorToDelete, setVendorToDelete] = useState<{ id: number; name: string } | null>(null);
+  
+  const { showSuccess } = useNotification();
 
   const handleAddVendor = () => {
     if (newVendorName.trim()) {
       // 這裡之後會連接到後端 API
       console.log('新增業者:', newVendorName);
+      
+      // 顯示新增成功通知
+      showSuccess(`已新增業者「${newVendorName}」`, '新增業者成功');
+      
       // 導航到空的業者詳情頁
       if (onViewVendor) {
         onViewVendor(newVendorName, true);
@@ -136,6 +143,10 @@ export function VendorManagement({ onViewVendor }: VendorManagementProps) {
     if (vendorToDelete) {
       // 這裡之後會連接到後端 API
       console.log('刪除業者:', vendorToDelete);
+      
+      // 顯示刪除成功通知
+      showSuccess(`已刪除業者「${vendorToDelete.name}」`, '刪除業者成功');
+      
       setVendorToDelete(null);
       setIsDeleteModalOpen(false);
     }
