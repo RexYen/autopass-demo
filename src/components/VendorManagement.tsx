@@ -16,8 +16,6 @@ import {
 import {
   IconPlus,
   IconSearch,
-  IconSettings,
-  IconTrash,
 } from '@tabler/icons-react'
 
 // Custom Eye Icon based on Figma design
@@ -101,7 +99,7 @@ const mockVendors = [
 
 
 interface VendorManagementProps {
-  onViewVendor?: (vendorName: string) => void;
+  onViewVendor?: (vendorName: string, isNew?: boolean) => void;
 }
 
 export function VendorManagement({ onViewVendor }: VendorManagementProps) {
@@ -117,7 +115,7 @@ export function VendorManagement({ onViewVendor }: VendorManagementProps) {
       console.log('新增業者:', newVendorName);
       // 導航到空的業者詳情頁
       if (onViewVendor) {
-        onViewVendor(newVendorName);
+        onViewVendor(newVendorName, true);
       }
       setNewVendorName('');
       setIsAddModalOpen(false);

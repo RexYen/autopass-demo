@@ -9,15 +9,18 @@ type CurrentView = 'vendor-list' | 'vendor-detail'
 function App() {
   const [currentView, setCurrentView] = useState<CurrentView>('vendor-list');
   const [selectedVendorName, setSelectedVendorName] = useState<string>('');
+  const [isNewVendor, setIsNewVendor] = useState<boolean>(false);
 
-  const handleViewVendor = (vendorName: string) => {
+  const handleViewVendor = (vendorName: string, isNew: boolean = false) => {
     setSelectedVendorName(vendorName);
+    setIsNewVendor(isNew);
     setCurrentView('vendor-detail');
   };
 
   const handleBackToList = () => {
     setCurrentView('vendor-list');
     setSelectedVendorName('');
+    setIsNewVendor(false);
   };
 
   const renderMainContent = () => {
@@ -27,6 +30,7 @@ function App() {
           <VendorDetail 
             vendorName={selectedVendorName}
             onBack={handleBackToList}
+            isNewVendor={isNewVendor}
           />
         );
       default:

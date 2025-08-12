@@ -3,7 +3,6 @@ import {
   Stack, 
   NavLink,
   Box,
-  Group,
   Badge,
 } from '@mantine/core'
 import {
@@ -15,8 +14,8 @@ import {
   IconChevronDown,
 } from '@tabler/icons-react'
 
-// Logo image from Figma design
-const autopassLogo = "http://localhost:3845/assets/f564a984a27b36affc579301d82091401db71514.svg"
+// Logo image
+const autopassLogo = "/autopass.png"
 
 export function Navigation() {
   const [active, setActive] = useState('vendors')
@@ -45,11 +44,12 @@ export function Navigation() {
           src={autopassLogo} 
           alt="Autopass" 
           style={{ 
-            height: '24px',
+            height: '40px',
             width: 'auto',
-            maxWidth: '112px', // 限制 logo 最大寬度
+            maxWidth: '140px', // 增加 logo 最大寬度
             objectFit: 'contain',
             flexShrink: 0, // 防止 logo 被壓縮
+            imageRendering: 'crisp-edges', // 改善PNG解析度
           }} 
         />
         <Badge

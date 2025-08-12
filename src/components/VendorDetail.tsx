@@ -6,7 +6,6 @@ import {
   Table,
   Badge,
   ActionIcon,
-  Pagination,
   Text,
   Box,
   Tabs,
@@ -14,7 +13,6 @@ import {
   TextInput,
   Stack,
   Select,
-  Radio,
   Menu,
 } from '@mantine/core'
 import {
@@ -227,52 +225,61 @@ export function VendorDetail({ vendorName, onBack, isNewVendor = false }: Vendor
 
           {/* Tabs */}
           <Box px="15px">
-            <Tabs defaultValue="active" variant="default">
-              <Tabs.List
-                styles={{
-                  list: {
-                    borderBottom: '1px solid #dee2e6',
-                  },
-                  tab: {
-                    padding: '12px',
-                    fontSize: '12px',
-                    fontFamily: 'Noto Sans TC, sans-serif',
-                    fontWeight: 400,
-                    lineHeight: '16px',
-                    border: 'none',
-                    borderBottom: '1px solid #dee2e6',
-                    color: '#adb5bd',
-                    '&[data-active]': {
-                      color: '#000000',
-                      borderBottomColor: '#000000',
+            <Box
+              style={{
+                '& .mantine-Tabs-tab': {
+                  padding: '12px',
+                  fontSize: '12px',
+                  fontFamily: 'Noto Sans TC, sans-serif',
+                  fontWeight: 400,
+                  lineHeight: '16px',
+                  border: 'none',
+                  borderBottom: '1px solid #dee2e6',
+                  color: '#adb5bd',
+                },
+                '& .mantine-Tabs-tab[data-active="true"]': {
+                  color: isNewVendor ? '#adb5bd' : '#000000',
+                  borderBottomColor: isNewVendor ? '#dee2e6' : '#000000',
+                },
+                '& .mantine-Tabs-tab[data-disabled="true"]': {
+                  color: '#adb5bd',
+                  cursor: 'default',
+                },
+              } as any}
+            >
+              <Tabs defaultValue="active" variant="default">
+                <Tabs.List
+                  styles={{
+                    list: {
+                      borderBottom: '1px solid #dee2e6',
                     },
-                  },
-                }}
-              >
-                <Tabs.Tab value="active">
-                  執行中合約（4）
-                </Tabs.Tab>
-                <Tabs.Tab value="expired">
-                  已到期合約（2）
-                </Tabs.Tab>
-              </Tabs.List>
+                  }}
+                >
+                  <Tabs.Tab value="active" disabled={isNewVendor}>
+                    執行中合約（{isNewVendor ? '0' : '4'}）
+                  </Tabs.Tab>
+                  <Tabs.Tab value="expired" disabled={isNewVendor}>
+                    已到期合約（{isNewVendor ? '0' : '2'}）
+                  </Tabs.Tab>
+                </Tabs.List>
 
               <Tabs.Panel value="active">
-                <ContractTable />
+                <ContractTable isEmpty={isNewVendor} />
               </Tabs.Panel>
 
               <Tabs.Panel value="expired">
-                <ContractTable />
+                <ContractTable isEmpty={isNewVendor} />
               </Tabs.Panel>
             </Tabs>
+            </Box>
           </Box>
         </Paper>
 
         {/* Contact Info Section */}
-        <ContactInfoSection />
+        <ContactInfoSection isEmpty={isNewVendor} />
 
         {/* Bank Info Section */}
-        <BankInfoSection />
+        <BankInfoSection isEmpty={isNewVendor} />
 
         {/* 編輯業者名稱 Modal */}
         <Modal
@@ -398,38 +405,6 @@ function ContractTable({ isEmpty = false }: ContractTableProps) {
   if (isEmpty) {
     return (
       <Box mt="20px" pb="25px">
-        {/* Tabs Header */}
-        <Tabs defaultValue="active" variant="default">
-          <Tabs.List
-            styles={{
-              list: {
-                borderBottom: '1px solid #dee2e6',
-              },
-              tab: {
-                padding: '12px',
-                fontSize: '12px',
-                fontFamily: 'Noto Sans TC, sans-serif',
-                fontWeight: 400,
-                lineHeight: '16px',
-                border: 'none',
-                borderBottom: '1px solid #dee2e6',
-                color: '#adb5bd',
-                '&[data-active]': {
-                  color: '#adb5bd',
-                  borderBottomColor: '#dee2e6',
-                },
-              },
-            }}
-          >
-            <Tabs.Tab value="active">
-              執行中合約（0）
-            </Tabs.Tab>
-            <Tabs.Tab value="expired">
-              已到期合約（0）
-            </Tabs.Tab>
-          </Tabs.List>
-        </Tabs>
-        
         <EmptyState message="目前還沒有任何合約，點擊「新增合約」開始建立！" />
       </Box>
     );
@@ -564,7 +539,13 @@ function ContactInfoSection({ isEmpty = false }: ContactInfoSectionProps) {
   );
 
   const handleAddPerson = () => {
-    setContactList([...contactList, newPerson]);
+    const fullPersonData = {
+      ...newPerson,
+      role: personnelType === 'accountant' ? '會計人員' : '管理員',
+      isAccountant: personnelType === 'accountant' ? '是' : '否',
+      phone: '尚未設定',
+    };
+    setContactList([...contactList, fullPersonData]);
     setNewPerson({ name: '', email: '' });
     setIsAddPersonModalOpen(false);
   };
@@ -664,82 +645,65 @@ function ContactInfoSection({ isEmpty = false }: ContactInfoSectionProps) {
 
       {/* Tabs for Personnel Management */}
       <Box px="15px">
-        {isEmpty ? (
-          <>
-            <Tabs defaultValue="accountant" variant="default">
-              <Tabs.List
-                styles={{
-                  list: {
-                    borderBottom: '1px solid #dee2e6',
-                  },
-                  tab: {
-                    padding: '12px',
-                    fontSize: '12px',
-                    fontFamily: 'Noto Sans TC, sans-serif',
-                    fontWeight: 400,
-                    lineHeight: '16px',
-                    border: 'none',
-                    borderBottom: '1px solid #dee2e6',
-                    color: '#adb5bd',
-                    '&[data-active]': {
-                      color: '#adb5bd',
-                      borderBottomColor: '#dee2e6',
-                    },
-                  },
-                }}
-              >
-                <Tabs.Tab value="accountant">
-                  會計人員（0）
-                </Tabs.Tab>
-                <Tabs.Tab value="admin">
-                  廠商後台管理員（0）
-                </Tabs.Tab>
-              </Tabs.List>
-            </Tabs>
-            <Box mt="20px" pb="25px">
-              <EmptyState message="目前還沒有任何人員，點擊「新增人員」開始建立！" />
-            </Box>
-          </>
-        ) : (
+        <Box
+          style={{
+            '& .mantine-Tabs-tab': {
+              padding: '12px',
+              fontSize: '12px',
+              fontFamily: 'Noto Sans TC, sans-serif',
+              fontWeight: 400,
+              lineHeight: '16px',
+              border: 'none',
+              borderBottom: '1px solid #dee2e6',
+              color: '#adb5bd',
+            },
+            '& .mantine-Tabs-tab[data-active="true"]': {
+              color: isEmpty ? '#adb5bd' : '#000000',
+              borderBottomColor: isEmpty ? '#dee2e6' : '#000000',
+            },
+            '& .mantine-Tabs-tab[data-disabled="true"]': {
+              color: '#adb5bd',
+              cursor: 'default',
+            },
+          } as any}
+        >
           <Tabs defaultValue="accountant" variant="default">
             <Tabs.List
               styles={{
                 list: {
                   borderBottom: '1px solid #dee2e6',
                 },
-                tab: {
-                  padding: '12px',
-                  fontSize: '12px',
-                  fontFamily: 'Noto Sans TC, sans-serif',
-                  fontWeight: 400,
-                  lineHeight: '16px',
-                  border: 'none',
-                  borderBottom: '1px solid #dee2e6',
-                  color: '#adb5bd',
-                  '&[data-active]': {
-                    color: '#000000',
-                    borderBottomColor: '#000000',
-                  },
-                },
               }}
             >
-              <Tabs.Tab value="accountant">
-                會計人員（2）
+              <Tabs.Tab value="accountant" disabled={isEmpty}>
+                會計人員（{isEmpty ? '0' : '2'}）
               </Tabs.Tab>
-              <Tabs.Tab value="admin">
-                廠商後台管理員（2）
+              <Tabs.Tab value="admin" disabled={isEmpty}>
+                廠商後台管理員（{isEmpty ? '0' : '2'}）
               </Tabs.Tab>
             </Tabs.List>
 
             <Tabs.Panel value="accountant">
-              <PersonnelTable contactList={contactList} onEdit={handleEditPerson} onDelete={handleDeletePerson} />
+              {isEmpty ? (
+                <Box mt="20px" pb="25px">
+                  <EmptyState message="目前還沒有任何人員，點擊「新增人員」開始建立！" />
+                </Box>
+              ) : (
+                <PersonnelTable contactList={contactList} onEdit={handleEditPerson} onDelete={handleDeletePerson} />
+              )}
             </Tabs.Panel>
 
             <Tabs.Panel value="admin">
-              <PersonnelTable contactList={contactList} onEdit={handleEditPerson} onDelete={handleDeletePerson} />
+              {isEmpty ? (
+                <Box mt="20px" pb="25px">
+                  <EmptyState message="目前還沒有任何人員，點擊「新增人員」開始建立！" />
+                </Box>
+              ) : (
+                <PersonnelTable contactList={contactList} onEdit={handleEditPerson} onDelete={handleDeletePerson} />
+              )}
             </Tabs.Panel>
           </Tabs>
-        )}
+        </Box>
       </Box>
 
       {/* 新增人員 Modal */}
