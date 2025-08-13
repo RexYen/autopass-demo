@@ -14,6 +14,7 @@ import {
   Stack,
   Select,
   Menu,
+  Checkbox,
 } from '@mantine/core'
 import {
   IconChevronLeft,
@@ -109,20 +110,36 @@ export function VendorDetail({ vendorName, onBack, isNewVendor = false }: Vendor
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedVendorName, setEditedVendorName] = useState(vendorName);
   const [currentVendorName, setCurrentVendorName] = useState(vendorName);
+  const [displayName, setDisplayName] = useState('世潮'); // 前台顯示名稱
+  const [editedDisplayName, setEditedDisplayName] = useState('世潮');
+  const [editedStationTypes, setEditedStationTypes] = useState<string[]>(['停車場', '連鎖店']);
   
   const handleEditName = () => {
     setEditedVendorName(currentVendorName);
+    setEditedDisplayName(displayName);
+    setEditedStationTypes(['停車場', '連鎖店']); // 設置當前的場站類型
     setIsEditingName(true);
   };
 
   const handleSaveName = () => {
     setCurrentVendorName(editedVendorName);
+    setDisplayName(editedDisplayName);
     setIsEditingName(false);
   };
 
   const handleCancelEditName = () => {
     setEditedVendorName(currentVendorName);
+    setEditedDisplayName(displayName);
+    setEditedStationTypes(['停車場', '連鎖店']);
     setIsEditingName(false);
+  };
+
+  const handleEditStationTypeChange = (type: string, checked: boolean) => {
+    if (checked) {
+      setEditedStationTypes(prev => [...prev, type]);
+    } else {
+      setEditedStationTypes(prev => prev.filter(t => t !== type));
+    }
   };
 
   return (
@@ -144,44 +161,71 @@ export function VendorDetail({ vendorName, onBack, isNewVendor = false }: Vendor
           返回業者管理列表
         </Button>
 
-        {/* Vendor Name */}
-        <Group align="center" gap="12px" style={{ marginBottom: '16px', paddingLeft: '15px' }}>
-          <Title
-            order={1}
-            style={{
-              color: 'black',
-              fontSize: '24px',
-              fontFamily: 'Noto Sans TC',
-              fontWeight: 700,
-              lineHeight: '32px',
-              margin: 0,
-            }}
-          >
-            {currentVendorName}
-          </Title>
-          <ActionIcon
-            variant="light"
-            color="blue"
-            size={32}
-            radius={4}
-            onClick={handleEditName}
-            style={{
-              background: 'rgba(34, 139, 230, 0.12)',
-              '&:hover': {
-                background: 'rgba(34, 139, 230, 0.2)',
+        {/* Vendor Name Card */}
+        <Paper
+          style={{
+            background: '#ffffff',
+            boxShadow: '0px 7px 7px -5px rgba(0,0,0,0.04), 0px 10px 15px -5px rgba(0,0,0,0.1), 0px 1px 3px 0px rgba(0,0,0,0.05)',
+            borderRadius: '16px',
+            marginBottom: '16px',
+            padding: '24px',
+          }}
+        >
+          <Group justify="space-between" align="center" style={{ marginBottom: '16px' }}>
+            <Title
+              order={1}
+              style={{
+                color: '#000000',
+                fontSize: '24px',
+                fontFamily: 'Noto Sans TC',
+                fontWeight: 700,
+                lineHeight: '32px',
+                margin: 0,
+              }}
+            >
+              {currentVendorName} / {displayName}
+            </Title>
+            <Button
+              variant="light"
+              leftSection={
+                <svg width="16" height="16" viewBox="0 0 21 20" fill="none">
+                  <path 
+                    fillRule="evenodd" 
+                    clipRule="evenodd" 
+                    d="M14.4239 2.42271C14.9083 1.93863 15.5651 1.66669 16.25 1.66669C16.9352 1.66669 17.5923 1.93887 18.0768 2.42335C18.5612 2.90784 18.8334 3.56494 18.8334 4.25011C18.8334 4.93508 18.5614 5.59201 18.0772 6.07646C18.077 6.07659 18.0773 6.07632 18.0772 6.07646L17.0237 7.13368C16.9945 7.17679 16.9608 7.21776 16.9226 7.25594C16.8851 7.2934 16.845 7.32654 16.8028 7.35537L11.0903 13.0883C10.9339 13.2452 10.7215 13.3334 10.5 13.3334H8C7.53976 13.3334 7.16667 12.9603 7.16667 12.5001V10.0001C7.16667 9.77858 7.25487 9.56617 7.4118 9.4098L13.1443 3.69777C13.1732 3.65537 13.2065 3.61505 13.2441 3.57743C13.2824 3.53908 13.3236 3.50525 13.3669 3.47593L14.4232 2.42335C14.4235 2.42314 14.4237 2.42292 14.4239 2.42271ZM13.8427 5.35461L8.83333 10.3462V11.6668H10.1539L15.1455 6.65737L13.8427 5.35461ZM16.3219 5.47675L15.0234 4.1782L15.6018 3.60187C15.7737 3.42994 16.0069 3.33335 16.25 3.33335C16.4931 3.33335 16.7263 3.42994 16.8982 3.60187C17.0702 3.77379 17.1668 4.00697 17.1668 4.25011C17.1668 4.49325 17.0702 4.72643 16.8982 4.89835L16.3219 5.47675ZM3.73223 5.73225C4.20107 5.26341 4.83696 5.00002 5.5 5.00002H6.33333C6.79357 5.00002 7.16667 5.37312 7.16667 5.83335C7.16667 6.29359 6.79357 6.66669 6.33333 6.66669H5.5C5.27899 6.66669 5.06702 6.75448 4.91074 6.91076C4.75446 7.06704 4.66667 7.27901 4.66667 7.50002V15C4.66667 15.221 4.75446 15.433 4.91074 15.5893C5.06702 15.7456 5.27899 15.8334 5.5 15.8334H13C13.221 15.8334 13.433 15.7456 13.5893 15.5893C13.7455 15.433 13.8333 15.221 13.8333 15V14.1667C13.8333 13.7064 14.2064 13.3334 14.6667 13.3334C15.1269 13.3334 15.5 13.7064 15.5 14.1667V15C15.5 15.6631 15.2366 16.2989 14.7678 16.7678C14.2989 17.2366 13.663 17.5 13 17.5H5.5C4.83696 17.5 4.20107 17.2366 3.73223 16.7678C3.26339 16.2989 3 15.6631 3 15V7.50002C3 6.83698 3.26339 6.20109 3.73223 5.73225Z" 
+                    fill="currentColor"
+                  />
+                </svg>
               }
-            }}
-          >
-            <svg width="21" height="20" viewBox="0 0 21 20" fill="none">
-              <path 
-                fillRule="evenodd" 
-                clipRule="evenodd" 
-                d="M14.4239 2.42271C14.9083 1.93863 15.5651 1.66669 16.25 1.66669C16.9352 1.66669 17.5923 1.93887 18.0768 2.42335C18.5612 2.90784 18.8334 3.56494 18.8334 4.25011C18.8334 4.93508 18.5614 5.59201 18.0772 6.07646C18.077 6.07659 18.0773 6.07632 18.0772 6.07646L17.0237 7.13368C16.9945 7.17679 16.9608 7.21776 16.9226 7.25594C16.8851 7.2934 16.845 7.32654 16.8028 7.35537L11.0903 13.0883C10.9339 13.2452 10.7215 13.3334 10.5 13.3334H8C7.53976 13.3334 7.16667 12.9603 7.16667 12.5001V10.0001C7.16667 9.77858 7.25487 9.56617 7.4118 9.4098L13.1443 3.69777C13.1732 3.65537 13.2065 3.61505 13.2441 3.57743C13.2824 3.53908 13.3236 3.50525 13.3669 3.47593L14.4232 2.42335C14.4235 2.42314 14.4237 2.42292 14.4239 2.42271ZM13.8427 5.35461L8.83333 10.3462V11.6668H10.1539L15.1455 6.65737L13.8427 5.35461ZM16.3219 5.47675L15.0234 4.1782L15.6018 3.60187C15.7737 3.42994 16.0069 3.33335 16.25 3.33335C16.4931 3.33335 16.7263 3.42994 16.8982 3.60187C17.0702 3.77379 17.1668 4.00697 17.1668 4.25011C17.1668 4.49325 17.0702 4.72643 16.8982 4.89835L16.3219 5.47675ZM3.73223 5.73225C4.20107 5.26341 4.83696 5.00002 5.5 5.00002H6.33333C6.79357 5.00002 7.16667 5.37312 7.16667 5.83335C7.16667 6.29359 6.79357 6.66669 6.33333 6.66669H5.5C5.27899 6.66669 5.06702 6.75448 4.91074 6.91076C4.75446 7.06704 4.66667 7.27901 4.66667 7.50002V15C4.66667 15.221 4.75446 15.433 4.91074 15.5893C5.06702 15.7456 5.27899 15.8334 5.5 15.8334H13C13.221 15.8334 13.433 15.7456 13.5893 15.5893C13.7455 15.433 13.8333 15.221 13.8333 15V14.1667C13.8333 13.7064 14.2064 13.3334 14.6667 13.3334C15.1269 13.3334 15.5 13.7064 15.5 14.1667V15C15.5 15.6631 15.2366 16.2989 14.7678 16.7678C14.2989 17.2366 13.663 17.5 13 17.5H5.5C4.83696 17.5 4.20107 17.2366 3.73223 16.7678C3.26339 16.2989 3 15.6631 3 15V7.50002C3 6.83698 3.26339 6.20109 3.73223 5.73225Z" 
-                fill="#228BE6"
-              />
-            </svg>
-          </ActionIcon>
-        </Group>
+              onClick={handleEditName}
+              styles={{
+                root: {
+                  backgroundColor: 'rgba(34, 139, 230, 0.1)',
+                  border: 'none',
+                  borderRadius: '4px',
+                  padding: '8px 12px',
+                  color: '#228BE6',
+                  fontSize: '14px',
+                  fontFamily: 'Noto Sans TC',
+                  fontWeight: 400,
+                  lineHeight: '20px',
+                  '&:hover': {
+                    backgroundColor: 'rgba(34, 139, 230, 0.15)',
+                  },
+                },
+              }}
+            >
+              編輯
+            </Button>
+          </Group>
+          
+          {/* Vendor Tags */}
+          <Group gap="4px">
+            <Badge>停車場</Badge>
+            <Badge>加油站</Badge>
+            <Badge>連鎖店</Badge>
+          </Group>
+        </Paper>
 
         {/* Contract Management Section */}
         <Paper
@@ -288,104 +332,253 @@ export function VendorDetail({ vendorName, onBack, isNewVendor = false }: Vendor
           onClose={handleCancelEditName}
           title=""
           centered
-          size="md"
-          padding="24px"
+          size={440}
+          padding="16px"
           styles={{
             content: {
-              background: 'white',
-              boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.05)',
+              background: '#ffffff',
+              boxShadow: '0px 7px 7px -5px rgba(0,0,0,0.04), 0px 10px 15px -5px rgba(0,0,0,0.1), 0px 1px 3px 0px rgba(0,0,0,0.05)',
               borderRadius: '4px',
+              width: '440px',
             },
             header: {
               display: 'none',
             },
             body: {
-              paddingTop: '24px',
+              padding: '16px',
             },
           }}
         >
           <Stack gap="24px">
-            <Title
-              order={4}
-              style={{
-                color: 'black',
-                fontSize: '16px',
-                fontFamily: 'Noto Sans TC',
-                fontWeight: 700,
-                lineHeight: '20px',
-              }}
-            >
-              編輯業者名稱
-            </Title>
+            {/* Header */}
+            <Box>
+              <Title
+                order={4}
+                style={{
+                  color: '#000000',
+                  fontSize: '16px',
+                  fontFamily: 'Noto Sans TC',
+                  fontWeight: 700,
+                  lineHeight: '24px',
+                  margin: 0,
+                }}
+              >
+                編輯業者名稱
+              </Title>
+            </Box>
 
+            {/* Form Block */}
             <Stack gap="16px">
-              <Box>
-                <Group gap="0" mb="4px">
-                  <Text style={{ color: 'black', fontSize: '14px', fontFamily: 'Noto Sans TC', fontWeight: 400, lineHeight: '20px' }}>
+              {/* 業者名稱 */}
+              <Stack gap="4px">
+                <Group gap="0">
+                  <Text
+                    style={{
+                      color: '#000000',
+                      fontSize: '14px',
+                      fontFamily: 'Noto Sans TC',
+                      fontWeight: 500,
+                      lineHeight: '20px',
+                    }}
+                  >
                     業者名稱{' '}
                   </Text>
-                  <Text style={{ color: '#FA5252', fontSize: '12px', fontFamily: 'Noto Sans TC', fontWeight: 500, lineHeight: '16px' }}>
+                  <Text
+                    style={{
+                      color: '#fa5252',
+                      fontSize: '14px',
+                      fontFamily: 'Noto Sans TC',
+                      fontWeight: 500,
+                      lineHeight: '20px',
+                    }}
+                  >
                     *
                   </Text>
                 </Group>
-
                 <TextInput
+                  placeholder="請輸入業者名稱"
                   value={editedVendorName}
                   onChange={(event) => setEditedVendorName(event.currentTarget.value)}
                   styles={{
                     input: {
-                      paddingLeft: '12px',
-                      paddingRight: '12px',
-                      paddingTop: '6px',
-                      paddingBottom: '6px',
-                      background: 'white',
+                      backgroundColor: '#ffffff',
+                      padding: '6px 12px',
+                      border: '1px solid #dee2e6',
                       borderRadius: '4px',
-                      border: '1px solid #DEE2E6',
                       fontSize: '14px',
                       fontFamily: 'Noto Sans TC',
                       fontWeight: 400,
                       lineHeight: '20px',
+                      '&::placeholder': {
+                        color: '#adb5bd',
+                      },
                     },
                   }}
                 />
-              </Box>
+              </Stack>
+
+              {/* 前台顯示名稱 */}
+              <Stack gap="4px">
+                <Text
+                  style={{
+                    color: '#000000',
+                    fontSize: '14px',
+                    fontFamily: 'Noto Sans TC',
+                    fontWeight: 500,
+                    lineHeight: '20px',
+                  }}
+                >
+                  前台顯示名稱
+                </Text>
+                <TextInput
+                  placeholder="請輸入前台顯示名稱"
+                  value={editedDisplayName}
+                  onChange={(event) => setEditedDisplayName(event.currentTarget.value)}
+                  styles={{
+                    input: {
+                      backgroundColor: '#ffffff',
+                      padding: '6px 12px',
+                      border: '1px solid #dee2e6',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      fontFamily: 'Noto Sans TC',
+                      fontWeight: 400,
+                      lineHeight: '20px',
+                      '&::placeholder': {
+                        color: '#adb5bd',
+                      },
+                    },
+                  }}
+                />
+              </Stack>
+
+              {/* 場站類型 */}
+              <Stack gap="4px">
+                <Group gap="0">
+                  <Text
+                    style={{
+                      color: '#000000',
+                      fontSize: '14px',
+                      fontFamily: 'Noto Sans TC',
+                      fontWeight: 500,
+                      lineHeight: '20px',
+                    }}
+                  >
+                    場站類型
+                  </Text>
+                  <Text
+                    style={{
+                      color: '#fa5252',
+                      fontSize: '14px',
+                      fontFamily: 'Noto Sans TC',
+                      fontWeight: 500,
+                      lineHeight: '20px',
+                    }}
+                  >
+                    *
+                  </Text>
+                </Group>
+                <Group gap="24px">
+                  <Checkbox
+                    label="停車場"
+                    checked={editedStationTypes.includes('停車場')}
+                    onChange={(event) => handleEditStationTypeChange('停車場', event.currentTarget.checked)}
+                    size="md"
+                    styles={{
+                      label: {
+                        color: '#000000',
+                        fontSize: '14px',
+                        fontFamily: 'Noto Sans TC',
+                        fontWeight: 400,
+                        lineHeight: '20px',
+                        paddingLeft: '8px',
+                        cursor: 'pointer',
+                      },
+                    }}
+                  />
+                  <Checkbox
+                    label="加油站"
+                    checked={editedStationTypes.includes('加油站')}
+                    onChange={(event) => handleEditStationTypeChange('加油站', event.currentTarget.checked)}
+                    size="md"
+                    styles={{
+                      label: {
+                        color: '#000000',
+                        fontSize: '14px',
+                        fontFamily: 'Noto Sans TC',
+                        fontWeight: 400,
+                        lineHeight: '20px',
+                        paddingLeft: '8px',
+                        cursor: 'pointer',
+                      },
+                    }}
+                  />
+                  <Checkbox
+                    label="連鎖店"
+                    checked={editedStationTypes.includes('連鎖店')}
+                    onChange={(event) => handleEditStationTypeChange('連鎖店', event.currentTarget.checked)}
+                    size="md"
+                    styles={{
+                      label: {
+                        color: '#000000',
+                        fontSize: '14px',
+                        fontFamily: 'Noto Sans TC',
+                        fontWeight: 400,
+                        lineHeight: '20px',
+                        paddingLeft: '8px',
+                        cursor: 'pointer',
+                      },
+                    }}
+                  />
+                </Group>
+              </Stack>
             </Stack>
 
             <Group justify="flex-end" gap="16px">
               <Button
                 variant="outline"
                 onClick={handleCancelEditName}
-                style={{
-                  paddingLeft: '16px',
-                  paddingRight: '16px',
-                  paddingTop: '6px',
-                  paddingBottom: '6px',
-                  background: 'white',
-                  borderRadius: '4px',
-                  border: '1px solid #DEE2E6',
-                  color: '#212529',
-                  fontSize: '14px',
-                  fontFamily: 'Noto Sans TC',
-                  fontWeight: 400,
-                  lineHeight: '20px',
+                styles={{
+                  root: {
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #dee2e6',
+                    borderRadius: '4px',
+                    padding: '6px 16px',
+                    color: '#212529',
+                    fontSize: '14px',
+                    fontFamily: 'Noto Sans TC',
+                    fontWeight: 400,
+                    lineHeight: '20px',
+                    '&:hover': {
+                      backgroundColor: '#f8f9fa',
+                    },
+                  },
                 }}
               >
                 取消
               </Button>
               <Button
                 onClick={handleSaveName}
-                style={{
-                  paddingLeft: '16px',
-                  paddingRight: '16px',
-                  paddingTop: '6px',
-                  paddingBottom: '6px',
-                  background: '#228BE6',
-                  borderRadius: '4px',
-                  color: 'white',
-                  fontSize: '14px',
-                  fontFamily: 'Noto Sans TC',
-                  fontWeight: 400,
-                  lineHeight: '20px',
+                disabled={!editedVendorName.trim() || editedStationTypes.length === 0}
+                styles={{
+                  root: {
+                    backgroundColor: '#228be6',
+                    border: 'none',
+                    borderRadius: '4px',
+                    padding: '6px 16px',
+                    color: '#ffffff',
+                    fontSize: '14px',
+                    fontFamily: 'Noto Sans TC',
+                    fontWeight: 400,
+                    lineHeight: '20px',
+                    '&:hover': {
+                      backgroundColor: '#1c7ed6',
+                    },
+                    '&:disabled': {
+                      backgroundColor: '#e9ecef',
+                      color: '#868e96',
+                    },
+                  },
                 }}
               >
                 確認
