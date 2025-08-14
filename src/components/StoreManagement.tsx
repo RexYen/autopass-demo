@@ -119,7 +119,7 @@ interface StoreManagementProps {
   onViewStore?: (storeId: number) => void;
 }
 
-export function StoreManagement({ onViewVendor, onViewPlace, onViewStore }: StoreManagementProps) {
+export function StoreManagement({ onViewStore }: StoreManagementProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterVendor, setFilterVendor] = useState<string | null>(null);

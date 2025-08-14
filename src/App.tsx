@@ -5,10 +5,11 @@ import { VendorManagement } from './components/VendorManagement'
 import { VendorDetail } from './components/VendorDetail'
 import { MapManagement } from './components/MapManagement'
 import { StoreManagement } from './components/StoreManagement'
+import { TaskManagement } from './components/TaskManagement'
 import { Navigation } from './components/Navigation'
 import { NotificationProvider } from './hooks/useNotification'
 
-type CurrentView = 'vendor-list' | 'vendor-detail' | 'map-management' | 'store-management'
+type CurrentView = 'vendor-list' | 'vendor-detail' | 'map-management' | 'store-management' | 'task-management'
 
 function App() {
   const [currentView, setCurrentView] = useState<CurrentView>('vendor-list');
@@ -47,6 +48,8 @@ function App() {
         );
       case 'map-management':
         return <MapManagement />;
+      case 'task-management':
+        return <TaskManagement />;
       case 'store-management':
         return <StoreManagement 
           onViewVendor={(vendorId) => {
@@ -57,7 +60,7 @@ function App() {
               handleViewVendor(vendorName);
             }
           }}
-          onViewPlace={(placeId) => {
+          onViewPlace={() => {
             // 跳轉到地圖管理頁面
             setCurrentView('map-management');
           }}

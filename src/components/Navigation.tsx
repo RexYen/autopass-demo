@@ -19,7 +19,7 @@ const autopassLogo = "/autopass.png"
 
 interface NavigationProps {
   currentView?: string;
-  onNavigate?: (view: 'vendor-list' | 'map-management' | 'store-management') => void;
+  onNavigate?: (view: 'vendor-list' | 'map-management' | 'store-management' | 'task-management') => void;
 }
 
 export function Navigation({ currentView, onNavigate }: NavigationProps) {
@@ -32,6 +32,8 @@ export function Navigation({ currentView, onNavigate }: NavigationProps) {
         return 'maps';
       case 'store-management':
         return 'stores';
+      case 'task-management':
+        return 'tasks';
       default:
         return 'vendors';
     }
@@ -102,7 +104,10 @@ export function Navigation({ currentView, onNavigate }: NavigationProps) {
           label="任務管理"
           leftSection={<IconBrandAsana size={16} />}
           active={active === 'tasks'}
-          onClick={() => setActive('tasks')}
+          onClick={() => {
+            setActive('tasks');
+            onNavigate?.('task-management');
+          }}
           styles={{
             root: {
               borderRadius: 4,
