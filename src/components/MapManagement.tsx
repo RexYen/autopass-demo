@@ -24,8 +24,6 @@ import {
   IconFilter,
   IconEdit,
   IconEye,
-  IconParking,
-  IconBolt,
 } from '@tabler/icons-react'
 
 import React, { useState, useRef, useCallback, useEffect } from 'react'
@@ -289,7 +287,6 @@ export function MapManagement({ onViewDetail }: MapManagementProps) {
   // Map related state
   const [selectedMarker, setSelectedMarker] = useState<any>(null);
   const [activeMarkerId, setActiveMarkerId] = useState<number | null>(null);
-  const mapRef = useRef<any>();
   const markersRef = useRef<Map<number, any>>(new Map());
   
   const { showSuccess } = useNotification();
@@ -344,15 +341,8 @@ export function MapManagement({ onViewDetail }: MapManagementProps) {
     setActiveMarkerId(resource.id);
   }, []);
 
-  const onMapClick = useCallback(() => {
-    setSelectedMarker(null);
-    setActiveMarkerId(null);
-  }, []);
 
   const onListItemClick = useCallback((resource: any) => {
-    console.log('=== List item clicked ===');
-    console.log('Resource:', resource);
-    console.log('Setting activeMarkerId to:', resource.id);
     setSelectedMarker(resource);
     setActiveMarkerId(resource.id);
   }, []);
@@ -362,13 +352,11 @@ export function MapManagement({ onViewDetail }: MapManagementProps) {
     if (activeMarkerId && markersRef.current.has(activeMarkerId)) {
       const markerRef = markersRef.current.get(activeMarkerId);
       if (markerRef) {
-        console.log('Opening popup for marker:', activeMarkerId);
         // Use multiple attempts to ensure popup opens
         const openPopup = () => {
           try {
             markerRef.openPopup();
           } catch (err) {
-            console.log('Retry opening popup...', err);
             setTimeout(openPopup, 50);
           }
         };
@@ -390,85 +378,6 @@ export function MapManagement({ onViewDetail }: MapManagementProps) {
     return null;
   }
 
-  // 渲染停車場詳細資訊
-  const renderParkingDetails = (parkingInfo: any) => (
-    <div style={{ marginBottom: '12px' }}>
-      <div style={{ 
-        fontSize: '12px', 
-        fontWeight: 600, 
-        color: '#4c6ef5', 
-        marginBottom: '6px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '4px'
-      }}>
-        🅿️ 停車場資訊
-      </div>
-      <div style={{ fontSize: '11px', color: '#666', lineHeight: '1.4' }}>
-        <div style={{ marginBottom: '2px' }}>
-          <span style={{ fontWeight: 500 }}>車位：</span>
-          {parkingInfo.availableSpaces}/{parkingInfo.totalSpaces} 可用
-        </div>
-        <div style={{ marginBottom: '2px' }}>
-          <span style={{ fontWeight: 500 }}>費率：</span>
-          {parkingInfo.hourlyRate}元/小時 (日最高{parkingInfo.maxDailyRate}元)
-        </div>
-        <div style={{ marginBottom: '2px' }}>
-          <span style={{ fontWeight: 500 }}>營業時間：</span>
-          {parkingInfo.operatingHours}
-        </div>
-        <div style={{ marginBottom: '2px' }}>
-          <span style={{ fontWeight: 500 }}>車種：</span>
-          {parkingInfo.vehicleTypes.join('、')}
-        </div>
-        {parkingInfo.features && (
-          <div>
-            <span style={{ fontWeight: 500 }}>設施：</span>
-            {parkingInfo.features.join('、')}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-
-  // 渲染充電站詳細資訊
-  const renderChargingDetails = (chargingInfo: any) => (
-    <div style={{ marginBottom: '12px' }}>
-      <div style={{ 
-        fontSize: '12px', 
-        fontWeight: 600, 
-        color: '#12b886', 
-        marginBottom: '6px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '4px'
-      }}>
-        ⚡ 充電站資訊
-      </div>
-      <div style={{ fontSize: '11px', color: '#666', lineHeight: '1.4' }}>
-        <div style={{ marginBottom: '2px' }}>
-          <span style={{ fontWeight: 500 }}>充電樁：</span>
-          {chargingInfo.availableChargers}/{chargingInfo.totalChargers} 可用
-        </div>
-        <div style={{ marginBottom: '2px' }}>
-          <span style={{ fontWeight: 500 }}>類型：</span>
-          {chargingInfo.chargerTypes.join('、')}
-        </div>
-        <div style={{ marginBottom: '2px' }}>
-          <span style={{ fontWeight: 500 }}>費率：</span>
-          {chargingInfo.pricing}
-        </div>
-        <div style={{ marginBottom: '2px' }}>
-          <span style={{ fontWeight: 500 }}>營運商：</span>
-          {chargingInfo.networkProvider}
-        </div>
-        <div>
-          <span style={{ fontWeight: 500 }}>付款方式：</span>
-          {chargingInfo.paymentMethods.join('、')}
-        </div>
-      </div>
-    </div>
-  );
 
   return (
     <Paper 
@@ -994,9 +903,6 @@ export function MapManagement({ onViewDetail }: MapManagementProps) {
                       keepInView={true}
                       autoPanPadding={[50, 50]}
                       offset={[0, -5]}
-                      onOpen={() => {
-                        console.log('Popup opened for resource:', resource.id);
-                      }}
                       eventHandlers={{
                         remove: () => {
                           setSelectedMarker(null);
