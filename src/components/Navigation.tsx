@@ -19,7 +19,7 @@ const autopassLogo = "/autopass.png"
 
 interface NavigationProps {
   currentView?: string;
-  onNavigate?: (view: 'vendor-list' | 'map-management') => void;
+  onNavigate?: (view: 'vendor-list' | 'map-management' | 'store-management') => void;
 }
 
 export function Navigation({ currentView, onNavigate }: NavigationProps) {
@@ -30,6 +30,8 @@ export function Navigation({ currentView, onNavigate }: NavigationProps) {
         return 'vendors';
       case 'map-management':
         return 'maps';
+      case 'store-management':
+        return 'stores';
       default:
         return 'vendors';
     }
@@ -199,7 +201,10 @@ export function Navigation({ currentView, onNavigate }: NavigationProps) {
           label="商店管理"
           leftSection={<IconBuildingStore size={16} />}
           active={active === 'stores'}
-          onClick={() => setActive('stores')}
+          onClick={() => {
+            setActive('stores');
+            onNavigate?.('store-management');
+          }}
           styles={{
             root: {
               borderRadius: 4,

@@ -4,10 +4,11 @@ import { Notifications } from '@mantine/notifications'
 import { VendorManagement } from './components/VendorManagement'
 import { VendorDetail } from './components/VendorDetail'
 import { MapManagement } from './components/MapManagement'
+import { StoreManagement } from './components/StoreManagement'
 import { Navigation } from './components/Navigation'
 import { NotificationProvider } from './hooks/useNotification'
 
-type CurrentView = 'vendor-list' | 'vendor-detail' | 'map-management'
+type CurrentView = 'vendor-list' | 'vendor-detail' | 'map-management' | 'store-management'
 
 function App() {
   const [currentView, setCurrentView] = useState<CurrentView>('vendor-list');
@@ -46,6 +47,25 @@ function App() {
         );
       case 'map-management':
         return <MapManagement />;
+      case 'store-management':
+        return <StoreManagement 
+          onViewVendor={(vendorId) => {
+            // 根據vendorId找到對應的業者名稱並跳轉到業者詳情
+            const vendorNames = ['世潮企業股份有限公司', '經國能源股份有限公司平鎮分公司', '連展電能科技股份有限公司', '車容坊股份有限公司鳳壹營業所', '坤業加油站有限公司莒光路營業所'];
+            const vendorName = vendorNames[vendorId - 1];
+            if (vendorName) {
+              handleViewVendor(vendorName);
+            }
+          }}
+          onViewPlace={(placeId) => {
+            // 跳轉到地圖管理頁面
+            setCurrentView('map-management');
+          }}
+          onViewStore={(storeId) => {
+            // TODO: 實現商店詳情頁面
+            console.log('Navigate to store detail:', storeId);
+          }}
+        />;
       default:
         return <VendorManagement onViewVendor={handleViewVendor} />;
     }
