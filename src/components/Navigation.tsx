@@ -17,8 +17,25 @@ import {
 // Logo image
 const autopassLogo = "/autopass.png"
 
-export function Navigation() {
-  const [active, setActive] = useState('vendors')
+interface NavigationProps {
+  currentView?: string;
+  onNavigate?: (view: 'vendor-list' | 'map-management') => void;
+}
+
+export function Navigation({ currentView, onNavigate }: NavigationProps) {
+  const getActiveKey = () => {
+    switch (currentView) {
+      case 'vendor-list':
+      case 'vendor-detail':
+        return 'vendors';
+      case 'map-management':
+        return 'maps';
+      default:
+        return 'vendors';
+    }
+  };
+
+  const [active, setActive] = useState(getActiveKey())
 
   return (
     <Stack gap={0} h="100%" style={{ height: '901px' }}>
@@ -114,7 +131,10 @@ export function Navigation() {
           label="業者管理"
           leftSection={<IconAddressBook size={16} />}
           active={active === 'vendors'}
-          onClick={() => setActive('vendors')}
+          onClick={() => {
+            setActive('vendors');
+            onNavigate?.('vendor-list');
+          }}
           styles={{
             root: {
               borderRadius: 4,
@@ -145,7 +165,10 @@ export function Navigation() {
           label="圖資管理"
           leftSection={<IconMap2 size={16} />}
           active={active === 'maps'}
-          onClick={() => setActive('maps')}
+          onClick={() => {
+            setActive('maps');
+            onNavigate?.('map-management');
+          }}
           styles={{
             root: {
               borderRadius: 4,

@@ -3,10 +3,11 @@ import { AppShell } from '@mantine/core'
 import { Notifications } from '@mantine/notifications'
 import { VendorManagement } from './components/VendorManagement'
 import { VendorDetail } from './components/VendorDetail'
+import { MapManagement } from './components/MapManagement'
 import { Navigation } from './components/Navigation'
 import { NotificationProvider } from './hooks/useNotification'
 
-type CurrentView = 'vendor-list' | 'vendor-detail'
+type CurrentView = 'vendor-list' | 'vendor-detail' | 'map-management'
 
 function App() {
   const [currentView, setCurrentView] = useState<CurrentView>('vendor-list');
@@ -25,6 +26,14 @@ function App() {
     setIsNewVendor(false);
   };
 
+  const handleNavigate = (view: CurrentView) => {
+    setCurrentView(view);
+    if (view !== 'vendor-detail') {
+      setSelectedVendorName('');
+      setIsNewVendor(false);
+    }
+  };
+
   const renderMainContent = () => {
     switch (currentView) {
       case 'vendor-detail':
@@ -35,6 +44,8 @@ function App() {
             isNewVendor={isNewVendor}
           />
         );
+      case 'map-management':
+        return <MapManagement />;
       default:
         return <VendorManagement onViewVendor={handleViewVendor} />;
     }
@@ -57,7 +68,7 @@ function App() {
         }}
       >
         <AppShell.Navbar p={0}>
-          <Navigation />
+          <Navigation currentView={currentView} onNavigate={handleNavigate} />
         </AppShell.Navbar>
 
         <AppShell.Main>
