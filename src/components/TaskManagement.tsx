@@ -294,7 +294,7 @@ export function TaskManagement() {
         taskDetails.address.trim() && taskDetails.contactPerson.trim() && 
         taskDetails.contactPhone.trim()) {
       
-      showSuccess(`已建立任務「${taskDetails.stationName}」`, '建立任務成功')
+      showSuccess(`已建立任務「${taskDetails.stationName}」`, '已發送任務通知至 Slack 頻道')
       
       // Reset form
       setTaskDetails({
@@ -629,23 +629,27 @@ export function TaskManagement() {
         onClose={handleCancelCreate}
         title=""
         centered
-        size={createStep === 1 ? 520 : 640}
-        padding="16px"
+        size={createStep === 1 ? 560 : 800}
+        padding={0}
         styles={{
           content: {
             background: '#ffffff',
             boxShadow: '0px 7px 7px -5px rgba(0,0,0,0.04), 0px 10px 15px -5px rgba(0,0,0,0.1), 0px 1px 3px 0px rgba(0,0,0,0.05)',
             borderRadius: '4px',
+            maxHeight: '95vh',
+            overflow: 'hidden',
           },
           header: {
             display: 'none',
           },
           body: {
-            padding: '16px',
+            padding: '24px',
+            maxHeight: 'calc(95vh - 48px)',
+            overflow: 'hidden',
           },
         }}
       >
-        <Stack gap="24px">
+        <Stack gap={createStep === 1 ? "24px" : "20px"}>
           {/* Step Indicator */}
           <Group justify="space-between" align="center">
             <Group gap="16px" align="center">
@@ -849,8 +853,8 @@ export function TaskManagement() {
                 </Title>
               </Box>
 
-              <ScrollArea style={{ maxHeight: '60vh' }}>
-                <Stack gap="16px">
+              <ScrollArea.Autosize mah="calc(75vh - 160px)" scrollbarSize={6} offsetScrollbars={false}>
+                <Stack gap="16px" pb="24px">
                   {/* Station Name */}
                   <Stack gap="4px">
                     <Group gap="0">
@@ -1230,7 +1234,7 @@ export function TaskManagement() {
                     </Stack>
                   )}
                 </Stack>
-              </ScrollArea>
+              </ScrollArea.Autosize>
 
               <Group justify="space-between">
                 <Button
