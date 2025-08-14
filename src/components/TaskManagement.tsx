@@ -11,23 +11,33 @@ import {
   Stack,
   Textarea,
   Radio,
-  Table,
-  Timeline,
   ScrollArea,
   Grid,
+  Timeline,
+  Card,
+  ActionIcon,
+  Progress,
+  Avatar,
+  Divider,
+  SimpleGrid,
 } from '@mantine/core'
 import {
   IconPlus,
   IconSearch,
-  IconBuilding,
   IconClock,
   IconCircleCheck,
   IconAlertCircle,
   IconX,
   IconChevronLeft,
-  IconUser,
-  IconActivity,
   IconEye,
+  IconBuildingStore,
+  IconMapPin,
+  IconFileText,
+  IconUsers,
+  IconTrendingUp,
+  IconBuilding,
+  IconCheck,
+  IconArrowRight,
 } from '@tabler/icons-react'
 
 import { useState } from 'react'
@@ -83,9 +93,9 @@ const mockTasks = [
     // 根據情境二設計的狀態
     moduleStatus: {
       vendor: { status: '不需要', assignee: null },
-      contract: { status: '待啟用', assignee: '營運部 - 陳小美' },
+      contract: { status: '已完成', assignee: '營運部 - 陳小美' },
       merchant: { status: '待上架', assignee: '營運部 - 陳小美' },
-      mapResource: { status: '待上架', assignee: '圖資部 - 黃小強' },
+      mapResource: { status: '已完成', assignee: '圖資部 - 黃小強' },
     },
     activities: [
       {
@@ -134,10 +144,10 @@ const mockTasks = [
     contractFile: '美麗華停車場合約.pdf',
     // 根據情境三設計的狀態
     moduleStatus: {
-      vendor: { status: '待啟用', assignee: '營運部 - 陳小美' },
-      contract: { status: '待啟用', assignee: '營運部 - 陳小美' },
-      merchant: { status: '待上架', assignee: '營運部 - 陳小美' },
-      mapResource: { status: '待上架', assignee: '圖資部 - 黃小強' },
+      vendor: { status: '已完成', assignee: '營運部 - 陳小美' },
+      contract: { status: '已完成', assignee: '營運部 - 陳小美' },
+      merchant: { status: '已完成', assignee: '營運部 - 陳小美' },
+      mapResource: { status: '已完成', assignee: '圖資部 - 黃小強' },
     },
     activities: [
       {
@@ -185,27 +195,31 @@ const scenarios = [
     value: '舊業者｜舊合約｜新場站', 
     label: '舊業者｜舊合約｜新場站', 
     description: '既有業者使用現有合約增加新場站',
-    modules: ['商店管理', '圖資管理']
+    modules: ['商店管理', '圖資管理'],
+    icon: IconBuildingStore,
+    color: '#228be6'
   },
   { 
     value: '舊業者｜新合約｜新場站', 
     label: '舊業者｜新合約｜新場站', 
     description: '既有業者簽訂新合約並增加新場站',
-    modules: ['業者管理(合約)', '商店管理', '圖資管理']
+    modules: ['業者管理(合約)', '商店管理', '圖資管理'],
+    icon: IconFileText,
+    color: '#fd7e14'
   },
   { 
     value: '新業者｜新合約｜新場站', 
     label: '新業者｜新合約｜新場站', 
     description: '全新業者加入平台',
-    modules: ['業者管理(業者+合約)', '商店管理', '圖資管理']
+    modules: ['業者管理(業者+合約)', '商店管理', '圖資管理'],
+    icon: IconUsers,
+    color: '#12b886'
   }
 ]
 
-interface TaskManagementProps {}
-
-export function TaskManagement({}: TaskManagementProps) {
+export function TaskManagement() {
   const [searchTerm, setSearchTerm] = useState('')
-  const [selectedTask, setSelectedTask] = useState<any>(null)
+  const [selectedTask, setSelectedTask] = useState<typeof mockTasks[0] | null>(null)
   
   // Create task modal states
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
@@ -245,7 +259,7 @@ export function TaskManagement({}: TaskManagementProps) {
     switch (status) {
       case '待建立': return <IconClock size={14} />
       case '進行中': return <IconAlertCircle size={14} />
-      case '待上架': return <IconClock size={14} />
+      case '待上架': return <IconTrendingUp size={14} />
       case '待啟用': return <IconAlertCircle size={14} />
       case '待覆核': return <IconEye size={14} />
       case '已完成': return <IconCircleCheck size={14} />
@@ -264,10 +278,18 @@ export function TaskManagement({}: TaskManagementProps) {
     }
   }
 
+  const getProgressPercentage = (moduleStatus: typeof mockTasks[0]['moduleStatus']) => {
+    const modules = Object.values(moduleStatus)
+    const total = modules.filter(m => m.status !== '不需要').length
+    const completed = modules.filter(m => m.status === '已完成').length
+    return total > 0 ? (completed / total) * 100 : 0
+  }
+
+  const getScenarioConfig = (scenario: string) => {
+    return scenarios.find(s => s.value === scenario)
+  }
+
   const handleCreateTask = () => {
-    console.log('Creating task with details:', taskDetails)
-    console.log('Selected scenario:', selectedScenario)
-    
     if (taskDetails.stationName.trim() && taskDetails.operator.trim() && 
         taskDetails.address.trim() && taskDetails.contactPerson.trim() && 
         taskDetails.contactPhone.trim()) {
@@ -288,14 +310,6 @@ export function TaskManagement({}: TaskManagementProps) {
       setSelectedScenario('')
       setCreateStep(1)
       setIsCreateModalOpen(false)
-    } else {
-      console.log('Validation failed:', {
-        stationName: taskDetails.stationName,
-        operator: taskDetails.operator,
-        address: taskDetails.address,
-        contactPerson: taskDetails.contactPerson,
-        contactPhone: taskDetails.contactPhone
-      })
     }
   }
 
@@ -315,8 +329,7 @@ export function TaskManagement({}: TaskManagementProps) {
     setIsCreateModalOpen(false)
   }
 
-  const handleViewTaskDetail = (task: any) => {
-    console.log('Opening task detail for:', task)
+  const handleViewTaskDetail = (task: typeof mockTasks[0]) => {
     setSelectedTask(task)
     setShowTaskDetail(true)
   }
@@ -342,6 +355,7 @@ export function TaskManagement({}: TaskManagementProps) {
         flexDirection: 'column',
         width: '100%',
         maxWidth: '100%',
+        marginBottom: '24px',
       }}
     >
       {/* Header */}
@@ -384,7 +398,7 @@ export function TaskManagement({}: TaskManagementProps) {
         </Button>
       </Group>
 
-      {/* Search and Filters */}
+      {/* Search */}
       <Box px="20px" pb="24px" style={{ flexShrink: 0 }}>
         <TextInput
           placeholder="搜尋場站名稱、業者或情境"
@@ -410,269 +424,203 @@ export function TaskManagement({}: TaskManagementProps) {
         />
       </Box>
 
-      {/* Task Table */}
+      {/* Task Cards */}
       <Box 
         style={{ 
           flex: 1,
           overflow: 'auto',
-          display: 'flex',
-          flexDirection: 'column',
-          minWidth: 0,
+          paddingLeft: '20px',
+          paddingRight: '20px',
+          paddingBottom: '24px',
         }}
       >
-        <Table
-          withTableBorder={false}
-          withRowBorders
-          styles={{
-            table: {
-              backgroundColor: '#ffffff',
-              width: '100%',
-            },
-            thead: {
-              backgroundColor: '#ffffff',
-            },
-            th: {
-              color: '#868e96',
-              fontWeight: 400,
-              fontSize: '14px',
-              lineHeight: '20px',
-              padding: '12px 20px',
-              height: '50px',
-              borderBottom: '1px solid #dee2e6',
-              fontFamily: 'Noto Sans TC, sans-serif',
-            },
-            td: {
-              padding: '12px 20px',
-              height: 'auto',
-              minHeight: '60px',
-              borderBottom: '1px solid #dee2e6',
-              verticalAlign: 'middle',
-              overflow: 'visible',
-            },
-            tr: {
-              backgroundColor: '#ffffff',
-              '&:hover': {
-                backgroundColor: '#f8f9fa',
-              },
-            },
-          }}
+        <SimpleGrid 
+          cols={{ base: 1, sm: 2, lg: 3 }}
+          spacing="20px"
+          style={{ paddingBottom: '24px' }}
         >
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th style={{ width: '20%' }}>場站名稱</Table.Th>
-              <Table.Th style={{ width: '20%' }}>情境類型</Table.Th>
-              <Table.Th style={{ width: '12%' }}>整體狀態</Table.Th>
-              <Table.Th style={{ width: '28%' }}>模組狀態</Table.Th>
-              <Table.Th style={{ width: '12%' }}>建立時間</Table.Th>
-              <Table.Th style={{ width: '8%' }}>操作</Table.Th>
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {filteredTasks.map((task) => {
-              const statusStyle = getStatusColor(task.overallStatus)
-              return (
-                <Table.Tr key={task.id}>
-                  {/* 場站名稱 */}
-                  <Table.Td>
-                    <Stack gap="4px">
-                      <Text
-                        style={{
-                          color: '#228be6',
-                          fontSize: '14px',
-                          lineHeight: '20px',
-                          fontFamily: 'Noto Sans TC, sans-serif',
-                          fontWeight: 500,
-                          cursor: 'pointer',
-                          textDecoration: 'underline',
-                        }}
-                        onClick={() => handleViewTaskDetail(task)}
-                      >
-                        {task.stationName}
-                      </Text>
-                      <Text
-                        style={{
-                          color: '#6c757d',
-                          fontSize: '12px',
-                          lineHeight: '16px',
-                          fontFamily: 'Noto Sans TC, sans-serif',
-                        }}
-                      >
-                        {task.operator}
-                      </Text>
-                    </Stack>
-                  </Table.Td>
-
-                  {/* 情境類型 */}
-                  <Table.Td>
-                    <Text
-                      style={{
-                        color: '#000000',
-                        fontSize: '14px',
-                        lineHeight: '20px',
-                        fontFamily: 'Noto Sans TC, sans-serif',
+          {filteredTasks.map((task) => {
+            const progress = getProgressPercentage(task.moduleStatus)
+            const scenarioConfig = getScenarioConfig(task.scenario)
+            const statusStyle = getStatusColor(task.overallStatus)
+            
+            return (
+              <Card
+                key={task.id}
+                padding="16px"
+                radius="8px"
+                withBorder
+                style={{
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #e9ecef',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  minHeight: '300px',
+                  height: 'auto',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+                styles={{
+                  root: {
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0px 4px 12px rgba(0,0,0,0.15)',
+                    },
+                  }
+                }}
+                onClick={() => handleViewTaskDetail(task)}
+              >
+                {/* Card Header */}
+                <Group justify="space-between" mb="12px">
+                  <Badge
+                    variant="light"
+                    leftSection={getStatusIcon(task.overallStatus)}
+                    styles={{
+                      root: {
+                        backgroundColor: statusStyle.bg,
+                        color: statusStyle.color,
+                        fontSize: '11px',
                         fontWeight: 400,
-                      }}
-                    >
-                      {task.scenario}
-                    </Text>
-                  </Table.Td>
-
-                  {/* 整體狀態 */}
-                  <Table.Td>
-                    <Badge
-                      variant="light"
-                      styles={{
-                        root: {
-                          backgroundColor: statusStyle.bg,
-                          color: statusStyle.color,
-                          fontSize: '12px',
-                          lineHeight: '16px',
-                          fontWeight: 400,
-                          padding: '4px 8px',
-                          borderRadius: '16px',
-                          border: 'none',
-                          fontFamily: 'Noto Sans TC, sans-serif',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                        },
-                      }}
-                    >
-                      {getStatusIcon(task.overallStatus)}
-                      {task.overallStatus}
-                    </Badge>
-                  </Table.Td>
-
-                  {/* 模組狀態 */}
-                  <Table.Td>
-                    <Group gap="8px" wrap="nowrap">
-                      {/* 業者狀態 */}
-                      {task.moduleStatus.vendor.status !== '不需要' && (
-                        <Box
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px',
-                            padding: '2px 6px',
-                            borderRadius: '4px',
-                            backgroundColor: '#f8f9fa',
-                          }}
-                        >
-                          <Box
-                            style={{
-                              width: '6px',
-                              height: '6px',
-                              borderRadius: '50%',
-                              backgroundColor: getModuleStatusColor(task.moduleStatus.vendor.status),
-                            }}
-                          />
-                          <Text size="xs">業者</Text>
-                        </Box>
-                      )}
-                      
-                      {/* 合約狀態 */}
-                      {task.moduleStatus.contract.status !== '不需要' && (
-                        <Box
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px',
-                            padding: '2px 6px',
-                            borderRadius: '4px',
-                            backgroundColor: '#f8f9fa',
-                          }}
-                        >
-                          <Box
-                            style={{
-                              width: '6px',
-                              height: '6px',
-                              borderRadius: '50%',
-                              backgroundColor: getModuleStatusColor(task.moduleStatus.contract.status),
-                            }}
-                          />
-                          <Text size="xs">合約</Text>
-                        </Box>
-                      )}
-
-                      {/* 商店狀態 */}
-                      <Box
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          padding: '2px 6px',
-                          borderRadius: '4px',
-                          backgroundColor: '#f8f9fa',
-                        }}
-                      >
-                        <Box
-                          style={{
-                            width: '6px',
-                            height: '6px',
-                            borderRadius: '50%',
-                            backgroundColor: getModuleStatusColor(task.moduleStatus.merchant.status),
-                          }}
-                        />
-                        <Text size="xs">商店</Text>
-                      </Box>
-
-                      {/* 圖資狀態 */}
-                      <Box
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          padding: '2px 6px',
-                          borderRadius: '4px',
-                          backgroundColor: '#f8f9fa',
-                        }}
-                      >
-                        <Box
-                          style={{
-                            width: '6px',
-                            height: '6px',
-                            borderRadius: '50%',
-                            backgroundColor: getModuleStatusColor(task.moduleStatus.mapResource.status),
-                          }}
-                        />
-                        <Text size="xs">圖資</Text>
-                      </Box>
-                    </Group>
-                  </Table.Td>
-
-                  {/* 建立時間 */}
-                  <Table.Td>
-                    <Text
-                      style={{
-                        color: '#6c757d',
-                        fontSize: '14px',
-                        lineHeight: '20px',
+                        border: 'none',
                         fontFamily: 'Noto Sans TC, sans-serif',
-                      }}
-                    >
-                      {task.createdAt}
-                    </Text>
-                  </Table.Td>
+                      },
+                    }}
+                  >
+                    {task.overallStatus}
+                  </Badge>
+                  <ActionIcon variant="subtle" size="sm" color="gray">
+                    <IconArrowRight size={14} />
+                  </ActionIcon>
+                </Group>
 
-                  {/* 操作 */}
-                  <Table.Td>
-                    <Button
-                      variant="subtle"
-                      size="sm"
-                      onClick={() => handleViewTaskDetail(task)}
+                {/* Scenario Icon & Type */}
+                <Group gap="8px" mb="12px">
+                  {scenarioConfig && (
+                    <Box
                       style={{
-                        color: '#228be6',
-                        padding: '4px 8px',
+                        width: '24px',
+                        height: '24px',
+                        borderRadius: '6px',
+                        backgroundColor: `${scenarioConfig.color}15`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
                       }}
                     >
-                      <IconEye size={16} />
-                    </Button>
-                  </Table.Td>
-                </Table.Tr>
-              )
-            })}
-          </Table.Tbody>
-        </Table>
+                      <scenarioConfig.icon size={14} color={scenarioConfig.color} />
+                    </Box>
+                  )}
+                  <Text size="xs" c="dimmed" fw={500}>
+                    {task.scenario}
+                  </Text>
+                </Group>
+
+                {/* Station Name & Operator */}
+                <Stack gap="4px" mb="12px">
+                  <Text
+                    fw={600}
+                    size="sm"
+                    c="dark.8"
+                    style={{
+                      lineHeight: 1.3,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {task.stationName}
+                  </Text>
+                  <Text size="xs" c="dimmed">
+                    {task.operator}
+                  </Text>
+                  <Group gap="4px">
+                    <IconMapPin size={12} color="#868e96" />
+                    <Text size="xs" c="dimmed" lineClamp={1}>
+                      {task.address}
+                    </Text>
+                  </Group>
+                </Stack>
+
+                {/* Progress Section */}
+                <Box mb="16px" style={{ flex: 1, minHeight: '80px' }}>
+                  <Group justify="space-between" mb="8px">
+                    <Text size="xs" fw={500} c="dark.6">
+                      完成進度
+                    </Text>
+                    <Text size="xs" c="dimmed">
+                      {Math.round(progress)}%
+                    </Text>
+                  </Group>
+                  <Progress
+                    value={progress}
+                    size="sm"
+                    radius="xl"
+                    color={progress === 100 ? 'teal' : 'blue'}
+                    mb="8px"
+                  />
+                  
+                  {/* Module Status Indicators */}
+                  <Group gap="6px" wrap="nowrap">
+                    {Object.entries(task.moduleStatus).map(([key, status]) => {
+                      if (status.status === '不需要') return null
+                      
+                      const moduleNames = {
+                        vendor: '業者',
+                        contract: '合約', 
+                        merchant: '商店',
+                        mapResource: '圖資'
+                      }
+                      
+                      return (
+                        <Box
+                          key={key}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '3px',
+                            padding: '1px 4px',
+                            borderRadius: '3px',
+                            backgroundColor: '#f8f9fa',
+                            border: '1px solid #e9ecef',
+                          }}
+                        >
+                          <Box
+                            style={{
+                              width: '6px',
+                              height: '6px',
+                              borderRadius: '50%',
+                              backgroundColor: getModuleStatusColor(status.status),
+                            }}
+                          />
+                          <Text size="xs" c="dark.6" fw={400} style={{ fontSize: '10px' }}>
+                            {moduleNames[key as keyof typeof moduleNames]}
+                          </Text>
+                        </Box>
+                      )
+                    })}
+                  </Group>
+                </Box>
+
+                <Divider my="sm" />
+
+                {/* Footer */}
+                <Group justify="space-between" align="center" mt="auto">
+                  <Group gap="6px">
+                    <Avatar size={20} color="blue" radius="xl">
+                      {task.createdBy.split(' - ')[1]?.[0] || 'U'}
+                    </Avatar>
+                    <Box>
+                      <Text size="xs" fw={500} c="dark.7">
+                        {task.createdBy.split(' - ')[1] || task.createdBy}
+                      </Text>
+                      <Text size="xs" c="dimmed">
+                        {task.createdAt}
+                      </Text>
+                    </Box>
+                  </Group>
+                </Group>
+              </Card>
+            )
+          })}
+        </SimpleGrid>
       </Box>
 
       {/* Create Task Modal */}
@@ -774,47 +722,80 @@ export function TaskManagement({}: TaskManagementProps) {
 
               <Radio.Group value={selectedScenario} onChange={setSelectedScenario}>
                 <Stack gap="12px">
-                  {scenarios.map((scenario) => (
-                    <Box
-                      key={scenario.value}
-                      style={{
-                        border: `1px solid ${selectedScenario === scenario.value ? '#228be6' : '#dee2e6'}`,
-                        borderRadius: '8px',
-                        padding: '16px',
-                        backgroundColor: selectedScenario === scenario.value ? 'rgba(34,139,230,0.05)' : '#ffffff',
-                        cursor: 'pointer',
-                      }}
-                      onClick={() => setSelectedScenario(scenario.value)}
-                    >
-                      <Group gap="12px" align="flex-start">
-                        <Radio value={scenario.value} mt={2} />
-                        <Box style={{ flex: 1 }}>
-                          <Text
+                  {scenarios.map((scenario) => {
+                    const Icon = scenario.icon
+                    return (
+                      <Box
+                        key={scenario.value}
+                        style={{
+                          border: `1px solid ${selectedScenario === scenario.value ? '#228be6' : '#dee2e6'}`,
+                          borderRadius: '8px',
+                          padding: '16px',
+                          backgroundColor: selectedScenario === scenario.value ? 'rgba(34,139,230,0.05)' : '#ffffff',
+                          cursor: 'pointer',
+                        }}
+                        onClick={() => setSelectedScenario(scenario.value)}
+                      >
+                        <Group gap="12px" align="flex-start">
+                          <Radio value={scenario.value} mt={2} />
+                          <Box
                             style={{
-                              fontSize: '14px',
-                              fontWeight: 500,
-                              color: '#000000',
-                              lineHeight: '20px',
-                              fontFamily: 'Noto Sans TC, sans-serif',
-                              marginBottom: '4px',
+                              width: '32px',
+                              height: '32px',
+                              borderRadius: '8px',
+                              backgroundColor: `${scenario.color}15`,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
                             }}
                           >
-                            {scenario.label}
-                          </Text>
-                          <Text
-                            style={{
-                              fontSize: '12px',
-                              color: '#6c757d',
-                              lineHeight: '16px',
-                              fontFamily: 'Noto Sans TC, sans-serif',
-                            }}
-                          >
-                            {scenario.description}
-                          </Text>
-                        </Box>
-                      </Group>
-                    </Box>
-                  ))}
+                            <Icon size={18} color={scenario.color} />
+                          </Box>
+                          <Box style={{ flex: 1 }}>
+                            <Text
+                              style={{
+                                fontSize: '14px',
+                                fontWeight: 500,
+                                color: '#000000',
+                                lineHeight: '20px',
+                                fontFamily: 'Noto Sans TC, sans-serif',
+                                marginBottom: '4px',
+                              }}
+                            >
+                              {scenario.label}
+                            </Text>
+                            <Text
+                              style={{
+                                fontSize: '12px',
+                                color: '#6c757d',
+                                lineHeight: '16px',
+                                fontFamily: 'Noto Sans TC, sans-serif',
+                                marginBottom: '8px',
+                              }}
+                            >
+                              {scenario.description}
+                            </Text>
+                            <Group gap="4px">
+                              {scenario.modules.map((module, idx) => (
+                                <Badge
+                                  key={idx}
+                                  variant="light"
+                                  size="xs"
+                                  style={{
+                                    backgroundColor: `${scenario.color}10`,
+                                    color: scenario.color,
+                                    border: 'none',
+                                  }}
+                                >
+                                  {module}
+                                </Badge>
+                              ))}
+                            </Group>
+                          </Box>
+                        </Group>
+                      </Box>
+                    )
+                  })}
                 </Stack>
               </Radio.Group>
 
@@ -870,7 +851,7 @@ export function TaskManagement({}: TaskManagementProps) {
 
               <ScrollArea style={{ maxHeight: '60vh' }}>
                 <Stack gap="16px">
-                  {/* Parking Name */}
+                  {/* Station Name */}
                   <Stack gap="4px">
                     <Group gap="0">
                       <Text
@@ -1185,8 +1166,8 @@ export function TaskManagement({}: TaskManagementProps) {
                     />
                   </Stack>
 
-                  {/* 合約上傳（情境二、三需要） */}
-                  {(selectedScenario.includes('新合約')) && (
+                  {/* Contract Upload for scenarios with new contract */}
+                  {selectedScenario.includes('新合約') && (
                     <Stack gap="4px">
                       <Group gap="0">
                         <Text
@@ -1309,7 +1290,7 @@ export function TaskManagement({}: TaskManagementProps) {
         </Stack>
       </Modal>
 
-      {/* Task Detail Modal */}
+      {/* Enhanced Task Detail Modal */}
       {showTaskDetail && selectedTask && (
         <Modal
           opened={showTaskDetail}
@@ -1317,447 +1298,297 @@ export function TaskManagement({}: TaskManagementProps) {
             setShowTaskDetail(false)
             setSelectedTask(null)
           }}
-          title="任務詳情"
-          size="lg"
-          padding="20px"
+          title=""
+          size="xl"
+          padding={0}
           centered
+          styles={{
+            content: {
+              background: '#ffffff',
+              boxShadow: '0px 7px 7px -5px rgba(0,0,0,0.04), 0px 10px 15px -5px rgba(0,0,0,0.1), 0px 1px 3px 0px rgba(0,0,0,0.05)',
+              borderRadius: '4px',
+              maxHeight: '90vh',
+            },
+            header: {
+              display: 'none',
+            },
+            body: {
+              padding: 0,
+            },
+          }}
         >
-          <Stack gap="20px">
-            {/* 基本資訊 */}
-            <Box>
-              <Text size="lg" fw={600} mb="md">基本資訊</Text>
-              <Stack gap="sm">
-                <Group>
-                  <Text size="sm" c="dimmed" w={100}>場站名稱:</Text>
-                  <Text size="sm">{selectedTask.stationName}</Text>
-                </Group>
-                <Group>
-                  <Text size="sm" c="dimmed" w={100}>業者名稱:</Text>
-                  <Text size="sm">{selectedTask.operator}</Text>
-                </Group>
-                <Group>
-                  <Text size="sm" c="dimmed" w={100}>情境類型:</Text>
-                  <Text size="sm">{selectedTask.scenario}</Text>
-                </Group>
-                <Group>
-                  <Text size="sm" c="dimmed" w={100}>整體狀態:</Text>
-                  <Badge
-                    variant="light"
-                    styles={{
-                      root: {
-                        backgroundColor: getStatusColor(selectedTask.overallStatus).bg,
-                        color: getStatusColor(selectedTask.overallStatus).color,
-                      },
-                    }}
-                  >
-                    {selectedTask.overallStatus}
-                  </Badge>
-                </Group>
-                <Group>
-                  <Text size="sm" c="dimmed" w={100}>建立者:</Text>
-                  <Text size="sm">{selectedTask.createdBy}</Text>
-                </Group>
-                <Group>
-                  <Text size="sm" c="dimmed" w={100}>建立時間:</Text>
-                  <Text size="sm">{selectedTask.createdAt}</Text>
-                </Group>
-              </Stack>
-            </Box>
-
-            {/* 聯絡資訊 */}
-            <Box>
-              <Text size="lg" fw={600} mb="md">聯絡資訊</Text>
-              <Stack gap="sm">
-                <Group>
-                  <Text size="sm" c="dimmed" w={100}>聯絡人:</Text>
-                  <Text size="sm">{selectedTask.contactPerson}</Text>
-                </Group>
-                <Group>
-                  <Text size="sm" c="dimmed" w={100}>聯絡電話:</Text>
-                  <Text size="sm">{selectedTask.contactPhone}</Text>
-                </Group>
-                {selectedTask.contactEmail && (
-                  <Group>
-                    <Text size="sm" c="dimmed" w={100}>電子郵件:</Text>
-                    <Text size="sm">{selectedTask.contactEmail}</Text>
+          <Box>
+            {/* Header with gradient background */}
+            <Box
+              style={{
+                background: 'linear-gradient(135deg, #228be6 0%, #339af0 100%)',
+                color: 'white',
+                padding: '24px',
+                borderRadius: '4px 4px 0 0',
+              }}
+            >
+              <Group justify="space-between" align="flex-start">
+                <Box style={{ flex: 1 }}>
+                  <Group gap="8px" mb="8px">
+                    {(() => {
+                      const scenarioConfig = getScenarioConfig(selectedTask.scenario)
+                      const Icon = scenarioConfig?.icon || IconBuildingStore
+                      return (
+                        <Box
+                          style={{
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '8px',
+                            backgroundColor: 'rgba(255,255,255,0.2)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                        >
+                          <Icon size={18} color="white" />
+                        </Box>
+                      )
+                    })()}
+                    <Text size="sm" opacity={0.9}>
+                      {selectedTask.scenario}
+                    </Text>
                   </Group>
-                )}
-                <Group>
-                  <Text size="sm" c="dimmed" w={100}>地址:</Text>
-                  <Text size="sm">{selectedTask.address}</Text>
-                </Group>
-              </Stack>
-            </Box>
-
-            {/* 備註 */}
-            {selectedTask.notes && (
-              <Box>
-                <Text size="lg" fw={600} mb="md">備註</Text>
-                <Text size="sm">{selectedTask.notes}</Text>
-              </Box>
-            )}
-
-            {/* 操作按鈕 */}
-            {selectedTask.overallStatus === '待覆核' && (
-              <Group justify="flex-end">
-                <Button
+                  <Title order={3} c="white" mb="4px">
+                    {selectedTask.stationName}
+                  </Title>
+                  <Text size="sm" opacity={0.9} mb="12px">
+                    {selectedTask.operator}
+                  </Text>
+                  <Group gap="12px">
+                    <Badge
+                      variant="light"
+                      color="white"
+                      styles={{
+                        root: {
+                          backgroundColor: 'rgba(255,255,255,0.2)',
+                          color: 'white',
+                          border: '1px solid rgba(255,255,255,0.3)',
+                        },
+                      }}
+                    >
+                      {selectedTask.overallStatus}
+                    </Badge>
+                    <Text size="sm" opacity={0.8}>
+                      {(() => {
+                        const progress = getProgressPercentage(selectedTask.moduleStatus)
+                        return `${Math.round(progress)}% 完成`
+                      })()}
+                    </Text>
+                  </Group>
+                </Box>
+                <ActionIcon
+                  variant="subtle"
+                  size="lg"
                   onClick={() => {
-                    handleCompleteReview()
                     setShowTaskDetail(false)
                     setSelectedTask(null)
                   }}
-                  styles={{
-                    root: {
-                      backgroundColor: '#12b886',
-                      '&:hover': {
-                        backgroundColor: '#0ca678',
-                      },
-                    },
-                  }}
+                  style={{ color: 'white' }}
                 >
-                  完成覆核
-                </Button>
+                  <IconX size={20} />
+                </ActionIcon>
               </Group>
-            )}
-          </Stack>
-            {/* Header */}
-            <Group
-              justify="space-between"
-              p="20px"
-              style={{
-                borderBottom: '1px solid #dee2e6',
-                flexShrink: 0,
-              }}
-            >
-              <Title
-                order={4}
-                style={{
-                  color: '#000000',
-                  fontSize: '16px',
-                  fontFamily: 'Noto Sans TC',
-                  fontWeight: 700,
-                  lineHeight: '24px',
-                  margin: 0,
-                }}
-              >
-                任務詳情
-              </Title>
-              <Button
-                variant="subtle"
-                onClick={() => {
-                  setShowTaskDetail(false)
-                  setSelectedTask(null)
-                }}
-                style={{ padding: '4px', minWidth: 'auto' }}
-              >
-                <IconX size={20} />
-              </Button>
-            </Group>
-
-            {/* Content */}
-            <Box style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-              {/* Left Panel - Main Content */}
-              <ScrollArea style={{ flex: 1, padding: '20px' }}>
-                <Stack gap="20px">
-                  {/* Station Info */}
-                  <Box
-                    style={{
-                      backgroundColor: '#f8f9fa',
-                      borderRadius: '8px',
-                      padding: '16px',
-                    }}
-                  >
-                    <Group mb="12px" align="center">
-                      <IconBuilding size={16} />
-                      <Text
-                        style={{
-                          fontSize: '14px',
-                          fontWeight: 600,
-                          color: '#000000',
-                          fontFamily: 'Noto Sans TC, sans-serif',
-                        }}
-                      >
-                        場站資訊
-                      </Text>
-                    </Group>
-                    <Grid>
-                      <Grid.Col span={6}>
-                        <Text size="xs" c="dimmed">場站名稱</Text>
-                        <Text size="sm" fw={500}>{selectedTask.stationName}</Text>
-                      </Grid.Col>
-                      <Grid.Col span={6}>
-                        <Text size="xs" c="dimmed">業者名稱</Text>
-                        <Text size="sm" fw={500}>{selectedTask.operator}</Text>
-                      </Grid.Col>
-                      <Grid.Col span={12}>
-                        <Text size="xs" c="dimmed">地址</Text>
-                        <Text size="sm" fw={500}>{selectedTask.address}</Text>
-                      </Grid.Col>
-                      <Grid.Col span={6}>
-                        <Text size="xs" c="dimmed">情境類型</Text>
-                        <Text size="sm" fw={500}>{selectedTask.scenario}</Text>
-                      </Grid.Col>
-                      <Grid.Col span={6}>
-                        <Text size="xs" c="dimmed">當前狀態</Text>
-                        <Badge
-                          variant="light"
-                          styles={{
-                            root: {
-                              backgroundColor: getStatusColor(selectedTask.overallStatus).bg,
-                              color: getStatusColor(selectedTask.overallStatus).color,
-                              fontSize: '12px',
-                              lineHeight: '16px',
-                              fontWeight: 400,
-                              padding: '4px 8px',
-                              borderRadius: '16px',
-                              border: 'none',
-                              fontFamily: 'Noto Sans TC, sans-serif',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                            },
-                          }}
-                        >
-                          {getStatusIcon(selectedTask.overallStatus)}
-                          {selectedTask.overallStatus}
-                        </Badge>
-                      </Grid.Col>
-                    </Grid>
-                  </Box>
-
-                  {/* Contact Info */}
-                  <Box
-                    style={{
-                      backgroundColor: '#f8f9fa',
-                      borderRadius: '8px',
-                      padding: '16px',
-                    }}
-                  >
-                    <Group mb="12px" align="center">
-                      <IconUser size={16} />
-                      <Text
-                        style={{
-                          fontSize: '14px',
-                          fontWeight: 600,
-                          color: '#000000',
-                          fontFamily: 'Noto Sans TC, sans-serif',
-                        }}
-                      >
-                        聯絡資訊
-                      </Text>
-                    </Group>
-                    <Grid>
-                      <Grid.Col span={4}>
-                        <Text size="xs" c="dimmed">聯絡人</Text>
-                        <Text size="sm" fw={500}>{selectedTask.contactPerson}</Text>
-                      </Grid.Col>
-                      <Grid.Col span={4}>
-                        <Text size="xs" c="dimmed">電話</Text>
-                        <Text size="sm" fw={500}>{selectedTask.contactPhone}</Text>
-                      </Grid.Col>
-                      {selectedTask.contactEmail && (
-                        <Grid.Col span={4}>
-                          <Text size="xs" c="dimmed">電子郵件</Text>
-                          <Text size="sm" fw={500} style={{ wordBreak: 'break-all' }}>{selectedTask.contactEmail}</Text>
-                        </Grid.Col>
-                      )}
-                    </Grid>
-                  </Box>
-
-                  {/* Notes */}
-                  {selectedTask.notes && (
-                    <Box
-                      style={{
-                        backgroundColor: '#f8f9fa',
-                        borderRadius: '8px',
-                        padding: '16px',
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontSize: '14px',
-                          fontWeight: 600,
-                          color: '#000000',
-                          fontFamily: 'Noto Sans TC, sans-serif',
-                          marginBottom: '8px',
-                        }}
-                      >
-                        備註
-                      </Text>
-                      <Text size="sm" c="gray.7">{selectedTask.notes}</Text>
-                    </Box>
-                  )}
-                </Stack>
-              </ScrollArea>
-
-              {/* Right Panel - Status & Activities */}
-              <Box
-                style={{
-                  width: '320px',
-                  borderLeft: '1px solid #dee2e6',
-                  flexShrink: 0,
-                }}
-              >
-                <ScrollArea style={{ height: '100%', padding: '20px' }}>
-                  <Stack gap="20px">
-                    {/* Status Details */}
-                    <Box
-                      style={{
-                        backgroundColor: '#f8f9fa',
-                        borderRadius: '8px',
-                        padding: '16px',
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontSize: '14px',
-                          fontWeight: 600,
-                          color: '#000000',
-                          fontFamily: 'Noto Sans TC, sans-serif',
-                          marginBottom: '12px',
-                        }}
-                      >
-                        各項狀態
-                      </Text>
-                      <Stack gap="8px">
-                        <Group justify="space-between">
-                          <Text size="xs" c="dimmed">商家管理</Text>
-                          <Text size="xs" fw={500} c={
-                            selectedTask.overallStatusDetails.merchant === '待建立' ? 'gray.6' :
-                            selectedTask.overallStatusDetails.merchant === '待上架' ? 'yellow.6' :
-                            'green.6'
-                          }>
-                            {selectedTask.overallStatusDetails.merchant}
-                          </Text>
-                        </Group>
-                        <Group justify="space-between">
-                          <Text size="xs" c="dimmed">圖資管理</Text>
-                          <Text size="xs" fw={500} c={
-                            selectedTask.overallStatusDetails.map === '待建立' ? 'gray.6' :
-                            selectedTask.overallStatusDetails.map === '待上架' ? 'yellow.6' :
-                            'green.6'
-                          }>
-                            {selectedTask.overallStatusDetails.map}
-                          </Text>
-                        </Group>
-                        {selectedTask.overallStatusDetails.contract !== '不需要' && (
-                          <Group justify="space-between">
-                            <Text size="xs" c="dimmed">合約管理</Text>
-                            <Text size="xs" fw={500} c={
-                              selectedTask.overallStatusDetails.contract === '待建立' ? 'gray.6' :
-                              selectedTask.overallStatusDetails.contract === '待啟用' ? 'yellow.6' :
-                              'green.6'
-                            }>
-                              {selectedTask.overallStatusDetails.contract}
-                            </Text>
-                          </Group>
-                        )}
-                        {selectedTask.overallStatusDetails.operator !== '不需要' && (
-                          <Group justify="space-between">
-                            <Text size="xs" c="dimmed">業者管理</Text>
-                            <Text size="xs" fw={500} c={
-                              selectedTask.overallStatusDetails.operator === '待建立' ? 'gray.6' :
-                              selectedTask.overallStatusDetails.operator === '待啟用' ? 'yellow.6' :
-                              'green.6'
-                            }>
-                              {selectedTask.overallStatusDetails.operator}
-                            </Text>
-                          </Group>
-                        )}
-                      </Stack>
-                    </Box>
-
-                    {/* Activity Log */}
-                    <Box
-                      style={{
-                        backgroundColor: '#f8f9fa',
-                        borderRadius: '8px',
-                        padding: '16px',
-                      }}
-                    >
-                      <Group mb="12px" align="center">
-                        <IconActivity size={16} />
-                        <Text
-                          style={{
-                            fontSize: '14px',
-                            fontWeight: 600,
-                            color: '#000000',
-                            fontFamily: 'Noto Sans TC, sans-serif',
-                          }}
-                        >
-                          活動記錄
-                        </Text>
-                      </Group>
-                      <Timeline active={selectedTask.activities.length} bulletSize={12} lineWidth={2}>
-                        {selectedTask.activities.map((activity: any, index: number) => (
-                          <Timeline.Item key={index} bullet={<IconCircleCheck size={8} />}>
-                            <Text size="xs" fw={500}>{activity.action}</Text>
-                            <Text size="xs" c="dimmed">{activity.description}</Text>
-                            <Text size="xs" c="dimmed">{activity.user}</Text>
-                            <Text size="xs" c="gray.5">{activity.time}</Text>
-                          </Timeline.Item>
-                        ))}
-                      </Timeline>
-                    </Box>
-                  </Stack>
-                </ScrollArea>
-              </Box>
             </Box>
 
+            <ScrollArea style={{ height: '60vh' }}>
+              <Box p="24px">
+                <Grid gutter="24px">
+                  {/* Left Column */}
+                  <Grid.Col span={8}>
+                    <Stack gap="24px">
+                      {/* Progress Visualization */}
+                      <Card withBorder p="20px">
+                        <Group justify="space-between" mb="16px">
+                          <Text fw={600} size="md">整體進度</Text>
+                          <Text size="sm" c="dimmed">
+                            {(() => {
+                              const progress = getProgressPercentage(selectedTask.moduleStatus)
+                              return `${Math.round(progress)}%`
+                            })()}
+                          </Text>
+                        </Group>
+                        <Progress
+                          value={getProgressPercentage(selectedTask.moduleStatus)}
+                          size="lg"
+                          radius="xl"
+                          color="blue"
+                          mb="20px"
+                        />
+                        <SimpleGrid cols={2} spacing="12px">
+                          {Object.entries(selectedTask.moduleStatus).map(([key, status]) => {
+                            if (status.status === '不需要') return null
+                            
+                            const moduleData = {
+                              vendor: { name: '業者管理', icon: IconBuilding },
+                              contract: { name: '合約管理', icon: IconFileText },
+                              merchant: { name: '商店管理', icon: IconBuildingStore },
+                              mapResource: { name: '圖資管理', icon: IconMapPin },
+                            }
+                            
+                            const module = moduleData[key as keyof typeof moduleData]
+                            const Icon = module.icon
+                            const statusStyle = getStatusColor(status.status)
+                            
+                            return (
+                              <Card key={key} withBorder p="12px">
+                                <Group gap="8px" mb="8px">
+                                  <Icon size={16} color="#666" />
+                                  <Text size="sm" fw={500}>{module.name}</Text>
+                                </Group>
+                                <Badge
+                                  variant="light"
+                                  size="sm"
+                                  styles={{
+                                    root: {
+                                      backgroundColor: statusStyle.bg,
+                                      color: statusStyle.color,
+                                      border: 'none',
+                                    },
+                                  }}
+                                >
+                                  {status.status}
+                                </Badge>
+                                {status.assignee && (
+                                  <Text size="xs" c="dimmed" mt="4px">
+                                    {status.assignee}
+                                  </Text>
+                                )}
+                              </Card>
+                            )
+                          })}
+                        </SimpleGrid>
+                      </Card>
+
+                      {/* Basic Info */}
+                      <Card withBorder p="20px">
+                        <Text fw={600} size="md" mb="16px">基本資訊</Text>
+                        <Stack gap="12px">
+                          <Group>
+                            <Text size="sm" c="dimmed" style={{ minWidth: '80px' }}>場站名稱</Text>
+                            <Text size="sm" fw={500}>{selectedTask.stationName}</Text>
+                          </Group>
+                          <Group>
+                            <Text size="sm" c="dimmed" style={{ minWidth: '80px' }}>業者名稱</Text>
+                            <Text size="sm" fw={500}>{selectedTask.operator}</Text>
+                          </Group>
+                          <Group>
+                            <Text size="sm" c="dimmed" style={{ minWidth: '80px' }}>地址</Text>
+                            <Text size="sm">{selectedTask.address}</Text>
+                          </Group>
+                          <Group>
+                            <Text size="sm" c="dimmed" style={{ minWidth: '80px' }}>聯絡人</Text>
+                            <Text size="sm">{selectedTask.contactPerson}</Text>
+                          </Group>
+                          <Group>
+                            <Text size="sm" c="dimmed" style={{ minWidth: '80px' }}>電話</Text>
+                            <Text size="sm">{selectedTask.contactPhone}</Text>
+                          </Group>
+                          {selectedTask.contactEmail && (
+                            <Group>
+                              <Text size="sm" c="dimmed" style={{ minWidth: '80px' }}>電子郵件</Text>
+                              <Text size="sm">{selectedTask.contactEmail}</Text>
+                            </Group>
+                          )}
+                        </Stack>
+                      </Card>
+
+                      {/* Notes */}
+                      {selectedTask.notes && (
+                        <Card withBorder p="20px">
+                          <Text fw={600} size="md" mb="12px">備註</Text>
+                          <Text size="sm" c="dark.6">{selectedTask.notes}</Text>
+                        </Card>
+                      )}
+                    </Stack>
+                  </Grid.Col>
+
+                  {/* Right Column */}
+                  <Grid.Col span={4}>
+                    <Stack gap="20px">
+                      {/* Creator Info */}
+                      <Card withBorder p="16px">
+                        <Text fw={600} size="sm" mb="12px">建立資訊</Text>
+                        <Group gap="8px" mb="8px">
+                          <Avatar size={32} color="blue">
+                            {selectedTask.createdBy.split(' - ')[1]?.[0] || 'U'}
+                          </Avatar>
+                          <Box>
+                            <Text size="sm" fw={500}>
+                              {selectedTask.createdBy.split(' - ')[1] || selectedTask.createdBy}
+                            </Text>
+                            <Text size="xs" c="dimmed">
+                              {selectedTask.createdBy.split(' - ')[0]}
+                            </Text>
+                          </Box>
+                        </Group>
+                        <Text size="xs" c="dimmed">
+                          建立時間：{selectedTask.createdAt}
+                        </Text>
+                      </Card>
+
+                      {/* Activity Timeline */}
+                      <Card withBorder p="16px">
+                        <Text fw={600} size="sm" mb="16px">活動記錄</Text>
+                        <Timeline bulletSize={16} lineWidth={2}>
+                          {selectedTask.activities.map((activity) => (
+                            <Timeline.Item
+                              key={activity.id}
+                              bullet={<IconCheck size={10} />}
+                              color="blue"
+                            >
+                              <Text size="sm" fw={500} mb={2}>
+                                {activity.action}
+                              </Text>
+                              <Text size="xs" c="dimmed" mb={4}>
+                                {activity.description}
+                              </Text>
+                              <Group gap="4px">
+                                <Text size="xs" fw={500}>
+                                  {activity.user}
+                                </Text>
+                                <Text size="xs" c="gray.5">
+                                  {activity.time}
+                                </Text>
+                              </Group>
+                            </Timeline.Item>
+                          ))}
+                        </Timeline>
+                      </Card>
+                    </Stack>
+                  </Grid.Col>
+                </Grid>
+              </Box>
+            </ScrollArea>
+
             {/* Footer */}
-            <Group
-              justify="flex-end"
+            <Box
               p="20px"
-              gap="12px"
               style={{
-                borderTop: '1px solid #dee2e6',
-                flexShrink: 0,
+                borderTop: '1px solid #e9ecef',
+                backgroundColor: '#f8f9fa',
               }}
             >
-              <Button
-                variant="outline"
-                styles={{
-                  root: {
-                    backgroundColor: '#ffffff',
-                    border: '1px solid #dee2e6',
-                    borderRadius: '4px',
-                    padding: '6px 16px',
-                    color: '#212529',
-                    fontSize: '14px',
-                    fontFamily: 'Noto Sans TC',
-                    fontWeight: 400,
-                    lineHeight: '20px',
-                    '&:hover': {
-                      backgroundColor: '#f8f9fa',
-                    },
-                  },
-                }}
-              >
-                編輯任務
-              </Button>
-              {selectedTask.overallStatus === '待覆核' && (
-                <Button
-                  styles={{
-                    root: {
-                      backgroundColor: '#12b886',
-                      border: 'none',
-                      borderRadius: '4px',
-                      padding: '6px 16px',
-                      color: '#ffffff',
-                      fontSize: '14px',
-                      fontFamily: 'Noto Sans TC',
-                      fontWeight: 400,
-                      lineHeight: '20px',
-                      '&:hover': {
-                        backgroundColor: '#0ca678',
-                      },
-                    },
-                  }}
-                >
-                  完成覆核
-                </Button>
-              )}
-            </Group>
+              <Group justify="flex-end" gap="12px">
+                <Button variant="outline">編輯任務</Button>
+                {selectedTask.overallStatus === '待覆核' && (
+                  <Button
+                    color="teal"
+                    onClick={() => {
+                      handleCompleteReview()
+                      setShowTaskDetail(false)
+                      setSelectedTask(null)
+                    }}
+                  >
+                    完成覆核
+                  </Button>
+                )}
+              </Group>
+            </Box>
           </Box>
         </Modal>
       )}
