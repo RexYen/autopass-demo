@@ -12,7 +12,6 @@ import {
   Textarea,
   Card,
   ActionIcon,
-  Checkbox,
 } from '@mantine/core'
 import {
   IconArrowLeft,
