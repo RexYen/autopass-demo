@@ -28,6 +28,7 @@ import {
 
 import React, { useState, useRef, useCallback, useEffect } from 'react'
 import { useNotification } from '../hooks/useNotification'
+import { PlaceDetail } from './PlaceDetail'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -283,6 +284,14 @@ export function MapManagement({ onViewDetail }: MapManagementProps) {
   const [batchRemarks, setBatchRemarks] = useState('');
   const [isServiceDetailOpen, setIsServiceDetailOpen] = useState(false);
   const [selectedResource, setSelectedResource] = useState<any>(null);
+  const [isAddPlaceModalOpen, setIsAddPlaceModalOpen] = useState(false);
+  const [newPlaceForm, setNewPlaceForm] = useState({
+    placeName: '',
+    address: '',
+    streetViewUrl: ''
+  });
+  const [showPlaceDetail, setShowPlaceDetail] = useState(false);
+  const [selectedPlace, setSelectedPlace] = useState<any>(null);
   
   // Map related state
   const [selectedMarker, setSelectedMarker] = useState<any>(null);
@@ -336,6 +345,71 @@ export function MapManagement({ onViewDetail }: MapManagementProps) {
     setIsServiceDetailOpen(true);
   };
 
+  // 模擬Google街景網址轉換經緯度
+  const parseStreetViewUrl = (url: string): { latitude: number; longitude: number } | null => {
+    // 模擬解析Google街景網址，實際應該使用Google Maps API
+    // 這裡用簡單的mock數據模擬
+    const mockCoordinates = [
+      { latitude: 25.0330, longitude: 121.5654 }, // 台北101
+      { latitude: 25.0360, longitude: 121.5200 }, // 中正紀念堂
+      { latitude: 25.0478, longitude: 121.5170 }, // 台北車站
+      { latitude: 25.0418, longitude: 121.5081 }, // 西門町
+      { latitude: 25.0881, longitude: 121.5241 }, // 士林
+    ];
+    
+    if (url.trim()) {
+      // 隨機返回一個座標（實際應該解析URL）
+      const randomIndex = Math.floor(Math.random() * mockCoordinates.length);
+      return mockCoordinates[randomIndex];
+    }
+    
+    return null;
+  };
+
+  const handleAddPlace = () => {
+    if (!newPlaceForm.placeName || !newPlaceForm.address || !newPlaceForm.streetViewUrl) {
+      return;
+    }
+
+    try {
+      const coordinates = parseStreetViewUrl(newPlaceForm.streetViewUrl);
+      if (!coordinates) {
+        showSuccess('無法解析街景網址座標', '錯誤');
+        return;
+      }
+
+      const newPlace = {
+        id: Date.now(), // 簡單的ID生成
+        placeName: newPlaceForm.placeName,
+        address: newPlaceForm.address,
+        streetViewUrl: newPlaceForm.streetViewUrl,
+        latitude: coordinates.latitude,
+        longitude: coordinates.longitude,
+        coordinates: `${coordinates.latitude}, ${coordinates.longitude}`,
+        serviceTypes: [], // 初始為空，後續在詳情頁添加服務
+        vendor: '', // 待設定
+        status: '籌備中', // 新建地點初始狀態
+        remarks: '',
+        createdAt: new Date().toLocaleDateString(),
+      };
+
+      console.log('新增地點:', newPlace);
+      showSuccess('地點基本資訊已建立，請繼續設定服務內容', '新增成功');
+      
+      // 清空表單並關閉Modal
+      setNewPlaceForm({ placeName: '', address: '', streetViewUrl: '' });
+      setIsAddPlaceModalOpen(false);
+      
+      // 跳轉到地點詳情頁面
+      console.log('跳轉到詳情頁面，地點:', newPlace);
+      setSelectedPlace(newPlace);
+      setShowPlaceDetail(true);
+    } catch (error) {
+      console.error('新增地點時發生錯誤:', error);
+      showSuccess('新增地點時發生錯誤', '錯誤');
+    }
+  };
+
   const onMarkerClick = useCallback((resource: any) => {
     setSelectedMarker(resource);
     setActiveMarkerId(resource.id);
@@ -378,6 +452,19 @@ export function MapManagement({ onViewDetail }: MapManagementProps) {
     return null;
   }
 
+
+  // 如果正在顯示地點詳情，則渲染詳情頁面
+  if (showPlaceDetail && selectedPlace) {
+    return (
+      <PlaceDetail 
+        place={selectedPlace}
+        onBack={() => {
+          setShowPlaceDetail(false);
+          setSelectedPlace(null);
+        }}
+      />
+    );
+  }
 
   return (
     <Paper 
@@ -436,6 +523,7 @@ export function MapManagement({ onViewDetail }: MapManagementProps) {
           )}
           <Button
             leftSection={<IconPlus size={16} />}
+            onClick={() => setIsAddPlaceModalOpen(true)}
             style={{
               backgroundColor: '#228be6',
               color: '#ffffff',
@@ -695,27 +783,25 @@ export function MapManagement({ onViewDetail }: MapManagementProps) {
                       </Group>
                     </Table.Td>
                     <Table.Td>
-                      <Badge
-                        variant="light"
-                        styles={{
-                          root: {
-                            backgroundColor: `rgba(${
-                              resource.status === '營運中' ? '18,184,134' : 
-                              resource.status === '維護中' ? '250,176,5' : '250,82,82'
-                            },0.1)`,
-                            color: '#212529',
-                            fontSize: '12px',
-                            lineHeight: '16px',
-                            fontWeight: 400,
-                            padding: '4px 8px',
-                            borderRadius: '16px',
-                            border: 'none',
-                            fontFamily: 'Noto Sans TC, sans-serif',
-                          },
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
                         }}
                       >
-                        {resource.status}
-                      </Badge>
+                        <div
+                          style={{
+                            width: '12px',
+                            height: '12px',
+                            borderRadius: '50%',
+                            backgroundColor: 
+                              resource.status === '營運中' ? '#12b886' : 
+                              resource.status === '維護中' ? '#fab005' : '#fa5252',
+                          }}
+                          title={resource.status}
+                        />
+                      </div>
                     </Table.Td>
                     <Table.Td>
                       <Button
@@ -1479,6 +1565,228 @@ export function MapManagement({ onViewDetail }: MapManagementProps) {
             </div>
           </Box>
         )}
+      </Modal>
+
+      {/* Add Place Modal */}
+      <Modal
+        opened={isAddPlaceModalOpen}
+        onClose={() => {
+          setIsAddPlaceModalOpen(false);
+          setNewPlaceForm({ placeName: '', address: '', streetViewUrl: '' });
+        }}
+        title=""
+        centered
+        size={500}
+        padding="16px"
+        styles={{
+          content: {
+            background: '#ffffff',
+            boxShadow: '0px 7px 7px -5px rgba(0,0,0,0.04), 0px 10px 15px -5px rgba(0,0,0,0.1), 0px 1px 3px 0px rgba(0,0,0,0.05)',
+            borderRadius: '4px',
+            width: '500px',
+          },
+          header: {
+            display: 'none',
+          },
+          body: {
+            padding: '16px',
+          },
+        }}
+      >
+        <Stack gap="24px">
+          <Box>
+            <Title
+              order={4}
+              style={{
+                color: '#000000',
+                fontSize: '16px',
+                fontFamily: 'Noto Sans TC',
+                fontWeight: 700,
+                lineHeight: '24px',
+                margin: 0,
+              }}
+            >
+              新增圖資地點
+            </Title>
+            <Text
+              size="sm"
+              c="dimmed"
+              mt="4px"
+            >
+              請填寫地點基本資訊，系統將自動從街景網址解析經緯度
+            </Text>
+          </Box>
+
+          <Stack gap="16px">
+            <Stack gap="4px">
+              <Text
+                style={{
+                  color: '#000000',
+                  fontSize: '14px',
+                  fontFamily: 'Noto Sans TC',
+                  fontWeight: 500,
+                  lineHeight: '20px',
+                }}
+              >
+                地點名稱 <span style={{ color: '#fa5252' }}>*</span>
+              </Text>
+              <TextInput
+                placeholder="請輸入地點名稱"
+                value={newPlaceForm.placeName}
+                onChange={(event) => {
+                  const value = event.currentTarget.value;
+                  setNewPlaceForm(prev => ({ ...prev, placeName: value }));
+                }}
+                styles={{
+                  input: {
+                    backgroundColor: '#ffffff',
+                    padding: '6px 12px',
+                    border: '1px solid #dee2e6',
+                    borderRadius: '4px',
+                    fontSize: '14px',
+                    fontFamily: 'Noto Sans TC',
+                    fontWeight: 400,
+                    lineHeight: '20px',
+                    '&::placeholder': {
+                      color: '#adb5bd',
+                    },
+                  },
+                }}
+              />
+            </Stack>
+
+            <Stack gap="4px">
+              <Text
+                style={{
+                  color: '#000000',
+                  fontSize: '14px',
+                  fontFamily: 'Noto Sans TC',
+                  fontWeight: 500,
+                  lineHeight: '20px',
+                }}
+              >
+                地點地址 <span style={{ color: '#fa5252' }}>*</span>
+              </Text>
+              <TextInput
+                placeholder="請輸入完整地址"
+                value={newPlaceForm.address}
+                onChange={(event) => {
+                  const value = event.currentTarget.value;
+                  setNewPlaceForm(prev => ({ ...prev, address: value }));
+                }}
+                styles={{
+                  input: {
+                    backgroundColor: '#ffffff',
+                    padding: '6px 12px',
+                    border: '1px solid #dee2e6',
+                    borderRadius: '4px',
+                    fontSize: '14px',
+                    fontFamily: 'Noto Sans TC',
+                    fontWeight: 400,
+                    lineHeight: '20px',
+                    '&::placeholder': {
+                      color: '#adb5bd',
+                    },
+                  },
+                }}
+              />
+            </Stack>
+
+            <Stack gap="4px">
+              <Text
+                style={{
+                  color: '#000000',
+                  fontSize: '14px',
+                  fontFamily: 'Noto Sans TC',
+                  fontWeight: 500,
+                  lineHeight: '20px',
+                }}
+              >
+                Google Map 街景網址 <span style={{ color: '#fa5252' }}>*</span>
+              </Text>
+              <TextInput
+                placeholder="請輸入 Google 街景網址"
+                value={newPlaceForm.streetViewUrl}
+                onChange={(event) => {
+                  const value = event.currentTarget.value;
+                  setNewPlaceForm(prev => ({ ...prev, streetViewUrl: value }));
+                }}
+                styles={{
+                  input: {
+                    backgroundColor: '#ffffff',
+                    padding: '6px 12px',
+                    border: '1px solid #dee2e6',
+                    borderRadius: '4px',
+                    fontSize: '14px',
+                    fontFamily: 'Noto Sans TC',
+                    fontWeight: 400,
+                    lineHeight: '20px',
+                    '&::placeholder': {
+                      color: '#adb5bd',
+                    },
+                  },
+                }}
+              />
+              <Text size="xs" c="dimmed">
+                系統將自動解析經緯度座標
+              </Text>
+            </Stack>
+          </Stack>
+
+          <Group justify="flex-end" gap="16px">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsAddPlaceModalOpen(false);
+                setNewPlaceForm({ placeName: '', address: '', streetViewUrl: '' });
+              }}
+              styles={{
+                root: {
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #dee2e6',
+                  borderRadius: '4px',
+                  padding: '6px 16px',
+                  color: '#212529',
+                  fontSize: '14px',
+                  fontFamily: 'Noto Sans TC',
+                  fontWeight: 400,
+                  lineHeight: '20px',
+                  '&:hover': {
+                    backgroundColor: '#f8f9fa',
+                  },
+                },
+              }}
+            >
+              取消
+            </Button>
+            <Button
+              onClick={handleAddPlace}
+              disabled={!newPlaceForm.placeName || !newPlaceForm.address || !newPlaceForm.streetViewUrl}
+              styles={{
+                root: {
+                  backgroundColor: '#228be6',
+                  border: 'none',
+                  borderRadius: '4px',
+                  padding: '6px 16px',
+                  color: '#ffffff',
+                  fontSize: '14px',
+                  fontFamily: 'Noto Sans TC',
+                  fontWeight: 400,
+                  lineHeight: '20px',
+                  '&:hover': {
+                    backgroundColor: '#1c7ed6',
+                  },
+                  '&:disabled': {
+                    backgroundColor: '#e9ecef',
+                    color: '#868e96',
+                  },
+                },
+              }}
+            >
+              建立地點
+            </Button>
+          </Group>
+        </Stack>
       </Modal>
     </Paper>
   )
