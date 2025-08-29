@@ -12,6 +12,7 @@ import {
   Card,
   ActionIcon,
   Tabs,
+  Modal,
 } from '@mantine/core'
 import {
   IconArrowLeft,
@@ -126,6 +127,9 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
   console.log('PlaceDetail 渲染，place:', place);
   const [chargingServices, setChargingServices] = useState<ChargingService[]>([])
   const [isAddingChargingService, setIsAddingChargingService] = useState(false)
+  const [addingStep, setAddingStep] = useState<'basic' | 'schedule'>('basic')
+  const [editingServiceId, setEditingServiceId] = useState<string | null>(null)
+  const [editingStep, setEditingStep] = useState<'basic' | 'schedule'>('basic')
   // const [expandedService, setExpandedService] = useState<string | null>(null) // Tab設計不需要
   
   const { showSuccess } = useNotification()
@@ -152,10 +156,46 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
     saturday: { isOpen: true, openTime: '09:00', closeTime: '18:00' }
   })
 
+  const handleNextStep = () => {
+    if (!newChargingService.name || !newChargingService.brand) {
+      return
+    }
+    if (editingServiceId) {
+      if (editingStep === 'basic') {
+        setEditingStep('schedule')
+      }
+    } else {
+      if (addingStep === 'basic') {
+        setAddingStep('schedule')
+      }
+    }
+  }
+
+  const handlePrevStep = () => {
+    if (editingServiceId) {
+      if (editingStep === 'schedule') {
+        setEditingStep('basic')
+      }
+    } else {
+      if (addingStep === 'schedule') {
+        setAddingStep('basic')
+      }
+    }
+  }
+
   const handleAddChargingService = () => {
     if (!newChargingService.name || !newChargingService.brand) {
       return
     }
+
+    // 將營業時間轉換為字串格式
+    const operatingHoursStr = Object.entries(operatingHours)
+      .filter(([, schedule]) => schedule.isOpen)
+      .map(([day, schedule]) => {
+        const dayLabel = weekDays.find(d => d.value === day)?.label || day
+        return `${dayLabel}: ${schedule.openTime}-${schedule.closeTime}`
+      })
+      .join(', ')
 
     const service: ChargingService = {
       id: Date.now().toString(),
@@ -163,7 +203,7 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
       brand: newChargingService.brand!,
       status: newChargingService.status!,
       phone: newChargingService.phone || '',
-      operatingHours: newChargingService.operatingHours || '',
+      operatingHours: operatingHoursStr,
       photos: [],
       remarks: newChargingService.remarks || '',
       officialWebsite: newChargingService.officialWebsite || '',
@@ -171,6 +211,15 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
     }
 
     setChargingServices(prev => [...prev, service])
+    handleCloseModal()
+    showSuccess('充電服務已新增', '新增成功')
+  }
+
+  const handleCloseModal = () => {
+    setIsAddingChargingService(false)
+    setEditingServiceId(null)
+    setAddingStep('basic')
+    setEditingStep('basic')
     setNewChargingService({
       name: '',
       brand: '',
@@ -181,8 +230,78 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
       officialWebsite: '',
       evses: []
     })
-    setIsAddingChargingService(false)
-    showSuccess('充電服務已新增', '新增成功')
+    setOperatingHours({
+      monday: { isOpen: true, openTime: '09:00', closeTime: '18:00' },
+      tuesday: { isOpen: true, openTime: '09:00', closeTime: '18:00' },
+      wednesday: { isOpen: true, openTime: '09:00', closeTime: '18:00' },
+      thursday: { isOpen: true, openTime: '09:00', closeTime: '18:00' },
+      friday: { isOpen: true, openTime: '09:00', closeTime: '18:00' },
+      saturday: { isOpen: true, openTime: '09:00', closeTime: '18:00' }
+    })
+  }
+
+  const handleEditService = (service: ChargingService) => {
+    setEditingServiceId(service.id)
+    setEditingStep('basic')
+    setNewChargingService({
+      name: service.name,
+      brand: service.brand,
+      status: service.status,
+      phone: service.phone,
+      operatingHours: service.operatingHours,
+      remarks: service.remarks,
+      officialWebsite: service.officialWebsite,
+      evses: service.evses
+    })
+    
+    // 解析營業時間字串回到狀態
+    const hoursFromString: OperatingHours = {}
+    if (service.operatingHours) {
+      const hoursParts = service.operatingHours.split(', ')
+      hoursParts.forEach(part => {
+        const match = part.match(/^(.+): (.+)-(.+)$/)
+        if (match) {
+          const [, dayLabel, openTime, closeTime] = match
+          const dayValue = weekDays.find(d => d.label === dayLabel)?.value
+          if (dayValue) {
+            hoursFromString[dayValue] = { isOpen: true, openTime, closeTime }
+          }
+        }
+      })
+    }
+    setOperatingHours(hoursFromString)
+  }
+
+  const handleUpdateService = () => {
+    if (!editingServiceId || !newChargingService.name || !newChargingService.brand) {
+      return
+    }
+
+    // 將營業時間轉換為字串格式
+    const operatingHoursStr = Object.entries(operatingHours)
+      .filter(([, schedule]) => schedule.isOpen)
+      .map(([day, schedule]) => {
+        const dayLabel = weekDays.find(d => d.value === day)?.label || day
+        return `${dayLabel}: ${schedule.openTime}-${schedule.closeTime}`
+      })
+      .join(', ')
+
+    setChargingServices(prev => prev.map(service => 
+      service.id === editingServiceId 
+        ? {
+            ...service,
+            name: newChargingService.name!,
+            brand: newChargingService.brand!,
+            status: newChargingService.status!,
+            phone: newChargingService.phone || '',
+            operatingHours: operatingHoursStr,
+            remarks: newChargingService.remarks || '',
+            officialWebsite: newChargingService.officialWebsite || '',
+          }
+        : service
+    ))
+    handleCloseModal()
+    showSuccess('充電服務已更新', '更新成功')
   }
 
   const handleAddEVSE = (serviceId: string) => {
@@ -461,98 +580,140 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
 
               <Tabs.Panel value="charging" pt="lg">
                 <Stack gap="xl">
-                  {/* 充電服務管理區塊 */}
-                  <Card withBorder radius="8px" bg="#ffffff" style={{ border: '1px solid #bbdefb' }}>
-                    <Stack gap="lg">
-                      <Title order={5} style={{ color: '#1976d2' }}>充電服務管理</Title>
-                      
-                      {/* 充電服務詳細管理區域 */}
-                      {chargingServices.map((service) => (
-                        <div key={service.id}>
-                          {/* 充電服務標題區塊 */}
-                          <Card withBorder radius="8px" bg="#e3f2fd" mb="lg" style={{ border: '1px solid #bbdefb' }}>
-                            <Group justify="space-between" align="center">
-                              <Group align="center">
-                                <IconBolt size={24} color="#1976d2" />
-                                <div>
-                                  <Text size="lg" fw={700} style={{ color: '#1976d2' }}>
-                                    {service.name}
-                                  </Text>
-                                  <Group gap="sm" mt="xs">
-                                    <Badge size="md" variant="light" color="blue">
-                                      {service.brand}
-                                    </Badge>
-                                    <Badge
-                                      size="md"
-                                      variant="light"
-                                      color={service.status === '營運中' ? 'green' : service.status === '維護中' ? 'yellow' : 'red'}
-                                    >
-                                      {service.status}
-                                    </Badge>
-                                  </Group>
-                                </div>
+                  {/* 充電服務詳細管理區域 */}
+                  {chargingServices.map((service) => (
+                    <Card key={service.id} withBorder radius="8px" bg="#ffffff" style={{ border: '1px solid #e9ecef' }}>
+                      <Stack gap="lg">
+                        {/* 充電服務標題區塊 */}
+                        <Group justify="space-between" align="flex-start">
+                          <Group align="center">
+                            <Box
+                              style={{
+                                padding: '10px',
+                                borderRadius: '8px',
+                                backgroundColor: '#e3f2fd',
+                              }}
+                            >
+                              <IconBolt size={24} color="#1976d2" />
+                            </Box>
+                            <div>
+                              <Text size="lg" fw={700} style={{ color: '#1976d2' }}>
+                                {service.name}
+                              </Text>
+                              <Group gap="sm" mt="xs">
+                                <Badge size="md" variant="light" color="blue">
+                                  {service.brand}
+                                </Badge>
+                                <Badge
+                                  size="md"
+                                  variant="light"
+                                  color={service.status === '營運中' ? 'green' : service.status === '維護中' ? 'yellow' : 'red'}
+                                >
+                                  {service.status}
+                                </Badge>
                               </Group>
-                              <ActionIcon color="red" variant="subtle" size="lg">
-                                <IconTrash size={18} />
-                              </ActionIcon>
-                            </Group>
-                          </Card>
-
-                          {/* 充電服務詳細資訊 */}
-                          <Card withBorder radius="8px" bg="#ffffff" mb="md" style={{ border: '1px solid #bbdefb' }}>
-                            <div style={{ 
-                              display: 'grid', 
-                              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
-                              gap: '20px',
-                              marginBottom: '16px'
-                            }}>
-
-                              {service.phone && (
-                                <Box>
-                                  <Group gap="8px" mb="xs">
-                                    <IconPhone size={16} color="#666" />
-                                    <Text size="sm" fw={600} style={{ color: '#495057' }}>服務電話</Text>
-                                  </Group>
-                                  <Text size="sm" style={{ color: '#212529' }}>{service.phone}</Text>
-                                </Box>
-                              )}
-
-                              {service.operatingHours && (
-                                <Box>
-                                  <Group gap="8px" mb="xs">
-                                    <IconClock size={16} color="#666" />
-                                    <Text size="sm" fw={600} style={{ color: '#495057' }}>營業時間</Text>
-                                  </Group>
-                                  <Text size="sm" style={{ color: '#212529' }}>{service.operatingHours}</Text>
-                                </Box>
-                              )}
-
-                              {service.officialWebsite && (
-                                <Box>
-                                  <Group gap="8px" mb="xs">
-                                    <IconWorld size={16} color="#666" />
-                                    <Text size="sm" fw={600} style={{ color: '#495057' }}>官方網站</Text>
-                                  </Group>
-                                  <Text size="sm" c="blue" style={{ cursor: 'pointer' }}
-                                        onClick={() => window.open(service.officialWebsite, '_blank')}>
-                                    {service.officialWebsite}
-                                  </Text>
-                                </Box>
-                              )}
-
-                              {service.remarks && (
-                                <Box style={{ gridColumn: 'span 2' }}>
-                                  <Text size="sm" fw={600} mb="xs" style={{ color: '#495057' }}>備註</Text>
-                                  <Text size="sm" style={{ color: '#212529', lineHeight: '1.5' }}>
-                                    {service.remarks}
-                                  </Text>
-                                </Box>
-                              )}
                             </div>
-                          </Card>
+                          </Group>
+                          <Button
+                            variant="light"
+                            size="sm"
+                            onClick={() => handleEditService(service)}
+                          >
+                            編輯設定
+                          </Button>
+                        </Group>
 
-                          {/* EVSE 管理 */}
-                          <Card withBorder radius="8px" bg="#ffffff" mb="md" style={{ border: '1px solid #bbdefb' }}>
+                        {/* 充電服務詳細資訊 - 改善版 */}
+                        <div style={{ 
+                          display: 'grid', 
+                          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', 
+                          gap: '24px'
+                        }}>
+                          {/* 基本資訊 */}
+                          <Box 
+                            style={{
+                              backgroundColor: '#f8f9fa',
+                              borderRadius: '8px',
+                              padding: '16px',
+                            }}
+                          >
+                            <Text size="sm" fw={600} mb="md" style={{ color: '#495057' }}>基本資訊</Text>
+                            <Stack gap="sm">
+                              {service.phone && (
+                                <Group gap="8px">
+                                  <IconPhone size={16} color="#666" />
+                                  <Text size="sm" style={{ color: '#212529' }}>
+                                    {service.phone}
+                                  </Text>
+                                </Group>
+                              )}
+                              {service.officialWebsite && (
+                                <Group gap="8px">
+                                  <IconWorld size={16} color="#666" />
+                                  <Text 
+                                    size="sm" 
+                                    c="blue" 
+                                    style={{ cursor: 'pointer', textDecoration: 'underline' }}
+                                    onClick={() => window.open(service.officialWebsite, '_blank')}
+                                  >
+                                    官方網站
+                                  </Text>
+                                </Group>
+                              )}
+                            </Stack>
+                          </Box>
+
+                          {/* 營業時間 - 改善版 */}
+                          {service.operatingHours && (
+                            <Box 
+                              style={{
+                                backgroundColor: '#f8f9fa',
+                                borderRadius: '8px',
+                                padding: '16px',
+                              }}
+                            >
+                              <Group gap="8px" mb="md">
+                                <IconClock size={16} color="#666" />
+                                <Text size="sm" fw={600} style={{ color: '#495057' }}>營業時間</Text>
+                              </Group>
+                              <Stack gap="xs">
+                                {service.operatingHours.split(', ').map((timeRange, index) => {
+                                  const [day, hours] = timeRange.split(': ')
+                                  return (
+                                    <Group key={index} justify="space-between">
+                                      <Text size="xs" fw={600} w={30} style={{ color: '#495057' }}>
+                                        {day}
+                                      </Text>
+                                      <Text size="xs" style={{ color: '#212529' }}>
+                                        {hours}
+                                      </Text>
+                                    </Group>
+                                  )
+                                })}
+                              </Stack>
+                            </Box>
+                          )}
+
+                          {/* 備註 */}
+                          {service.remarks && (
+                            <Box 
+                              style={{ 
+                                gridColumn: service.operatingHours ? 'span 1' : 'span 2',
+                                backgroundColor: '#f8f9fa',
+                                borderRadius: '8px',
+                                padding: '16px',
+                              }}
+                            >
+                              <Text size="sm" fw={600} mb="sm" style={{ color: '#495057' }}>備註</Text>
+                              <Text size="sm" style={{ color: '#212529', lineHeight: '1.5' }}>
+                                {service.remarks}
+                              </Text>
+                            </Box>
+                          )}
+                        </div>
+
+                        {/* EVSE 管理 */}
+                        <Card withBorder radius="8px" bg="#f8f9fa" style={{ border: '1px solid #e9ecef' }}>
                             <Stack gap="16px">
                               <Group justify="space-between">
                                 <Text fw={500}>充電樁管理</Text>
@@ -654,130 +815,206 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
                                 </Card>
                               ))}
                             </Stack>
-                          </Card>
-                        </div>
-                      ))}
+                        </Card>
+                      </Stack>
+                    </Card>
+                  ))}
 
-                      {/* 新增充電服務按鈕 */}
-                      <Group justify="flex-end">
-                        {chargingServices.length === 0 ? (
-                          <Button
-                            leftSection={<IconBolt size={16} />}
-                            onClick={() => setIsAddingChargingService(true)}
-                          >
-                            新增充電服務
-                          </Button>
-                        ) : (
-                          <Text size="sm" c="dimmed">
-                            已建立充電服務 (一個場站只能有一個充電服務)
-                          </Text>
-                        )}
+                  {/* 充電服務初始狀態區塊 - 置中顯示按鈕和提示 */}
+                  {chargingServices.length === 0 && !isAddingChargingService && (
+                    <Box ta="center" py="xl">
+                      <Button
+                        leftSection={<IconBolt size={16} />}
+                        onClick={() => setIsAddingChargingService(true)}
+                        size="md"
+                      >
+                        開始設定充電服務
+                      </Button>
+                    </Box>
+                  )}
+
+                  {/* 已有充電服務時的提示 */}
+                  {chargingServices.length > 0 && (
+                    <Group justify="flex-end">
+                      <Text size="sm" c="dimmed">
+                        已建立充電服務 (一個場站只能有一個充電服務)
+                      </Text>
+                    </Group>
+                  )}
+
+                  {/* 兩階段Modal - 新增/編輯充電服務 */}
+                  <Modal
+                    opened={isAddingChargingService || editingServiceId !== null}
+                    onClose={handleCloseModal}
+                    title={
+                      <Group gap="xs">
+                        <IconBolt size={20} color="#1976d2" />
+                        <Text fw={600} style={{ color: '#1976d2' }}>
+                          {editingServiceId 
+                            ? (editingStep === 'basic' ? '編輯：充電服務基本設定' : '編輯：營業時間設定')
+                            : (addingStep === 'basic' ? '第一階段：充電服務基本設定' : '第二階段：營業時間設定')
+                          }
+                        </Text>
+                      </Group>
+                    }
+                    size="lg"
+                    centered
+                  >
+                    <Stack gap="lg">
+                      {/* 進度指示器 */}
+                      <Group justify="center" gap="xs">
+                        <Box
+                          style={{
+                            width: '8px',
+                            height: '8px',
+                            borderRadius: '50%',
+                            backgroundColor: '#228be6',
+                          }}
+                        />
+                        <Box
+                          style={{
+                            width: '30px',
+                            height: '2px',
+                            backgroundColor: (editingServiceId ? editingStep : addingStep) === 'schedule' ? '#228be6' : '#e9ecef',
+                          }}
+                        />
+                        <Box
+                          style={{
+                            width: '8px',
+                            height: '8px',
+                            borderRadius: '50%',
+                            backgroundColor: (editingServiceId ? editingStep : addingStep) === 'schedule' ? '#228be6' : '#e9ecef',
+                          }}
+                        />
                       </Group>
 
-                      {chargingServices.length === 0 && !isAddingChargingService && (
-                        <Text size="sm" c="dimmed" ta="center" py="xl">
-                          點擊上方按鈕開始設置充電服務
-                        </Text>
+                      {/* 第一階段：基本設定 */}
+                      {(editingServiceId ? editingStep : addingStep) === 'basic' && (
+                        <Stack gap="lg">
+                          <Group grow>
+                            <TextInput
+                              label="充電站名稱"
+                              placeholder="請輸入充電站名稱"
+                              value={newChargingService.name || ''}
+                              onChange={(e) => {
+                                const value = e.currentTarget.value;
+                                setNewChargingService(prev => ({ ...prev, name: value }));
+                              }}
+                            />
+                            <TextInput
+                              label="充電站品牌"
+                              placeholder="請輸入品牌名稱"
+                              value={newChargingService.brand || ''}
+                              onChange={(e) => {
+                                const value = e.currentTarget.value;
+                                setNewChargingService(prev => ({ ...prev, brand: value }));
+                              }}
+                            />
+                          </Group>
+
+                          <Group grow>
+                            <Select
+                              label="服務狀態"
+                              data={serviceStatusOptions}
+                              value={newChargingService.status}
+                              onChange={(value) => {
+                                setNewChargingService(prev => ({ ...prev, status: value || '籌備中' }));
+                              }}
+                            />
+                            <TextInput
+                              label="服務電話"
+                              placeholder="請輸入電話號碼"
+                              value={newChargingService.phone || ''}
+                              onChange={(e) => {
+                                const value = e.currentTarget.value;
+                                setNewChargingService(prev => ({ ...prev, phone: value }));
+                              }}
+                            />
+                          </Group>
+
+                          <TextInput
+                            label="官方網址"
+                            placeholder="請輸入官方網站連結"
+                            value={newChargingService.officialWebsite || ''}
+                            onChange={(e) => {
+                              const value = e.currentTarget.value;
+                              setNewChargingService(prev => ({ ...prev, officialWebsite: value }));
+                            }}
+                          />
+
+                          <Textarea
+                            label="備註"
+                            placeholder="請輸入備註資訊"
+                            value={newChargingService.remarks || ''}
+                            onChange={(e) => {
+                              const value = e.currentTarget.value;
+                              setNewChargingService(prev => ({ ...prev, remarks: value }));
+                            }}
+                            rows={3}
+                          />
+
+                          <Group justify="flex-end" mt="lg">
+                            <Button variant="outline" onClick={handleCloseModal}>
+                              取消
+                            </Button>
+                            <Button 
+                              onClick={handleNextStep}
+                              disabled={!newChargingService.name || !newChargingService.brand}
+                            >
+                              {editingServiceId ? '下一步：編輯營業時間' : '下一步：設定營業時間'}
+                            </Button>
+                          </Group>
+                        </Stack>
                       )}
-                    </Stack>
-                  </Card>
 
-                  {/* 新增充電服務表單 */}
-                  {isAddingChargingService && (
-                    <Card withBorder radius="8px" bg="#ffffff" style={{ border: '1px solid #bbdefb' }}>
-                      <Stack gap="lg">
-                        <Title order={5} style={{ color: '#1976d2' }}>新增充電服務</Title>
-                        
-                        <Group grow>
-                          <TextInput
-                            label="充電站名稱"
-                            placeholder="請輸入充電站名稱"
-                            value={newChargingService.name || ''}
-                            onChange={(e) => {
-                              const value = e.currentTarget.value;
-                              setNewChargingService(prev => ({ ...prev, name: value }));
-                            }}
-                          />
-                          <TextInput
-                            label="充電站品牌"
-                            placeholder="請輸入品牌名稱"
-                            value={newChargingService.brand || ''}
-                            onChange={(e) => {
-                              const value = e.currentTarget.value;
-                              setNewChargingService(prev => ({ ...prev, brand: value }));
-                            }}
-                          />
-                        </Group>
+                      {/* 第二階段：營業時間設定 */}
+                      {(editingServiceId ? editingStep : addingStep) === 'schedule' && (
+                        <Stack gap="lg">
+                          {/* 快速選擇模式 */}
+                          <Group gap="xs">
+                            <Button 
+                              size="xs" 
+                              variant="light"
+                              onClick={() => {
+                                const newHours: OperatingHours = {};
+                                weekDays.forEach(day => {
+                                  newHours[day.value] = { isOpen: true, openTime: '00:00', closeTime: '24:00' };
+                                });
+                                setOperatingHours(newHours);
+                              }}
+                            >
+                              24小時營業
+                            </Button>
+                            <Button 
+                              size="xs" 
+                              variant="light"
+                              onClick={() => {
+                                const newHours: OperatingHours = {};
+                                weekDays.forEach(day => {
+                                  newHours[day.value] = { isOpen: true, openTime: '09:00', closeTime: '18:00' };
+                                });
+                                setOperatingHours(newHours);
+                              }}
+                            >
+                              09:00-18:00
+                            </Button>
+                            <Button 
+                              size="xs" 
+                              variant="light"
+                              onClick={() => {
+                                const newHours: OperatingHours = {};
+                                ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'].forEach(day => {
+                                  newHours[day] = { isOpen: true, openTime: '09:00', closeTime: '18:00' };
+                                });
+                                setOperatingHours(newHours);
+                              }}
+                            >
+                              平日營業
+                            </Button>
+                          </Group>
 
-                        <Group grow>
-                          <Select
-                            label="服務狀態"
-                            data={serviceStatusOptions}
-                            value={newChargingService.status}
-                            onChange={(value) => {
-                              setNewChargingService(prev => ({ ...prev, status: value || '籌備中' }));
-                            }}
-                          />
-                          <TextInput
-                            label="服務電話"
-                            placeholder="請輸入電話號碼"
-                            value={newChargingService.phone || ''}
-                            onChange={(e) => {
-                              const value = e.currentTarget.value;
-                              setNewChargingService(prev => ({ ...prev, phone: value }));
-                            }}
-                          />
-                        </Group>
-
-                        {/* 營業時間設定 */}
-                        <Card withBorder radius="6px" bg="#e3f2fd" style={{ border: '1px solid #bbdefb' }}>
-                          <Stack gap="md">
-                            <Text size="sm" fw={500} style={{ color: '#1976d2' }}>營業時間設定</Text>
-                            
-                            {/* 快速選擇模式 */}
-                            <Group gap="xs">
-                              <Button 
-                                size="xs" 
-                                variant="light"
-                                onClick={() => {
-                                  const newHours: OperatingHours = {};
-                                  weekDays.forEach(day => {
-                                    newHours[day.value] = { isOpen: true, openTime: '00:00', closeTime: '24:00' };
-                                  });
-                                  setOperatingHours(newHours);
-                                }}
-                              >
-                                24小時營業
-                              </Button>
-                              <Button 
-                                size="xs" 
-                                variant="light"
-                                onClick={() => {
-                                  const newHours: OperatingHours = {};
-                                  weekDays.forEach(day => {
-                                    newHours[day.value] = { isOpen: true, openTime: '09:00', closeTime: '18:00' };
-                                  });
-                                  setOperatingHours(newHours);
-                                }}
-                              >
-                                09:00-18:00
-                              </Button>
-                              <Button 
-                                size="xs" 
-                                variant="light"
-                                onClick={() => {
-                                  const newHours: OperatingHours = {};
-                                  ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'].forEach(day => {
-                                    newHours[day] = { isOpen: true, openTime: '09:00', closeTime: '18:00' };
-                                  });
-                                  setOperatingHours(newHours);
-                                }}
-                              >
-                                平日營業
-                              </Button>
-                            </Group>
-
-                            {/* 營業日設定 */}
+                          {/* 營業日設定 */}
+                          <Box style={{ maxHeight: '300px', overflowY: 'auto' }}>
                             <Stack gap="xs">
                               {weekDays.map((day) => {
                                 const hasSchedule = operatingHours[day.value];
@@ -785,9 +1022,9 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
                                 return hasSchedule ? (
                                   <Group key={day.value} justify="space-between" align="center" p="sm" 
                                          style={{ 
-                                           backgroundColor: '#ffffff', 
+                                           backgroundColor: '#f8f9fa', 
                                            borderRadius: '6px', 
-                                           border: '1px solid #bbdefb'
+                                           border: '1px solid #e9ecef'
                                          }}>
                                     <Group gap="sm">
                                       <Text size="xs" fw={600} w={30}>
@@ -871,47 +1108,20 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
                                 );
                               })}
                             </Stack>
-                          </Stack>
-                        </Card>
+                          </Box>
 
-                        <TextInput
-                          label="官方網址"
-                          placeholder="請輸入官方網站連結"
-                          value={newChargingService.officialWebsite || ''}
-                          onChange={(e) => {
-                            const value = e.currentTarget.value;
-                            setNewChargingService(prev => ({ ...prev, officialWebsite: value }));
-                          }}
-                        />
-
-                        <Textarea
-                          label="備註"
-                          placeholder="請輸入備註資訊"
-                          value={newChargingService.remarks || ''}
-                          onChange={(e) => {
-                            const value = e.currentTarget.value;
-                            setNewChargingService(prev => ({ ...prev, remarks: value }));
-                          }}
-                          rows={3}
-                        />
-
-                        <Group justify="flex-end">
-                          <Button
-                            variant="outline"
-                            onClick={() => setIsAddingChargingService(false)}
-                          >
-                            取消
-                          </Button>
-                          <Button
-                            onClick={handleAddChargingService}
-                            disabled={!newChargingService.name || !newChargingService.brand}
-                          >
-                            新增充電服務
-                          </Button>
-                        </Group>
-                      </Stack>
-                    </Card>
-                  )}
+                          <Group justify="space-between" mt="lg">
+                            <Button variant="outline" onClick={handlePrevStep}>
+                              上一步
+                            </Button>
+                            <Button onClick={editingServiceId ? handleUpdateService : handleAddChargingService}>
+                              {editingServiceId ? '完成編輯充電服務' : '完成新增充電服務'}
+                            </Button>
+                          </Group>
+                        </Stack>
+                      )}
+                    </Stack>
+                  </Modal>
                 </Stack>
               </Tabs.Panel>
 
