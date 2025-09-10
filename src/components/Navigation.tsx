@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useCallback } from 'react'
 import { 
   Stack, 
   NavLink,
@@ -23,7 +23,7 @@ interface NavigationProps {
 }
 
 export function Navigation({ currentView, onNavigate }: NavigationProps) {
-  const getActiveKey = () => {
+  const getActiveKey = useCallback(() => {
     switch (currentView) {
       case 'vendor-list':
       case 'vendor-detail':
@@ -39,14 +39,14 @@ export function Navigation({ currentView, onNavigate }: NavigationProps) {
       default:
         return 'none';
     }
-  };
+  }, [currentView]);
 
   const [active, setActive] = useState(getActiveKey())
 
   // 同步 active 狀態與 currentView
   React.useEffect(() => {
     setActive(getActiveKey());
-  }, [currentView]);
+  }, [currentView, getActiveKey]);
 
   return (
     <Stack gap={0} h="100%" style={{ height: '901px' }}>
