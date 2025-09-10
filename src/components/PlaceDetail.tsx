@@ -13,6 +13,7 @@ import {
   ActionIcon,
   Tabs,
   Modal,
+  Radio,
 } from '@mantine/core'
 import {
   IconArrowLeft,
@@ -73,6 +74,8 @@ interface ChargingConnector {
   status: string
   powerKw: number
   chargingRate: string
+  powerOutput: string
+  supportsEVCCID: boolean
 }
 
 interface TempChargingConnector extends Partial<ChargingConnector> {
@@ -92,10 +95,17 @@ const connectorTypeOptions = [
 
 // 充電槍狀態選項
 const connectorStatusOptions = [
+  'Unknown',
   'AVAILABLE',
   'PREPARING', 
   'CHARGING',
   'FAULTED'
+]
+
+// 電力輸出方式選項
+const powerOutputOptions = [
+  'AC',
+  'DC'
 ]
 
 // 服務狀態選項
@@ -104,6 +114,23 @@ const serviceStatusOptions = [
   '維護中',
   '籌備中',
   '停用'
+]
+
+// 營運業者品牌選項
+const operatorBrandOptions = [
+  'Acon-Eco',
+  '區快充',
+  'Tesla',
+  '皮卡充',
+  'EVOASIS'
+]
+
+// 充電樁/槍資料來源選項
+const dataSourceOptions = [
+  '手動新增',
+  'TDX',
+  '好友電',
+  '用愛發電'
 ]
 
 // 週天選項
@@ -133,9 +160,9 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
   console.log('PlaceDetail 渲染，place:', place);
   const [chargingServices, setChargingServices] = useState<ChargingService[]>([])
   const [isAddingChargingService, setIsAddingChargingService] = useState(false)
-  const [addingStep, setAddingStep] = useState<'basic' | 'schedule'>('basic')
+  const [addingStep, setAddingStep] = useState<'basic' | 'schedule' | 'dataSource'>('basic')
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null)
-  const [editingStep, setEditingStep] = useState<'basic' | 'schedule'>('basic')
+  const [editingStep, setEditingStep] = useState<'basic' | 'schedule' | 'dataSource'>('basic')
   const [editingEVSEId, setEditingEVSEId] = useState<string | null>(null)
   const [editingConnectorId, setEditingConnectorId] = useState<string | null>(null)
   const [tempEVSE, setTempEVSE] = useState<Partial<EVSE>>({})
@@ -156,6 +183,9 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
     evses: []
   })
 
+  // 資料來源選擇狀態
+  const [dataSource, setDataSource] = useState<string>('')
+
   // 營業時間狀態
   const [operatingHours, setOperatingHours] = useState<OperatingHours>({
     monday: { isOpen: true, openTime: '09:00', closeTime: '18:00' },
@@ -167,16 +197,23 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
   })
 
   const handleNextStep = () => {
-    if (!newChargingService.name || !newChargingService.brand) {
-      return
-    }
     if (editingServiceId) {
       if (editingStep === 'basic') {
+        if (!newChargingService.name || !newChargingService.brand) {
+          return
+        }
         setEditingStep('schedule')
+      } else if (editingStep === 'schedule') {
+        setEditingStep('dataSource')
       }
     } else {
       if (addingStep === 'basic') {
+        if (!newChargingService.name || !newChargingService.brand) {
+          return
+        }
         setAddingStep('schedule')
+      } else if (addingStep === 'schedule') {
+        setAddingStep('dataSource')
       }
     }
   }
@@ -185,10 +222,14 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
     if (editingServiceId) {
       if (editingStep === 'schedule') {
         setEditingStep('basic')
+      } else if (editingStep === 'dataSource') {
+        setEditingStep('schedule')
       }
     } else {
       if (addingStep === 'schedule') {
         setAddingStep('basic')
+      } else if (addingStep === 'dataSource') {
+        setAddingStep('schedule')
       }
     }
   }
@@ -370,9 +411,11 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
       id: Date.now().toString(),
       connectorNumber: '',
       connectorType: 'Type 2',
-      status: 'AVAILABLE',
+      status: 'Unknown',
       powerKw: 22,
-      chargingRate: ''
+      chargingRate: '',
+      powerOutput: 'AC',
+      supportsEVCCID: false
     }
     setTempConnector({ ...newConnector, serviceId, evseId })
     setEditingConnectorId(newConnector.id)
@@ -452,7 +495,7 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
     }
   }
 
-  const updateConnector = (serviceId: string, evseId: string, connectorId: string, field: keyof ChargingConnector, value: string | number) => {
+  const updateConnector = (serviceId: string, evseId: string, connectorId: string, field: keyof ChargingConnector, value: string | number | boolean) => {
     if (editingConnectorId === connectorId) {
       setTempConnector(prev => ({ ...prev, [field]: value }))
     } else {
@@ -781,7 +824,7 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
                             </Box>
                           )}
 
-                          {/* 備註 */}
+                          {/* 小編精選資訊 */}
                           {service.remarks && (
                             <Box 
                               style={{ 
@@ -791,7 +834,7 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
                                 padding: '16px',
                               }}
                             >
-                              <Text size="sm" fw={600} mb="sm" style={{ color: '#495057' }}>備註</Text>
+                              <Text size="sm" fw={600} mb="sm" style={{ color: '#495057' }}>小編精選資訊</Text>
                               <Text size="sm" style={{ color: '#212529', lineHeight: '1.5' }}>
                                 {service.remarks}
                               </Text>
@@ -803,19 +846,49 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
                         <Box>
                           <Group justify="space-between" mb="lg">
                             <Title order={5} style={{ color: '#495057', fontSize: '16px' }}>充電樁管理</Title>
-                            <Button
-                              size="sm"
-                              variant="light"
-                              onClick={() => handleAddEVSE(service.id)}
-                              disabled={editingEVSEId !== null || editingConnectorId !== null}
-                            >
-                              新增充電樁
-                            </Button>
+                            {service.evses.length > 0 && (
+                              <Button
+                                size="sm"
+                                variant="light"
+                                onClick={() => handleAddEVSE(service.id)}
+                                disabled={editingEVSEId !== null || editingConnectorId !== null}
+                              >
+                                新增充電樁
+                              </Button>
+                            )}
                           </Group>
                           
                           <Stack gap="lg">
-
-                            {service.evses.map((evse, evseIndex) => (
+                            {service.evses.length === 0 ? (
+                              <Card withBorder bg="#f8f9fa" style={{ 
+                                border: '2px dashed #dee2e6',
+                                borderRadius: '8px',
+                                textAlign: 'center',
+                                padding: '40px 20px'
+                              }}>
+                                <Stack gap="md" align="center">
+                                  <IconGasStation size={48} color="#868e96" />
+                                  <Stack gap="xs" align="center">
+                                    <Text size="md" fw={600} style={{ color: '#495057' }}>
+                                      尚未新增充電樁
+                                    </Text>
+                                    <Text size="sm" style={{ color: '#6c757d' }}>
+                                      開始為這個充電站配置充電樁設備，提供更完整的服務資訊
+                                    </Text>
+                                  </Stack>
+                                  <Button 
+                                    leftSection={<IconGasStation size={16} />}
+                                    onClick={() => handleAddEVSE(service.id)}
+                                    variant="filled"
+                                    color="blue"
+                                    size="sm"
+                                  >
+                                    立即新增充電樁
+                                  </Button>
+                                </Stack>
+                              </Card>
+                            ) : (
+                              service.evses.map((evse, evseIndex) => (
                               <Card key={evse.id} withBorder bg="#ffffff" style={{ 
                                 border: '2px solid #dee2e6',
                                 borderRadius: '8px',
@@ -995,7 +1068,7 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
                                                 label="狀態"
                                                 data={connectorStatusOptions}
                                                 value={displayConnector.status}
-                                                onChange={(value) => updateConnector(service.id, evse.id, connector.id, 'status', value || 'AVAILABLE')}
+                                                onChange={(value) => updateConnector(service.id, evse.id, connector.id, 'status', value || 'Unknown')}
                                                 size="xs"
                                                 disabled={editingConnectorId !== connector.id}
                                                 styles={{
@@ -1028,6 +1101,47 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
                                                   }
                                                 }}
                                               />
+                                            </Group>
+                                            
+                                            <Group grow>
+                                              <Select
+                                                label="電力輸出方式"
+                                                data={powerOutputOptions}
+                                                value={displayConnector.powerOutput}
+                                                onChange={(value) => updateConnector(service.id, evse.id, connector.id, 'powerOutput', value || 'AC')}
+                                                size="xs"
+                                                disabled={editingConnectorId !== connector.id}
+                                                styles={{
+                                                  input: {
+                                                    '&:disabled': {
+                                                      color: '#495057',
+                                                      backgroundColor: '#f8f9fa',
+                                                      opacity: 1
+                                                    }
+                                                  }
+                                                }}
+                                              />
+                                              <Box>
+                                                <Text size="xs" fw={500} mb="4px">是否支援 EVCCID</Text>
+                                                <Radio.Group
+                                                  value={displayConnector.supportsEVCCID ? 'yes' : 'no'}
+                                                  onChange={(value) => updateConnector(service.id, evse.id, connector.id, 'supportsEVCCID', value === 'yes')}
+                                                  size="xs"
+                                                  styles={{
+                                                    root: {
+                                                      '&:has(input:disabled)': {
+                                                        opacity: editingConnectorId !== connector.id ? 0.6 : 1,
+                                                        pointerEvents: editingConnectorId !== connector.id ? 'none' : 'auto'
+                                                      }
+                                                    }
+                                                  }}
+                                                >
+                                                  <Group gap="md">
+                                                    <Radio value="yes" label="是" disabled={editingConnectorId !== connector.id} />
+                                                    <Radio value="no" label="否" disabled={editingConnectorId !== connector.id} />
+                                                  </Group>
+                                                </Radio.Group>
+                                              </Box>
                                             </Group>
                                             
                                             {/* 充電費率 - 條件顯示 */}
@@ -1132,8 +1246,8 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
                                             <Select
                                               label="狀態"
                                               data={connectorStatusOptions}
-                                              value={tempConnector.status || 'AVAILABLE'}
-                                              onChange={(value) => setTempConnector(prev => ({ ...prev, status: value || 'AVAILABLE' }))}
+                                              value={tempConnector.status || 'Unknown'}
+                                              onChange={(value) => setTempConnector(prev => ({ ...prev, status: value || 'Unknown' }))}
                                               size="xs"
                                             />
                                             <TextInput
@@ -1146,6 +1260,29 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
                                               size="xs"
                                               type="number"
                                             />
+                                          </Group>
+                                          
+                                          <Group grow>
+                                            <Select
+                                              label="電力輸出方式"
+                                              data={powerOutputOptions}
+                                              value={tempConnector.powerOutput || 'AC'}
+                                              onChange={(value) => setTempConnector(prev => ({ ...prev, powerOutput: value || 'AC' }))}
+                                              size="xs"
+                                            />
+                                            <Box>
+                                              <Text size="xs" fw={500} mb="4px">是否支援 EVCCID</Text>
+                                              <Radio.Group
+                                                value={tempConnector.supportsEVCCID ? 'yes' : 'no'}
+                                                onChange={(value) => setTempConnector(prev => ({ ...prev, supportsEVCCID: value === 'yes' }))}
+                                                size="xs"
+                                              >
+                                                <Group gap="md">
+                                                  <Radio value="yes" label="是" />
+                                                  <Radio value="no" label="否" />
+                                                </Group>
+                                              </Radio.Group>
+                                            </Box>
                                           </Group>
                                           
                                           <Stack gap="4px">
@@ -1191,7 +1328,7 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
                                     )}
                                 </Stack>
                               </Card>
-                            ))}
+                            )))}
                             
                             {/* 新增 EVSE 表單 */}
                             {editingEVSEId && !service.evses.find(e => e.id === editingEVSEId) && (
@@ -1270,13 +1407,23 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
                         <Text fw={600} style={{ color: '#1976d2' }}>
                           {editingServiceId 
                             ? (editingStep === 'basic' ? '編輯：充電服務基本設定' : '編輯：營業時間設定')
-                            : (addingStep === 'basic' ? '第一階段：充電服務基本設定' : '第二階段：營業時間設定')
+                            : (addingStep === 'basic' ? '第一階段：充電服務基本設定' : addingStep === 'schedule' ? '第二階段：營業時間設定' : '第三階段：資料來源選擇')
                           }
                         </Text>
                       </Group>
                     }
-                    size="lg"
+                    size="xl"
                     centered
+                    styles={{
+                      body: {
+                        height: 'auto',
+                        maxHeight: 'none'
+                      },
+                      content: {
+                        height: 'auto',
+                        maxHeight: 'none'
+                      }
+                    }}
                   >
                     <Stack gap="lg">
                       {/* 進度指示器 */}
@@ -1293,7 +1440,7 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
                           style={{
                             width: '30px',
                             height: '2px',
-                            backgroundColor: (editingServiceId ? editingStep : addingStep) === 'schedule' ? '#228be6' : '#e9ecef',
+                            backgroundColor: (editingServiceId ? (editingStep === 'schedule' || editingStep === 'basic') : (addingStep === 'schedule' || addingStep === 'dataSource')) ? '#228be6' : '#e9ecef',
                           }}
                         />
                         <Box
@@ -1301,7 +1448,22 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
                             width: '8px',
                             height: '8px',
                             borderRadius: '50%',
-                            backgroundColor: (editingServiceId ? editingStep : addingStep) === 'schedule' ? '#228be6' : '#e9ecef',
+                            backgroundColor: (editingServiceId ? (editingStep === 'schedule' || editingStep === 'basic') : (addingStep === 'schedule' || addingStep === 'dataSource')) ? '#228be6' : '#e9ecef',
+                          }}
+                        />
+                        <Box
+                          style={{
+                            width: '30px',
+                            height: '2px',
+                            backgroundColor: (editingServiceId ? false : addingStep === 'dataSource') ? '#228be6' : '#e9ecef',
+                          }}
+                        />
+                        <Box
+                          style={{
+                            width: '8px',
+                            height: '8px',
+                            borderRadius: '50%',
+                            backgroundColor: (editingServiceId ? false : addingStep === 'dataSource') ? '#228be6' : '#e9ecef',
                           }}
                         />
                       </Group>
@@ -1319,14 +1481,15 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
                                 setNewChargingService(prev => ({ ...prev, name: value }));
                               }}
                             />
-                            <TextInput
-                              label="充電站品牌"
-                              placeholder="請輸入品牌名稱"
-                              value={newChargingService.brand || ''}
-                              onChange={(e) => {
-                                const value = e.currentTarget.value;
-                                setNewChargingService(prev => ({ ...prev, brand: value }));
+                            <Select
+                              label="營運業者品牌"
+                              placeholder="請選擇營運業者品牌"
+                              data={operatorBrandOptions}
+                              value={newChargingService.brand || null}
+                              onChange={(value) => {
+                                setNewChargingService(prev => ({ ...prev, brand: value || '' }));
                               }}
+                              clearable
                             />
                           </Group>
 
@@ -1361,8 +1524,8 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
                           />
 
                           <Textarea
-                            label="備註"
-                            placeholder="請輸入備註資訊"
+                            label="小編精選資訊"
+                            placeholder="請輸入特色說明、使用建議或貼心提醒等精選資訊"
                             value={newChargingService.remarks || ''}
                             onChange={(e) => {
                               const value = e.currentTarget.value;
@@ -1432,7 +1595,7 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
                           </Group>
 
                           {/* 營業日設定 */}
-                          <Box style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                          <Box>
                             <Stack gap="xs">
                               {weekDays.map((day) => {
                                 const hasSchedule = operatingHours[day.value];
@@ -1532,7 +1695,47 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
                             <Button variant="outline" onClick={handlePrevStep}>
                               上一步
                             </Button>
-                            <Button onClick={editingServiceId ? handleUpdateService : handleAddChargingService}>
+                            <Button onClick={handleNextStep}>
+                              下一步：選擇資料來源
+                            </Button>
+                          </Group>
+                        </Stack>
+                      )}
+
+                      {/* 第三階段：資料來源選擇 */}
+                      {(editingServiceId ? editingStep : addingStep) === 'dataSource' && (
+                        <Stack gap="lg">
+                          
+                          <Select
+                            label="資料來源"
+                            placeholder="請選擇充電樁/槍的資料來源"
+                            data={dataSourceOptions}
+                            value={dataSource}
+                            onChange={(value) => setDataSource(value || '')}
+                            size="md"
+                            description="選擇如何建立充電樁/槍資料。手動新增：自行輸入詳細資訊；API來源：自動同步外部資料"
+                          />
+
+                          {dataSource && (
+                            <Box p="md" style={{ backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
+                              <Text size="sm" fw={600} mb="xs">資料來源說明：</Text>
+                              <Text size="sm" c="dimmed">
+                                {dataSource === '手動新增' && '您可以完全自訂充電樁和充電槍的所有規格和參數'}
+                                {dataSource === 'TDX' && '交通資料流通服務平臺 - 政府開放資料，包含全台公共充電站資訊'}
+                                {dataSource === '好友電' && '好友電充電站網路 - 提供民營充電站詳細資訊和即時狀態'}
+                                {dataSource === '用愛發電' && '用愛發電社群平台 - 社群維護的充電站資訊和使用者評價'}
+                              </Text>
+                            </Box>
+                          )}
+
+                          <Group justify="space-between" mt="lg">
+                            <Button variant="outline" onClick={handlePrevStep}>
+                              上一步
+                            </Button>
+                            <Button 
+                              onClick={editingServiceId ? handleUpdateService : handleAddChargingService}
+                              disabled={!dataSource}
+                            >
                               {editingServiceId ? '完成編輯充電服務' : '完成新增充電服務'}
                             </Button>
                           </Group>
