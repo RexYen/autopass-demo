@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { 
   Stack, 
   NavLink,
@@ -19,7 +19,7 @@ const autopassLogo = "/autopass.png"
 
 interface NavigationProps {
   currentView?: string;
-  onNavigate?: (view: 'vendor-list' | 'map-management' | 'store-management' | 'task-management') => void;
+  onNavigate?: (view: 'welcome' | 'vendor-list' | 'map-management' | 'store-management' | 'task-management') => void;
 }
 
 export function Navigation({ currentView, onNavigate }: NavigationProps) {
@@ -34,19 +34,27 @@ export function Navigation({ currentView, onNavigate }: NavigationProps) {
         return 'stores';
       case 'task-management':
         return 'tasks';
+      case 'welcome':
+        return 'none'; // 首頁時不高亮任何選項
       default:
-        return 'vendors';
+        return 'none';
     }
   };
 
   const [active, setActive] = useState(getActiveKey())
 
+  // 同步 active 狀態與 currentView
+  React.useEffect(() => {
+    setActive(getActiveKey());
+  }, [currentView]);
+
   return (
     <Stack gap={0} h="100%" style={{ height: '901px' }}>
-      {/* Logo 區域 - 純展示，不可點擊 */}
+      {/* Logo 區域 - 可點擊返回首頁 */}
       <Box
         mx="12px"
         mb="0"
+        onClick={() => onNavigate?.('welcome')}
         style={{
           height: '56px',
           display: 'flex',
@@ -59,6 +67,7 @@ export function Navigation({ currentView, onNavigate }: NavigationProps) {
           maxWidth: '216px',
           minWidth: '192px', // 設定最小寬度避免太窄
           overflow: 'hidden', // 防止內容溢出
+          cursor: 'pointer',
         }}
       >
         <img 

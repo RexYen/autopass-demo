@@ -267,7 +267,45 @@ const mockMapResources = [
 ]
 
 const serviceTypeOptions = ['停車場', '充電站']
-const statusOptions = ['營運中', '維護中', '停用']
+const statusOptions = ['營運中', '維護中', '暫停營運']
+
+// 使用 Haversine 公式計算兩個經緯度座標之間的距離（公尺）
+const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+  const R = 6371e3; // 地球半徑（公尺）
+  const φ1 = (lat1 * Math.PI) / 180; // φ, λ in radians
+  const φ2 = (lat2 * Math.PI) / 180;
+  const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+  const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+
+  const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+    Math.cos(φ1) * Math.cos(φ2) *
+    Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c; // 距離（公尺）
+}
+
+// 解析搜尋輸入是否為經緯度格式
+const parseCoordinates = (input: string): { lat: number; lng: number } | null => {
+  // 支援多種格式：
+  // 25.0330, 121.5654
+  // 25.0330,121.5654
+  // 25.0330 121.5654
+  const coordRegex = /^(-?\d+\.?\d*)[,\s]+(-?\d+\.?\d*)$/;
+  const match = input.trim().match(coordRegex);
+  
+  if (match) {
+    const lat = parseFloat(match[1]);
+    const lng = parseFloat(match[2]);
+    
+    // 基本範圍檢查（台灣地區）
+    if (lat >= 21 && lat <= 26 && lng >= 119 && lng <= 123) {
+      return { lat, lng };
+    }
+  }
+  
+  return null;
+}
 
 interface MapManagementProps {
   onViewDetail?: (resourceId: number) => void;
@@ -275,7 +313,7 @@ interface MapManagementProps {
 
 export function MapManagement({ onViewDetail }: MapManagementProps) {
   const [currentPage, setCurrentPage] = useState(1);
-  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('map');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterServiceType, setFilterServiceType] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
@@ -300,14 +338,52 @@ export function MapManagement({ onViewDetail }: MapManagementProps) {
   
   const { showSuccess } = useNotification();
 
-  const filteredResources = mockMapResources.filter(resource => {
-    const matchesSearch = resource.placeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         resource.address.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesServiceType = !filterServiceType || resource.serviceTypes.includes(filterServiceType);
-    const matchesStatus = !filterStatus || resource.status === filterStatus;
+  // 使用 useMemo 穩健地處理搜尋邏輯
+  const searchResult = React.useMemo(() => {
+    // 解析搜尋輸入
+    const coordinates = searchTerm.trim() ? parseCoordinates(searchTerm) : null;
+    const isCoordinateSearch = coordinates !== null;
     
-    return matchesSearch && matchesServiceType && matchesStatus;
-  });
+    // 篩選和處理資源
+    const filtered = mockMapResources.map(resource => {
+      let distance: number | undefined = undefined;
+      let matchesSearch = false;
+      
+      if (!searchTerm.trim()) {
+        matchesSearch = true;
+      } else if (isCoordinateSearch) {
+        // 經緯度搜尋
+        distance = calculateDistance(
+          coordinates!.lat, 
+          coordinates!.lng, 
+          resource.latitude, 
+          resource.longitude
+        );
+        matchesSearch = distance <= 30; // 30公尺範圍
+      } else {
+        // 文字搜尋
+        matchesSearch = resource.placeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                       resource.address.toLowerCase().includes(searchTerm.toLowerCase());
+      }
+      
+      const matchesServiceType = !filterServiceType || resource.serviceTypes.includes(filterServiceType);
+      const matchesStatus = !filterStatus || resource.status === filterStatus;
+      
+      return {
+        ...resource,
+        searchDistance: distance,
+        matches: matchesSearch && matchesServiceType && matchesStatus
+      };
+    }).filter(resource => resource.matches);
+    
+    return {
+      resources: filtered,
+      searchCoordinates: coordinates,
+      isCoordinateSearch
+    };
+  }, [searchTerm, filterServiceType, filterStatus]);
+
+  const filteredResources = searchResult.resources;
 
   const handleResourceSelect = (resourceId: number, checked: boolean) => {
     if (checked) {
@@ -545,12 +621,12 @@ export function MapManagement({ onViewDetail }: MapManagementProps) {
         <Group gap="16px" align="end">
           {/* Search */}
           <TextInput
-            placeholder="請輸入場所名稱或地址"
+            placeholder="請輸入場所名稱、地址或經緯度 (如: 25.0330, 121.5654)"
             leftSection={<IconSearch size={16} />}
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.currentTarget.value)}
             style={{ 
-              maxWidth: '321px',
+              maxWidth: '420px',
               width: '100%'
             }}
             styles={{
@@ -697,7 +773,7 @@ export function MapManagement({ onViewDetail }: MapManagementProps) {
                   <Table.Th style={{ width: '30%' }}>地址</Table.Th>
                   <Table.Th style={{ width: '15%' }}>經緯度</Table.Th>
                   <Table.Th style={{ width: '15%' }}>服務類型</Table.Th>
-                  <Table.Th style={{ width: '10%' }}>營運狀態</Table.Th>
+                  <Table.Th style={{ width: '10%', textAlign: 'center' }}>營運狀態</Table.Th>
                   <Table.Th style={{ width: '5%' }}>操作</Table.Th>
                 </Table.Tr>
               </Table.Thead>
@@ -741,17 +817,32 @@ export function MapManagement({ onViewDetail }: MapManagementProps) {
                       </Text>
                     </Table.Td>
                     <Table.Td>
-                      <Text 
-                        style={{
-                          color: '#000000',
-                          fontSize: '14px',
-                          lineHeight: '20px',
-                          fontFamily: 'Noto Sans TC, sans-serif',
-                          fontWeight: 400,
-                        }}
-                      >
-                        {resource.coordinates}
-                      </Text>
+                      <div>
+                        <Text 
+                          style={{
+                            color: '#000000',
+                            fontSize: '14px',
+                            lineHeight: '20px',
+                            fontFamily: 'Noto Sans TC, sans-serif',
+                            fontWeight: 400,
+                          }}
+                        >
+                          {resource.coordinates}
+                        </Text>
+                        {resource.searchDistance !== undefined && (
+                          <Text 
+                            size="xs"
+                            style={{
+                              color: '#228be6',
+                              fontSize: '12px',
+                              fontWeight: 500,
+                              marginTop: '2px',
+                            }}
+                          >
+                            距離 {Math.round(resource.searchDistance)}m
+                          </Text>
+                        )}
+                      </div>
                     </Table.Td>
                     <Table.Td>
                       <Group gap="4px" wrap="wrap">
@@ -790,17 +881,27 @@ export function MapManagement({ onViewDetail }: MapManagementProps) {
                           justifyContent: 'center',
                         }}
                       >
-                        <div
-                          style={{
-                            width: '12px',
-                            height: '12px',
-                            borderRadius: '50%',
-                            backgroundColor: 
-                              resource.status === '營運中' ? '#12b886' : 
-                              resource.status === '維護中' ? '#fab005' : '#fa5252',
+                        <Badge
+                          variant="dot"
+                          color={
+                            resource.status === '營運中' ? 'green' : 
+                            resource.status === '維護中' ? 'yellow' : 'red'
+                          }
+                          size="sm"
+                          styles={{
+                            root: {
+                              backgroundColor: 'transparent',
+                              border: 'none',
+                              padding: '0',
+                              fontSize: '12px',
+                              fontWeight: 400,
+                              color: '#212529',
+                              fontFamily: 'Noto Sans TC, sans-serif',
+                            },
                           }}
-                          title={resource.status}
-                        />
+                        >
+                          {resource.status}
+                        </Badge>
                       </div>
                     </Table.Td>
                     <Table.Td>
@@ -832,16 +933,30 @@ export function MapManagement({ onViewDetail }: MapManagementProps) {
               flexShrink: 0,
             }}
           >
-            <Text 
-              style={{
-                color: '#868e96',
-                fontSize: '14px',
-                lineHeight: '20px',
-                fontFamily: 'Noto Sans TC, sans-serif',
-              }}
-            >
-              顯示 1 - {filteredResources.length} 筆圖資，共 {mockMapResources.length} 筆
-            </Text>
+            <div>
+              <Text 
+                style={{
+                  color: '#868e96',
+                  fontSize: '14px',
+                  lineHeight: '20px',
+                  fontFamily: 'Noto Sans TC, sans-serif',
+                }}
+              >
+                顯示 1 - {filteredResources.length} 筆圖資，共 {mockMapResources.length} 筆
+              </Text>
+              {searchResult.searchCoordinates && (
+                <Text 
+                  size="xs"
+                  style={{
+                    color: '#228be6',
+                    fontSize: '12px',
+                    marginTop: '2px',
+                  }}
+                >
+                  📍 經緯度搜尋範圍：{searchResult.searchCoordinates.lat}, {searchResult.searchCoordinates.lng} 周邊 30 公尺
+                </Text>
+              )}
+            </div>
             <Pagination 
               total={Math.ceil(filteredResources.length / 10)} 
               value={currentPage}

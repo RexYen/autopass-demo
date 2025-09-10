@@ -7,12 +7,13 @@ import { MapManagement } from './components/MapManagement'
 import { StoreManagement } from './components/StoreManagement'
 import { TaskManagement } from './components/TaskManagement'
 import { Navigation } from './components/Navigation'
+import { Welcome } from './components/Welcome'
 import { NotificationProvider } from './hooks/useNotification'
 
-type CurrentView = 'vendor-list' | 'vendor-detail' | 'map-management' | 'store-management' | 'task-management'
+type CurrentView = 'welcome' | 'vendor-list' | 'vendor-detail' | 'map-management' | 'store-management' | 'task-management'
 
 function App() {
-  const [currentView, setCurrentView] = useState<CurrentView>('vendor-list');
+  const [currentView, setCurrentView] = useState<CurrentView>('welcome');
   const [selectedVendorName, setSelectedVendorName] = useState<string>('');
   const [isNewVendor, setIsNewVendor] = useState<boolean>(false);
 
@@ -38,6 +39,8 @@ function App() {
 
   const renderMainContent = () => {
     switch (currentView) {
+      case 'welcome':
+        return <Welcome onNavigate={handleNavigate} />;
       case 'vendor-detail':
         return (
           <VendorDetail 
@@ -69,8 +72,10 @@ function App() {
             console.log('Navigate to store detail:', storeId);
           }}
         />;
-      default:
+      case 'vendor-list':
         return <VendorManagement onViewVendor={handleViewVendor} />;
+      default:
+        return <Welcome onNavigate={handleNavigate} />;
     }
   };
 
