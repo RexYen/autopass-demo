@@ -13,7 +13,7 @@ import {
   ActionIcon,
   Tabs,
   Modal,
-  Radio,
+  Tooltip,
 } from '@mantine/core'
 import {
   IconArrowLeft,
@@ -27,10 +27,38 @@ import {
   IconGasStation,
   IconTool,
   IconSpray,
+  IconNote,
+  IconPhoto,
+  IconPlus,
+  IconX,
+  IconUpload,
 } from '@tabler/icons-react'
 
 import { useState } from 'react'
 import { useNotification } from '../hooks/useNotification'
+
+// 充電槍選項
+const connectorTypeOptions = [
+  'CCS1',
+  'CCS2', 
+  'Tesla TPC',
+  'CHAdeMO',
+  'Type 1',
+  'Type 2'
+]
+
+const connectorStatusOptions = [
+  'Unknown',
+  'AVAILABLE',
+  'PREPARING', 
+  'CHARGING',
+  'FAULTED'
+]
+
+const powerOutputOptions = [
+  'AC',
+  'DC'
+]
 
 interface PlaceDetailProps {
   place: {
@@ -44,6 +72,7 @@ interface PlaceDetailProps {
     serviceTypes: string[]
     status: string
     createdAt: string
+    photos?: string[]
   }
   onBack: () => void
 }
@@ -78,35 +107,7 @@ interface ChargingConnector {
   supportsEVCCID: boolean
 }
 
-interface TempChargingConnector extends Partial<ChargingConnector> {
-  serviceId?: string
-  evseId?: string
-}
 
-// 充電槍規格選項
-const connectorTypeOptions = [
-  'CCS1',
-  'CCS2', 
-  'Tesla TPC',
-  'CHAdeMO',
-  'Type 1',
-  'Type 2'
-]
-
-// 充電槍狀態選項
-const connectorStatusOptions = [
-  'Unknown',
-  'AVAILABLE',
-  'PREPARING', 
-  'CHARGING',
-  'FAULTED'
-]
-
-// 電力輸出方式選項
-const powerOutputOptions = [
-  'AC',
-  'DC'
-]
 
 // 服務狀態選項
 const serviceStatusOptions = [
@@ -161,12 +162,34 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
   const [chargingServices, setChargingServices] = useState<ChargingService[]>([])
   const [isAddingChargingService, setIsAddingChargingService] = useState(false)
   const [addingStep, setAddingStep] = useState<'basic' | 'schedule' | 'dataSource'>('basic')
+  
+  // 地點圖片管理
+  const [placePhotos, setPlacePhotos] = useState<string[]>(place.photos || [])
+  // 如果是空值（新地點），預設為編輯模式；有資料則為查看模式
+  const [isEditingPhotos, setIsEditingPhotos] = useState((place.photos || []).length === 0)
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null)
   const [editingStep, setEditingStep] = useState<'basic' | 'schedule' | 'dataSource'>('basic')
-  const [editingEVSEId, setEditingEVSEId] = useState<string | null>(null)
-  const [editingConnectorId, setEditingConnectorId] = useState<string | null>(null)
-  const [tempEVSE, setTempEVSE] = useState<Partial<EVSE>>({})
-  const [tempConnector, setTempConnector] = useState<TempChargingConnector>({})
+  
+  // 充電樁管理狀態
+  const [isAddingEVSE, setIsAddingEVSE] = useState(false)
+  const [addingEVSEServiceId, setAddingEVSEServiceId] = useState<string | null>(null)
+  const [newEVSE, setNewEVSE] = useState<Partial<EVSE>>({
+    floor: ''
+  })
+
+  // 充電槍管理狀態
+  const [isAddingConnector, setIsAddingConnector] = useState(false)
+  const [addingConnectorServiceId, setAddingConnectorServiceId] = useState<string | null>(null)
+  const [addingConnectorEVSEId, setAddingConnectorEVSEId] = useState<string | null>(null)
+  const [newConnector, setNewConnector] = useState<Partial<ChargingConnector>>({
+    connectorNumber: '',
+    connectorType: 'Type 2',
+    status: 'Unknown',
+    powerKw: 22,
+    chargingRate: '',
+    powerOutput: 'AC',
+    supportsEVCCID: false
+  })
   // const [expandedService, setExpandedService] = useState<string | null>(null) // Tab設計不需要
   
   const { showSuccess } = useNotification()
@@ -355,60 +378,80 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
     showSuccess('充電服務已更新', '更新成功')
   }
 
-  const handleAddEVSE = (_serviceId: string) => {
-    const newEVSE: EVSE = {
+  // 充電樁管理函數
+  const handleAddEVSE = (serviceId: string) => {
+    setAddingEVSEServiceId(serviceId)
+    setIsAddingEVSE(true)
+  }
+
+  const handleSaveEVSE = () => {
+    if (!newEVSE.floor || !addingEVSEServiceId) return
+
+    const evse: EVSE = {
       id: Date.now().toString(),
-      floor: '',
+      floor: newEVSE.floor,
       connectors: []
     }
-    setTempEVSE(newEVSE)
-    setEditingEVSEId(newEVSE.id)
-  }
 
-  const handleSaveEVSE = (serviceId: string) => {
-    if (!tempEVSE.floor || !tempEVSE.id) return
-    
     setChargingServices(prev => prev.map(service => 
-      service.id === serviceId 
-        ? { ...service, evses: [...service.evses, tempEVSE as EVSE] }
+      service.id === addingEVSEServiceId 
+        ? { ...service, evses: [...service.evses, evse] }
         : service
     ))
-    setEditingEVSEId(null)
-    setTempEVSE({})
-    showSuccess('充電樁已儲存', '儲存成功')
-  }
-
-  const handleEditEVSE = (_serviceId: string, evse: EVSE) => {
-    setTempEVSE(evse)
-    setEditingEVSEId(evse.id)
-  }
-
-  const handleUpdateEVSE = (serviceId: string) => {
-    if (!tempEVSE.floor || !tempEVSE.id) return
     
+    handleCloseEVSEModal()
+    showSuccess('充電樁已新增', '新增成功')
+  }
+
+  const handleCloseEVSEModal = () => {
+    setIsAddingEVSE(false)
+    setAddingEVSEServiceId(null)
+    setNewEVSE({ floor: '' })
+  }
+
+  // 充電槍管理函數
+  const handleAddConnector = (serviceId: string, evseId: string) => {
+    setAddingConnectorServiceId(serviceId)
+    setAddingConnectorEVSEId(evseId)
+    setIsAddingConnector(true)
+  }
+
+  const handleSaveConnector = () => {
+    if (!newConnector.connectorNumber || !addingConnectorServiceId || !addingConnectorEVSEId) return
+
+    const connector: ChargingConnector = {
+      id: Date.now().toString(),
+      connectorNumber: newConnector.connectorNumber,
+      connectorType: newConnector.connectorType || 'Type 2',
+      status: newConnector.status || 'Unknown',
+      powerKw: newConnector.powerKw || 22,
+      chargingRate: newConnector.chargingRate || '',
+      powerOutput: newConnector.powerOutput || 'AC',
+      supportsEVCCID: newConnector.supportsEVCCID || false
+    }
+
     setChargingServices(prev => prev.map(service => 
-      service.id === serviceId 
+      service.id === addingConnectorServiceId 
         ? {
             ...service,
             evses: service.evses.map(evse =>
-              evse.id === tempEVSE.id ? tempEVSE as EVSE : evse
+              evse.id === addingConnectorEVSEId
+                ? { ...evse, connectors: [...evse.connectors, connector] }
+                : evse
             )
           }
         : service
     ))
-    setEditingEVSEId(null)
-    setTempEVSE({})
-    showSuccess('充電樁已更新', '更新成功')
+    
+    handleCloseConnectorModal()
+    showSuccess('充電槍已新增', '新增成功')
   }
 
-  const handleCancelEVSE = () => {
-    setEditingEVSEId(null)
-    setTempEVSE({})
-  }
-
-  const handleAddConnector = (serviceId: string, evseId: string) => {
-    const newConnector: ChargingConnector = {
-      id: Date.now().toString(),
+  const handleCloseConnectorModal = () => {
+    setIsAddingConnector(false)
+    setAddingConnectorServiceId(null)
+    setAddingConnectorEVSEId(null)
+    setNewConnector({
       connectorNumber: '',
       connectorType: 'Type 2',
       status: 'Unknown',
@@ -416,109 +459,40 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
       chargingRate: '',
       powerOutput: 'AC',
       supportsEVCCID: false
-    }
-    setTempConnector({ ...newConnector, serviceId, evseId })
-    setEditingConnectorId(newConnector.id)
+    })
   }
 
-  const handleSaveConnector = (serviceId: string, evseId: string) => {
-    if (!tempConnector.connectorNumber || !tempConnector.id) return
+  // 圖片管理函數
+  const handleEditPhotos = () => {
+    setIsEditingPhotos(true)
+  }
+
+  const handleSavePhotos = () => {
+    // TODO: 實際的儲存邏輯到後端
+    setIsEditingPhotos(false)
+    showSuccess('圖片已儲存', '儲存成功')
+  }
+
+  const handleCancelEditPhotos = () => {
+    // 重置回原始狀態
+    setPlacePhotos(place.photos || [])
+    setIsEditingPhotos(false)
+  }
+
+  const handleAddPhoto = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!isEditingPhotos) return
     
-    setChargingServices(prev => prev.map(service => 
-      service.id === serviceId 
-        ? {
-            ...service,
-            evses: service.evses.map(evse =>
-              evse.id === evseId
-                ? { ...evse, connectors: [...evse.connectors, tempConnector as ChargingConnector] }
-                : evse
-            )
-          }
-        : service
-    ))
-    setEditingConnectorId(null)
-    setTempConnector({})
-    showSuccess('充電槍已儲存', '儲存成功')
+    const files = event.target.files
+    if (files) {
+      const newPhotos = Array.from(files).map(file => URL.createObjectURL(file))
+      setPlacePhotos(prev => [...prev, ...newPhotos])
+    }
   }
 
-  const handleEditConnector = (serviceId: string, evseId: string, connector: ChargingConnector) => {
-    setTempConnector({ ...connector, serviceId, evseId })
-    setEditingConnectorId(connector.id)
-  }
-
-  const handleUpdateConnector = (serviceId: string, evseId: string) => {
-    if (!tempConnector.connectorNumber || !tempConnector.id) return
+  const handleRemovePhoto = (index: number) => {
+    if (!isEditingPhotos) return
     
-    setChargingServices(prev => prev.map(service => 
-      service.id === serviceId 
-        ? {
-            ...service,
-            evses: service.evses.map(evse =>
-              evse.id === evseId
-                ? {
-                    ...evse,
-                    connectors: evse.connectors.map(connector =>
-                      connector.id === tempConnector.id ? tempConnector as ChargingConnector : connector
-                    )
-                  }
-                : evse
-            )
-          }
-        : service
-    ))
-    setEditingConnectorId(null)
-    setTempConnector({})
-    showSuccess('充電槍已更新', '更新成功')
-  }
-
-  const handleCancelConnector = () => {
-    setEditingConnectorId(null)
-    setTempConnector({})
-  }
-
-  const updateEVSE = (serviceId: string, evseId: string, field: keyof EVSE, value: string) => {
-    if (editingEVSEId === evseId) {
-      setTempEVSE(prev => ({ ...prev, [field]: value }))
-    } else {
-      setChargingServices(prev => prev.map(service => 
-        service.id === serviceId 
-          ? {
-              ...service,
-              evses: service.evses.map(evse =>
-                evse.id === evseId
-                  ? { ...evse, [field]: value }
-                  : evse
-              )
-            }
-          : service
-      ))
-    }
-  }
-
-  const updateConnector = (serviceId: string, evseId: string, connectorId: string, field: keyof ChargingConnector, value: string | number | boolean) => {
-    if (editingConnectorId === connectorId) {
-      setTempConnector(prev => ({ ...prev, [field]: value }))
-    } else {
-      setChargingServices(prev => prev.map(service => 
-        service.id === serviceId 
-          ? {
-              ...service,
-              evses: service.evses.map(evse =>
-                evse.id === evseId
-                  ? {
-                      ...evse,
-                      connectors: evse.connectors.map(connector =>
-                        connector.id === connectorId
-                          ? { ...connector, [field]: value }
-                          : connector
-                      )
-                    }
-                  : evse
-              )
-            }
-          : service
-      ))
-    }
+    setPlacePhotos(prev => prev.filter((_, i) => i !== index))
   }
 
   return (
@@ -567,833 +541,877 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
       {/* Content */}
       <Box style={{ flex: 1, overflow: 'auto' }}>
         <Stack gap="32px" p="20px">
-          {/* 基本地點資訊 */}
-          <Card withBorder radius="8px" shadow="sm" bg="#e3f2fd">
-            <Stack gap="24px">
+          {/* 基本地點資訊 - 現代化設計 */}
+          <Card withBorder radius="12px" shadow="xs" bg="#ffffff" style={{ 
+            border: '1px solid #f1f3f4',
+            overflow: 'hidden'
+          }}>
+            {/* Header Section */}
+            <Box style={{
+              backgroundColor: '#ffffff',
+              padding: '24px',
+              borderBottom: '1px solid #f1f3f4'
+            }}>
               <Group justify="space-between" align="flex-start">
-                <Group gap="12px">
+                <Group gap="16px" align="flex-start">
                   <Box
                     style={{
-                      padding: '8px',
-                      borderRadius: '8px',
-                      backgroundColor: '#228be6',
+                      padding: '12px',
+                      borderRadius: '12px',
+                      backgroundColor: '#f0f9ff',
+                      border: '1px solid #e0f2fe',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
                     }}
                   >
-                    <IconMapPin size={24} color="#ffffff" />
+                    <IconMapPin size={24} color="#0284c7" />
                   </Box>
-                  <Box>
-                    <Title order={2} style={{ color: '#212529' }}>
+                  <div>
+                    <Title order={2} style={{ 
+                      color: '#1e293b',
+                      fontSize: '24px',
+                      fontWeight: 700,
+                      marginBottom: '4px'
+                    }}>
                       {place.placeName}
                     </Title>
-                  </Box>
+                    <Text size="sm" style={{ 
+                      color: '#64748b',
+                      fontWeight: 500
+                    }}>
+                      地點管理 • {place.serviceTypes?.join('、') || '暫無服務'}
+                    </Text>
+                  </div>
                 </Group>
                 
                 <Badge
                   size="lg"
+                  radius="xl"
                   styles={{
                     root: {
-                      backgroundColor: place.status === '營運中' ? '#51cf66' : 
-                                     place.status === '維護中' ? '#ffd43b' : '#ff6b6b',
-                      color: '#fff',
+                      backgroundColor: place.status === '營運中' ? '#dcfce7' : 
+                                     place.status === '維護中' ? '#fef3c7' : '#fee2e2',
+                      color: place.status === '營運中' ? '#166534' : 
+                             place.status === '維護中' ? '#92400e' : '#dc2626',
                       padding: '8px 16px',
-                      fontSize: '14px',
+                      fontSize: '13px',
                       fontWeight: 600,
+                      border: `1px solid ${place.status === '營運中' ? '#bbf7d0' : 
+                                          place.status === '維護中' ? '#fde68a' : '#fecaca'}`,
                     },
                   }}
                 >
                   {place.status}
                 </Badge>
               </Group>
-              
-              {/* 資訊網格 */}
+            </Box>
+
+            {/* Information Grid */}
+            <Box p="24px">
               <div style={{ 
                 display: 'grid', 
-                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', 
+                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
                 gap: '20px' 
               }}>
-                <Box 
-                  style={{
-                    backgroundColor: '#ffffff',
-                    borderRadius: '8px',
-                    padding: '16px',
-                    border: '1px solid #bbdefb',
-                  }}
-                >
-                  <Text size="xs" fw={600} mb="8px" style={{ 
-                    color: '#868e96',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px'
+                {/* 地址位置 */}
+                <Box style={{
+                  padding: '20px',
+                  borderRadius: '12px',
+                  backgroundColor: '#f8fafc',
+                  border: '1px solid #e2e8f0'
+                }}>
+                  <Group gap="12px" mb="12px" align="center">
+                    <Box style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '8px',
+                      backgroundColor: '#e0f2fe',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      <IconMapPin size={16} color="#0369a1" />
+                    </Box>
+                    <Text size="sm" fw={600} style={{ 
+                      color: '#334155',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                      fontSize: '12px'
+                    }}>
+                      地址位置
+                    </Text>
+                  </Group>
+                  <Text size="sm" style={{ 
+                    color: '#1e293b', 
+                    lineHeight: '1.5',
+                    fontWeight: 500
                   }}>
-                    地址位置
-                  </Text>
-                  <Text size="sm" style={{ color: '#212529', lineHeight: '1.4' }}>
                     {place.address}
                   </Text>
                 </Box>
                 
-                <Box 
-                  style={{
-                    backgroundColor: '#ffffff',
-                    borderRadius: '8px',
-                    padding: '16px',
-                    border: '1px solid #bbdefb',
-                  }}
-                >
-                  <Text size="xs" fw={600} mb="8px" style={{ 
-                    color: '#868e96',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px'
-                  }}>
-                    座標位置
-                  </Text>
-                  <Group gap="8px">
-                    <Text size="sm" style={{ color: '#212529' }}>
+                {/* 座標位置 */}
+                <Box style={{
+                  padding: '20px',
+                  borderRadius: '12px',
+                  backgroundColor: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                }}>
+                  <Group gap="12px" mb="12px" align="center">
+                    <Box style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '8px',
+                      backgroundColor: '#f0f9ff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      <IconWorld size={16} color="#0284c7" />
+                    </Box>
+                    <Text size="sm" fw={600} style={{ 
+                      color: '#334155',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                      fontSize: '12px'
+                    }}>
+                      座標位置
+                    </Text>
+                  </Group>
+                  <Group gap="12px" align="center">
+                    <Text size="sm" style={{ 
+                      color: '#1e293b',
+                      fontWeight: 500,
+                      fontFamily: 'monospace'
+                    }}>
                       {place.coordinates}
                     </Text>
                     <Button
                       size="xs"
                       variant="light"
                       color="blue"
+                      radius="xl"
                       onClick={() => window.open(place.streetViewUrl, '_blank')}
+                      style={{ fontSize: '11px' }}
                     >
                       查看街景
                     </Button>
                   </Group>
                 </Box>
 
-                <Box 
-                  style={{
-                    backgroundColor: '#ffffff',
-                    borderRadius: '8px',
-                    padding: '16px',
-                    border: '1px solid #bbdefb',
-                  }}
-                >
-                  <Text size="xs" fw={600} mb="8px" style={{ 
-                    color: '#868e96',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px'
+                {/* 建立時間 */}
+                <Box style={{
+                  padding: '20px',
+                  borderRadius: '12px',
+                  backgroundColor: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                }}>
+                  <Group gap="12px" mb="12px" align="center">
+                    <Box style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '8px',
+                      backgroundColor: '#fef3c7',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      <IconClock size={16} color="#d97706" />
+                    </Box>
+                    <Text size="sm" fw={600} style={{ 
+                      color: '#334155',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                      fontSize: '12px'
+                    }}>
+                      建立時間
+                    </Text>
+                  </Group>
+                  <Text size="sm" style={{ 
+                    color: '#1e293b',
+                    fontWeight: 500
                   }}>
-                    建立時間
-                  </Text>
-                  <Text size="sm" style={{ color: '#212529' }}>
                     {place.createdAt}
                   </Text>
                 </Box>
               </div>
+            </Box>
+          </Card>
+
+          {/* 地點圖片區域 */}
+          <Card withBorder radius="8px" shadow="sm" bg="#ffffff">
+            <Stack gap="md">
+              <Group justify="space-between" align="center">
+                <Group gap="sm">
+                  <IconPhoto size={20} color="#495057" />
+                  <Text size="md" fw={600} style={{ color: '#495057' }}>
+                    地點圖片
+                  </Text>
+                  <Text size="sm" c="dimmed">
+                    ({placePhotos.length}/10)
+                  </Text>
+                </Group>
+                
+                {/* 編輯/儲存按鈕 */}
+                {!isEditingPhotos ? (
+                  <Button
+                    size="sm"
+                    variant="light"
+                    onClick={handleEditPhotos}
+                  >
+                    編輯圖片
+                  </Button>
+                ) : (
+                  /* 編輯模式下，只有當有圖片時才顯示儲存按鈕 */
+                  placePhotos.length > 0 && (
+                    <Group gap="sm">
+                      {/* 只有在原本有圖片的情況下才顯示取消按鈕 */}
+                      {(place.photos || []).length > 0 && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={handleCancelEditPhotos}
+                        >
+                          取消
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="filled"
+                        color="blue"
+                        onClick={handleSavePhotos}
+                      >
+                        {(place.photos || []).length === 0 ? '儲存圖片' : '儲存變更'}
+                      </Button>
+                    </Group>
+                  )
+                )}
+              </Group>
+              
+              {/* 隱藏的檔案輸入 */}
+              <input
+                id="photo-upload"
+                type="file"
+                multiple
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={handleAddPhoto}
+              />
+              
+              {placePhotos.length === 0 ? (
+                <Card withBorder bg="#f8f9fa" style={{ 
+                  border: '2px dashed #dee2e6',
+                  borderRadius: '8px',
+                  textAlign: 'center',
+                  padding: '40px 20px'
+                }}>
+                  <Stack gap="md" align="center">
+                    <IconPhoto size={48} color="#868e96" />
+                    <Stack gap="xs" align="center">
+                      <Text size="md" fw={600} style={{ color: '#495057' }}>
+                        尚未上傳圖片
+                      </Text>
+                      <Text size="sm" style={{ color: '#6c757d' }}>
+                        為這個地點添加照片，讓使用者更容易找到位置
+                      </Text>
+                    </Stack>
+                    {isEditingPhotos && (
+                      <Button 
+                        leftSection={<IconUpload size={16} />}
+                        onClick={() => document.getElementById('photo-upload')?.click()}
+                        variant="light"
+                        size="sm"
+                      >
+                        立即上傳圖片
+                      </Button>
+                    )}
+                  </Stack>
+                </Card>
+              ) : (
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+                  gap: '12px'
+                }}>
+                  {placePhotos.map((photo, index) => (
+                    <Box
+                      key={index}
+                      style={{
+                        position: 'relative',
+                        borderRadius: '8px',
+                        overflow: 'hidden',
+                        backgroundColor: '#f8f9fa',
+                        border: '1px solid #dee2e6'
+                      }}
+                    >
+                      <img
+                        src={photo}
+                        alt={`地點照片 ${index + 1}`}
+                        style={{
+                          width: '100%',
+                          height: '120px',
+                          objectFit: 'cover',
+                          display: 'block'
+                        }}
+                      />
+                      {isEditingPhotos && (
+                        <ActionIcon
+                          variant="filled"
+                          color="red"
+                          size="sm"
+                          style={{
+                            position: 'absolute',
+                            top: '8px',
+                            right: '8px'
+                          }}
+                          onClick={() => handleRemovePhoto(index)}
+                        >
+                          <IconX size={12} />
+                        </ActionIcon>
+                      )}
+                    </Box>
+                  ))}
+                  
+                  {/* 新增圖片按鈕 - 僅在編輯模式顯示 */}
+                  {isEditingPhotos && placePhotos.length < 10 && (
+                    <Box
+                      style={{
+                        height: '120px',
+                        border: '2px dashed #adb5bd',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        backgroundColor: '#f8f9fa',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onClick={() => document.getElementById('photo-upload')?.click()}
+                    >
+                      <Stack align="center" gap="xs">
+                        <IconPlus size={24} color="#6c757d" />
+                        <Text size="xs" c="dimmed">新增圖片</Text>
+                      </Stack>
+                    </Box>
+                  )}
+                </div>
+              )}
             </Stack>
           </Card>
 
-          {/* 服務管理 */}
-          <div>
-            <Title order={4} mb="lg">服務管理</Title>
-            
-            <Tabs defaultValue="charging" variant="pills" radius="md">
-              <Tabs.List>
-                <Tabs.Tab value="charging" leftSection={<IconBolt size={16} />}>
-                  充電服務 {chargingServices.length > 0 && `(${chargingServices.length})`}
-                </Tabs.Tab>
-                <Tabs.Tab value="fueling" leftSection={<IconGasStation size={16} />}>
-                  加油服務
-                </Tabs.Tab>
-                <Tabs.Tab value="maintenance" leftSection={<IconTool size={16} />}>
-                  保修服務  
-                </Tabs.Tab>
-                <Tabs.Tab value="washing" leftSection={<IconSpray size={16} />}>
-                  洗車服務
-                </Tabs.Tab>
-                <Tabs.Tab value="parking" leftSection={<IconCar size={16} />}>
-                  停車服務
-                </Tabs.Tab>
-              </Tabs.List>
+          {/* 服務管理 - 側邊導航式設計 (方案D) */}
+          <Card withBorder radius="12px" shadow="xs" bg="#ffffff" style={{ 
+            border: '1px solid #f1f3f4',
+            overflow: 'hidden'
+          }}>
+            {/* Header Section */}
+            <Box style={{
+              backgroundColor: '#ffffff',
+              padding: '24px',
+              borderBottom: '1px solid #f1f3f4'
+            }}>
+              <Group gap="16px" align="center">
+                <Box
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '12px',
+                    backgroundColor: '#f0f9ff',
+                    border: '1px solid #e0f2fe',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <IconTool size={20} color="#0284c7" />
+                </Box>
+                <div>
+                  <Title order={3} style={{ 
+                    color: '#1e293b',
+                    fontSize: '20px',
+                    fontWeight: 700,
+                    marginBottom: '2px'
+                  }}>
+                    服務管理
+                  </Title>
+                  <Text size="sm" style={{ 
+                    color: '#64748b',
+                    fontWeight: 500
+                  }}>
+                    管理此地點提供的各種服務
+                  </Text>
+                </div>
+              </Group>
+            </Box>
 
-              <Tabs.Panel value="charging" pt="lg">
-                <Stack gap="xl">
-                  {/* 充電服務詳細管理區域 */}
+            {/* Sidebar Navigation + Content Area */}
+            <Tabs defaultValue="charging" orientation="vertical" variant="default">
+              <Box style={{ display: 'flex', minHeight: '500px' }}>
+                {/* Sidebar Navigation */}
+                <Box style={{
+                  width: '240px',
+                  backgroundColor: '#f8fafc',
+                  borderRight: '1px solid #f1f3f4',
+                  flexShrink: 0
+                }}>
+                  <Tabs.List style={{
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    padding: '16px',
+                    gap: '4px'
+                  }}>
+                    <Tabs.Tab 
+                      value="charging" 
+                      leftSection={<IconBolt size={18} />}
+                      style={{
+                        width: '100%',
+                        justifyContent: 'flex-start',
+                        padding: '12px 16px',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        borderRadius: '8px',
+                        color: '#374151',
+                        backgroundColor: 'transparent',
+                        '&[data-active]': {
+                          backgroundColor: '#ffffff',
+                          color: '#0284c7',
+                          borderColor: '#e0f2fe',
+                          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+                        },
+                        '&:hover': {
+                          backgroundColor: '#ffffff'
+                        }
+                      }}
+                    >
+                      充電服務 {chargingServices.length > 0 && (
+                        <Badge size="sm" variant="light" color="blue" style={{ marginLeft: 'auto' }}>
+                          {chargingServices.length}
+                        </Badge>
+                      )}
+                    </Tabs.Tab>
+                    
+                    <Tabs.Tab 
+                      value="fueling" 
+                      leftSection={<IconGasStation size={18} />}
+                      style={{
+                        width: '100%',
+                        justifyContent: 'flex-start',
+                        padding: '12px 16px',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        borderRadius: '8px',
+                        color: '#374151',
+                        backgroundColor: 'transparent',
+                        '&[data-active]': {
+                          backgroundColor: '#ffffff',
+                          color: '#0284c7',
+                          borderColor: '#e0f2fe',
+                          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+                        },
+                        '&:hover': {
+                          backgroundColor: '#ffffff'
+                        }
+                      }}
+                    >
+                      加油服務
+                    </Tabs.Tab>
+                    
+                    <Tabs.Tab 
+                      value="maintenance" 
+                      leftSection={<IconTool size={18} />}
+                      style={{
+                        width: '100%',
+                        justifyContent: 'flex-start',
+                        padding: '12px 16px',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        borderRadius: '8px',
+                        color: '#374151',
+                        backgroundColor: 'transparent',
+                        '&[data-active]': {
+                          backgroundColor: '#ffffff',
+                          color: '#0284c7',
+                          borderColor: '#e0f2fe',
+                          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+                        },
+                        '&:hover': {
+                          backgroundColor: '#ffffff'
+                        }
+                      }}
+                    >
+                      保修服務
+                    </Tabs.Tab>
+                    
+                    <Tabs.Tab 
+                      value="washing" 
+                      leftSection={<IconSpray size={18} />}
+                      style={{
+                        width: '100%',
+                        justifyContent: 'flex-start',
+                        padding: '12px 16px',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        borderRadius: '8px',
+                        color: '#374151',
+                        backgroundColor: 'transparent',
+                        '&[data-active]': {
+                          backgroundColor: '#ffffff',
+                          color: '#0284c7',
+                          borderColor: '#e0f2fe',
+                          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+                        },
+                        '&:hover': {
+                          backgroundColor: '#ffffff'
+                        }
+                      }}
+                    >
+                      洗車服務
+                    </Tabs.Tab>
+                    
+                    <Tabs.Tab 
+                      value="parking" 
+                      leftSection={<IconCar size={18} />}
+                      style={{
+                        width: '100%',
+                        justifyContent: 'flex-start',
+                        padding: '12px 16px',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        borderRadius: '8px',
+                        color: '#374151',
+                        backgroundColor: 'transparent',
+                        '&[data-active]': {
+                          backgroundColor: '#ffffff',
+                          color: '#0284c7',
+                          borderColor: '#e0f2fe',
+                          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+                        },
+                        '&:hover': {
+                          backgroundColor: '#ffffff'
+                        }
+                      }}
+                    >
+                      停車服務
+                    </Tabs.Tab>
+                  </Tabs.List>
+                </Box>
+
+                {/* Content Area */}
+                <Box style={{ 
+                  flex: 1, 
+                  backgroundColor: '#ffffff',
+                  padding: '24px'
+                }}>
+                  <Tabs.Panel value="charging">
+                    <Stack gap="xl">
+                  {/* 充電服務 Dashboard 型卡片 */}
                   {chargingServices.map((service) => (
                     <Card key={service.id} withBorder radius="8px" bg="#ffffff" style={{ border: '1px solid #e9ecef' }}>
-                      <Stack gap="lg">
-                        {/* 充電服務標題區塊 */}
-                        <Group justify="space-between" align="flex-start">
-                          <Group align="center">
-                            <Box
-                              style={{
-                                padding: '10px',
-                                borderRadius: '8px',
-                                backgroundColor: '#e3f2fd',
-                              }}
-                            >
-                              <IconBolt size={24} color="#1976d2" />
-                            </Box>
-                            <div>
-                              <Text size="lg" fw={700} style={{ color: '#1976d2' }}>
-                                {service.name}
-                              </Text>
-                              <Group gap="sm" mt="xs">
-                                <Badge size="md" variant="light" color="blue">
-                                  {service.brand}
-                                </Badge>
-                                <Badge
-                                  size="md"
-                                  variant="light"
-                                  color={service.status === '營運中' ? 'green' : service.status === '維護中' ? 'yellow' : 'red'}
-                                >
-                                  {service.status}
-                                </Badge>
-                              </Group>
-                            </div>
-                          </Group>
+                      {/* 服務標題區域 */}
+                      <Group justify="space-between" align="flex-start" mb="xs">
+                        <Group gap="md" align="flex-start">
+                          <Box
+                            style={{
+                              padding: '10px',
+                              borderRadius: '8px',
+                              backgroundColor: '#e3f2fd',
+                            }}
+                          >
+                            <IconBolt size={24} color="#1976d2" />
+                          </Box>
+                          <div style={{ flex: 1 }}>
+                            <Text size="xl" fw={700} style={{ color: '#1976d2' }} mb="xs">
+                              {service.name}
+                            </Text>
+                            <Group gap="sm">
+                              <Badge size="md" variant="light" color="blue">
+                                {service.brand}
+                              </Badge>
+                              <Badge
+                                size="md"
+                                variant="light"
+                                color={service.status === '營運中' ? 'green' : service.status === '維護中' ? 'yellow' : 'red'}
+                              >
+                                {service.status}
+                              </Badge>
+                            </Group>
+                            
+                          </div>
+                        </Group>
+                        
+                        {/* 操作按鈕 */}
+                        <Group gap="sm">
                           <Button
                             variant="light"
                             size="sm"
                             onClick={() => handleEditService(service)}
-                            disabled={editingEVSEId !== null || editingConnectorId !== null}
                           >
                             編輯設定
                           </Button>
-                        </Group>
-
-                        {/* 充電服務詳細資訊 - 改善版 */}
-                        <div style={{ 
-                          display: 'grid', 
-                          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', 
-                          gap: '24px'
-                        }}>
-                          {/* 基本資訊 */}
-                          <Box 
-                            style={{
-                              backgroundColor: '#f8f9fa',
-                              borderRadius: '8px',
-                              padding: '16px',
-                            }}
+                          <Button
+                            variant="filled"
+                            size="sm"
+                            color="blue"
+                            leftSection={<IconGasStation size={14} />}
+                            onClick={() => handleAddEVSE(service.id)}
                           >
-                            <Text size="sm" fw={600} mb="md" style={{ color: '#495057' }}>基本資訊</Text>
-                            <Stack gap="sm">
-                              {service.phone && (
-                                <Group gap="8px">
-                                  <IconPhone size={16} color="#666" />
-                                  <Text size="sm" style={{ color: '#212529' }}>
-                                    {service.phone}
-                                  </Text>
-                                </Group>
-                              )}
-                              {service.officialWebsite && (
-                                <Group gap="8px">
-                                  <IconWorld size={16} color="#666" />
+                            新增充電樁
+                          </Button>
+                        </Group>
+                      </Group>
+
+                      {/* 服務詳細資訊 - 雙欄布局 */}
+                      <div style={{ 
+                        display: 'grid', 
+                        gridTemplateColumns: '1fr 1fr', 
+                        gap: '32px',
+                        marginTop: '4px',
+                        paddingTop: '4px',
+                        borderTop: '1px solid #e9ecef'
+                      }}>
+                        {/* 基本資訊 */}
+                        <Box>
+                          <Group gap="xs" mb="xs">
+                            <IconPhone size={14} color="#6c757d" />
+                            <Text size="xs" fw={600} style={{ color: '#6c757d', textTransform: 'uppercase' }}>
+                              基本資訊
+                            </Text>
+                          </Group>
+                          <Stack gap="xs">
+                            {service.phone && (
+                              <Group gap="xs">
+                                <IconPhone size={12} color="#adb5bd" />
+                                <Text size="sm" style={{ color: '#212529' }}>
+                                  {service.phone}
+                                </Text>
+                              </Group>
+                            )}
+                            {service.officialWebsite && (
+                              <Group gap="xs">
+                                <IconWorld size={12} color="#adb5bd" />
+                                <Text 
+                                  size="sm" 
+                                  c="blue" 
+                                  style={{ cursor: 'pointer', textDecoration: 'underline' }}
+                                  onClick={() => window.open(service.officialWebsite, '_blank')}
+                                >
+                                  官方網站
+                                </Text>
+                              </Group>
+                            )}
+                            {/* 營業時間 - 簡化顯示 */}
+                            {service.operatingHours && (
+                              <Group gap="xs">
+                                <IconClock size={12} color="#adb5bd" />
+                                <Tooltip
+                                  multiline
+                                  withArrow
+                                  transitionProps={{ duration: 200 }}
+                                  label={
+                                    <Stack gap="xs" p="xs">
+                                      {['週一', '週二', '週三', '週四', '週五', '週六', '週日'].map((day, index) => {
+                                        const hours = index < 5 ? '08:00-22:00' : index === 5 ? '09:00-23:00' : '10:00-20:00'
+                                        const isToday = new Date().getDay() === (index + 1) % 7
+                                        
+                                        return (
+                                          <Group key={day} justify="space-between" gap="sm">
+                                            <Text size="xs" fw={isToday ? 600 : 500} c={isToday ? 'blue' : undefined}>
+                                              {day}
+                                            </Text>
+                                            <Text size="xs" c={isToday ? 'blue' : 'dimmed'}>
+                                              {hours}
+                                            </Text>
+                                          </Group>
+                                        )
+                                      })}
+                                    </Stack>
+                                  }
+                                >
                                   <Text 
                                     size="sm" 
-                                    c="blue" 
-                                    style={{ cursor: 'pointer', textDecoration: 'underline' }}
-                                    onClick={() => window.open(service.officialWebsite, '_blank')}
+                                    c="blue"
+                                    style={{ 
+                                      cursor: 'pointer', 
+                                      textDecoration: 'underline',
+                                      textDecorationStyle: 'dotted'
+                                    }}
                                   >
-                                    官方網站
+                                    查看營業時間
                                   </Text>
-                                </Group>
-                              )}
-                            </Stack>
-                          </Box>
-
-                          {/* 營業時間 - 改善版 */}
-                          {service.operatingHours && (
-                            <Box 
-                              style={{
-                                backgroundColor: '#f8f9fa',
-                                borderRadius: '8px',
-                                padding: '16px',
-                              }}
-                            >
-                              <Group gap="8px" mb="md">
-                                <IconClock size={16} color="#666" />
-                                <Text size="sm" fw={600} style={{ color: '#495057' }}>營業時間</Text>
+                                </Tooltip>
                               </Group>
-                              <Stack gap="xs">
-                                {service.operatingHours.split(', ').map((timeRange, index) => {
-                                  const [day, hours] = timeRange.split(': ')
-                                  return (
-                                    <Group key={index} justify="space-between">
-                                      <Text size="xs" fw={600} w={30} style={{ color: '#495057' }}>
-                                        {day}
-                                      </Text>
-                                      <Text size="xs" style={{ color: '#212529' }}>
-                                        {hours}
-                                      </Text>
-                                    </Group>
-                                  )
-                                })}
-                              </Stack>
-                            </Box>
-                          )}
-
-                          {/* 小編精選資訊 */}
-                          {service.remarks && (
-                            <Box 
-                              style={{ 
-                                gridColumn: service.operatingHours ? 'span 1' : 'span 2',
-                                backgroundColor: '#f8f9fa',
-                                borderRadius: '8px',
-                                padding: '16px',
-                              }}
-                            >
-                              <Text size="sm" fw={600} mb="sm" style={{ color: '#495057' }}>小編精選資訊</Text>
-                              <Text size="sm" style={{ color: '#212529', lineHeight: '1.5' }}>
-                                {service.remarks}
-                              </Text>
-                            </Box>
-                          )}
-                        </div>
-
-                        {/* EVSE 管理 - 簡潔設計 */}
-                        <Box>
-                          <Group justify="space-between" mb="lg">
-                            <Title order={5} style={{ color: '#495057', fontSize: '16px' }}>充電樁管理</Title>
-                            {service.evses.length > 0 && (
-                              <Button
-                                size="sm"
-                                variant="light"
-                                onClick={() => handleAddEVSE(service.id)}
-                                disabled={editingEVSEId !== null || editingConnectorId !== null}
-                              >
-                                新增充電樁
-                              </Button>
-                            )}
-                          </Group>
-                          
-                          <Stack gap="lg">
-                            {service.evses.length === 0 ? (
-                              <Card withBorder bg="#f8f9fa" style={{ 
-                                border: '2px dashed #dee2e6',
-                                borderRadius: '8px',
-                                textAlign: 'center',
-                                padding: '40px 20px'
-                              }}>
-                                <Stack gap="md" align="center">
-                                  <IconGasStation size={48} color="#868e96" />
-                                  <Stack gap="xs" align="center">
-                                    <Text size="md" fw={600} style={{ color: '#495057' }}>
-                                      尚未新增充電樁
-                                    </Text>
-                                    <Text size="sm" style={{ color: '#6c757d' }}>
-                                      開始為這個充電站配置充電樁設備，提供更完整的服務資訊
-                                    </Text>
-                                  </Stack>
-                                  <Button 
-                                    leftSection={<IconGasStation size={16} />}
-                                    onClick={() => handleAddEVSE(service.id)}
-                                    variant="filled"
-                                    color="blue"
-                                    size="sm"
-                                  >
-                                    立即新增充電樁
-                                  </Button>
-                                </Stack>
-                              </Card>
-                            ) : (
-                              service.evses.map((evse, evseIndex) => (
-                              <Card key={evse.id} withBorder bg="#ffffff" style={{ 
-                                border: '2px solid #dee2e6',
-                                borderRadius: '8px',
-                                boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-                              }}>
-                                  <Stack gap="12px">
-                                <Group justify="space-between">
-                                  <Group gap="xs">
-                                    <Box 
-                                      style={{
-                                        width: '6px',
-                                        height: '20px',
-                                        backgroundColor: '#228be6',
-                                        borderRadius: '3px'
-                                      }}
-                                    />
-                                    <Text fw={600} size="md" style={{ color: '#495057' }}>充電樁 #{evseIndex + 1}</Text>
-                                  </Group>
-                                      <Group gap="xs">
-                                        {editingEVSEId !== evse.id && (
-                                          <Button
-                                            size="xs"
-                                            variant="light"
-                                            onClick={() => handleEditEVSE(service.id, evse)}
-                                            disabled={editingEVSEId !== null || editingConnectorId !== null}
-                                          >
-                                            編輯
-                                          </Button>
-                                        )}
-                                        <Button 
-                                          size="xs" 
-                                          color="red" 
-                                          variant="subtle"
-                                          disabled={editingEVSEId !== null || editingConnectorId !== null}
-                                        >
-                                          <IconTrash size={14} />
-                                        </Button>
-                                      </Group>
-                                    </Group>
-
-                                    <TextInput
-                                      label="樓層資訊"
-                                      placeholder="例: 1F, B1, B2..."
-                                      value={editingEVSEId === evse.id ? (tempEVSE.floor || '') : evse.floor}
-                                      onChange={(e) => {
-                                        const value = e.currentTarget.value;
-                                        updateEVSE(service.id, evse.id, 'floor', value);
-                                      }}
-                                      size="sm"
-                                      disabled={editingEVSEId !== evse.id}
-                                      styles={{
-                                        input: {
-                                          '&:disabled': {
-                                            color: '#495057',
-                                            backgroundColor: '#f8f9fa',
-                                            opacity: 1
-                                          }
-                                        }
-                                      }}
-                                    />
-                                    
-                                    {editingEVSEId === evse.id && (
-                                      <Group justify="flex-end" gap="xs">
-                                        <Button size="xs" variant="outline" onClick={handleCancelEVSE}>
-                                          取消
-                                        </Button>
-                                        <Button 
-                                          size="xs" 
-                                          onClick={() => evse.floor ? handleUpdateEVSE(service.id) : handleSaveEVSE(service.id)}
-                                          disabled={!tempEVSE.floor}
-                                        >
-                                          儲存
-                                        </Button>
-                                      </Group>
-                                    )}
-
-                                    <Group justify="space-between">
-                                      <Text size="sm" fw={500} style={{ color: '#1976d2' }}>充電槍管理</Text>
-                                      <Button
-                                        size="xs"
-                                        variant="light"
-                                        color="blue"
-                                        onClick={() => handleAddConnector(service.id, evse.id)}
-                                        disabled={editingEVSEId !== null || editingConnectorId !== null}
-                                      >
-                                        新增充電槍
-                                      </Button>
-                                    </Group>
-
-                                  {evse.connectors.map((connector, connectorIndex) => {
-                                    const isEditing = editingConnectorId === connector.id;
-                                    const displayConnector = isEditing ? tempConnector : connector;
-                                    
-                                    return (
-                                      <Card key={connector.id} bg="#ffffff" withBorder style={{ 
-                                        border: isEditing ? '2px solid #228be6' : '1px solid #e9ecef',
-                                        borderRadius: '6px',
-                                        marginLeft: '16px'
-                                      }}>
-                                          <Stack gap="8px">
-                                            <Group justify="space-between">
-                                              <Group gap="xs">
-                                                <Box 
-                                                  style={{
-                                                    width: '4px',
-                                                    height: '16px',
-                                                    backgroundColor: '#28a745',
-                                                    borderRadius: '2px'
-                                                  }}
-                                                />
-                                                <Text size="sm" fw={500} style={{ color: '#495057' }}>充電槍 #{connectorIndex + 1}</Text>
-                                              </Group>
-                                              <Group gap="xs">
-                                                {!isEditing && (
-                                                  <Button
-                                                    size="xs"
-                                                    variant="subtle"
-                                                    onClick={() => handleEditConnector(service.id, evse.id, connector)}
-                                                    disabled={editingEVSEId !== null || editingConnectorId !== null}
-                                                  >
-                                                    編輯
-                                                  </Button>
-                                                )}
-                                                <Button 
-                                                  size="xs" 
-                                                  color="red" 
-                                                  variant="subtle"
-                                                  disabled={editingEVSEId !== null || editingConnectorId !== null}
-                                                >
-                                                  <IconTrash size={14} />
-                                                </Button>
-                                              </Group>
-                                            </Group>
-                                            
-                                            <Group grow>
-                                              <TextInput
-                                                label="充電槍號"
-                                                placeholder="例: A1, B2..."
-                                                value={displayConnector.connectorNumber || ''}
-                                                onChange={(e) => {
-                                                  const value = e.currentTarget.value;
-                                                  updateConnector(service.id, evse.id, connector.id, 'connectorNumber', value);
-                                                }}
-                                                size="xs"
-                                                disabled={editingConnectorId !== connector.id}
-                                                styles={{
-                                                  input: {
-                                                    '&:disabled': {
-                                                      color: '#495057',
-                                                      backgroundColor: '#f8f9fa',
-                                                      opacity: 1
-                                                    }
-                                                  }
-                                                }}
-                                              />
-                                              <Select
-                                                label="充電槍規格"
-                                                data={connectorTypeOptions}
-                                                value={displayConnector.connectorType}
-                                                onChange={(value) => updateConnector(service.id, evse.id, connector.id, 'connectorType', value || 'Type 2')}
-                                                size="xs"
-                                                disabled={editingConnectorId !== connector.id}
-                                                styles={{
-                                                  input: {
-                                                    '&:disabled': {
-                                                      color: '#495057',
-                                                      backgroundColor: '#f8f9fa',
-                                                      opacity: 1
-                                                    }
-                                                  }
-                                                }}
-                                              />
-                                            </Group>
-
-                                            <Group grow>
-                                              <Select
-                                                label="狀態"
-                                                data={connectorStatusOptions}
-                                                value={displayConnector.status}
-                                                onChange={(value) => updateConnector(service.id, evse.id, connector.id, 'status', value || 'Unknown')}
-                                                size="xs"
-                                                disabled={editingConnectorId !== connector.id}
-                                                styles={{
-                                                  input: {
-                                                    '&:disabled': {
-                                                      color: '#495057',
-                                                      backgroundColor: '#f8f9fa',
-                                                      opacity: 1
-                                                    }
-                                                  }
-                                                }}
-                                              />
-                                              <TextInput
-                                                label="功率 (kW)"
-                                                value={displayConnector.powerKw?.toString() || '22'}
-                                                onChange={(e) => {
-                                                  const value = parseFloat(e.currentTarget.value) || 0;
-                                                  updateConnector(service.id, evse.id, connector.id, 'powerKw', value);
-                                                }}
-                                                size="xs"
-                                                type="number"
-                                                disabled={editingConnectorId !== connector.id}
-                                                styles={{
-                                                  input: {
-                                                    '&:disabled': {
-                                                      color: '#495057',
-                                                      backgroundColor: '#f8f9fa',
-                                                      opacity: 1
-                                                    }
-                                                  }
-                                                }}
-                                              />
-                                            </Group>
-                                            
-                                            <Group grow>
-                                              <Select
-                                                label="電力輸出方式"
-                                                data={powerOutputOptions}
-                                                value={displayConnector.powerOutput}
-                                                onChange={(value) => updateConnector(service.id, evse.id, connector.id, 'powerOutput', value || 'AC')}
-                                                size="xs"
-                                                disabled={editingConnectorId !== connector.id}
-                                                styles={{
-                                                  input: {
-                                                    '&:disabled': {
-                                                      color: '#495057',
-                                                      backgroundColor: '#f8f9fa',
-                                                      opacity: 1
-                                                    }
-                                                  }
-                                                }}
-                                              />
-                                              <Box>
-                                                <Text size="xs" fw={500} mb="4px">是否支援 EVCCID</Text>
-                                                <Radio.Group
-                                                  value={displayConnector.supportsEVCCID ? 'yes' : 'no'}
-                                                  onChange={(value) => updateConnector(service.id, evse.id, connector.id, 'supportsEVCCID', value === 'yes')}
-                                                  size="xs"
-                                                  styles={{
-                                                    root: {
-                                                      '&:has(input:disabled)': {
-                                                        opacity: editingConnectorId !== connector.id ? 0.6 : 1,
-                                                        pointerEvents: editingConnectorId !== connector.id ? 'none' : 'auto'
-                                                      }
-                                                    }
-                                                  }}
-                                                >
-                                                  <Group gap="md">
-                                                    <Radio value="yes" label="是" disabled={editingConnectorId !== connector.id} />
-                                                    <Radio value="no" label="否" disabled={editingConnectorId !== connector.id} />
-                                                  </Group>
-                                                </Radio.Group>
-                                              </Box>
-                                            </Group>
-                                            
-                                            {/* 充電費率 - 條件顯示 */}
-                                            {isEditing ? (
-                                              <Textarea
-                                                label="充電費率"
-                                                placeholder="範例：
-平日 08:00–18:00：TWD$ 6 元/kWh
-假日 10:00–20:00：TWD$ 6.5 元/kWh
-離峰 22:00-05:00：TWD$ 5.5 元/kWh"
-                                                value={displayConnector.chargingRate || ''}
-                                                onChange={(e) => {
-                                                  const value = e.currentTarget.value;
-                                                  if (value.length <= 1000) {
-                                                    updateConnector(service.id, evse.id, connector.id, 'chargingRate', value);
-                                                  }
-                                                }}
-                                                size="xs"
-                                                rows={3}
-                                                error={displayConnector.chargingRate && displayConnector.chargingRate.length > 1000 ? '不可超過 1000 字' : ''}
-                                              />
-                                            ) : displayConnector.chargingRate ? (
-                                              <Box 
-                                                style={{
-                                                  backgroundColor: '#f8f9fa',
-                                                  borderRadius: '4px',
-                                                  padding: '8px',
-                                                  border: '1px solid #dee2e6'
-                                                }}
-                                              >
-                                                <Text size="xs" fw={500} mb="4px" style={{ color: '#495057' }}>充電費率</Text>
-                                                <Text size="xs" style={{ 
-                                                  color: '#212529', 
-                                                  lineHeight: '1.4',
-                                                  whiteSpace: 'pre-line'
-                                                }}>
-                                                  {displayConnector.chargingRate}
-                                                </Text>
-                                              </Box>
-                                            ) : null}
-                                            
-                                            {isEditing && (
-                                              <Group justify="flex-end" gap="xs" mt="xs">
-                                                <Button size="xs" variant="outline" onClick={handleCancelConnector}>
-                                                  取消
-                                                </Button>
-                                                <Button 
-                                                  size="xs" 
-                                                  onClick={() => handleUpdateConnector(service.id, evse.id)}
-                                                  disabled={!tempConnector.connectorNumber || (tempConnector.chargingRate ? tempConnector.chargingRate.length > 1000 : false)}
-                                                >
-                                                  儲存
-                                                </Button>
-                                              </Group>
-                                            )}
-                                          </Stack>
-                                        </Card>
-                                      );
-                                    })}
-                                    
-                                  {/* 新增充電槍表單 */}
-                                  {editingConnectorId && !evse.connectors.find(c => c.id === editingConnectorId) && tempConnector.evseId === evse.id && (
-                                    <Card bg="#ffffff" withBorder style={{ 
-                                      border: '2px dashed #228be6',
-                                      borderRadius: '6px',
-                                      marginLeft: '16px'
-                                    }}>
-                                      <Stack gap="8px">
-                                        <Group gap="xs">
-                                          <Box 
-                                            style={{
-                                              width: '4px',
-                                              height: '16px',
-                                              backgroundColor: '#228be6',
-                                              borderRadius: '2px'
-                                            }}
-                                          />
-                                          <Text size="sm" fw={500} style={{ color: '#495057' }}>新增充電槍</Text>
-                                        </Group>
-                                          
-                                          <Group grow>
-                                            <TextInput
-                                              label="充電槍號"
-                                              placeholder="例: A1, B2..."
-                                              value={tempConnector.connectorNumber || ''}
-                                              onChange={(e) => {
-                                                const value = e.currentTarget.value;
-                                                setTempConnector(prev => ({ ...prev, connectorNumber: value }));
-                                              }}
-                                              size="xs"
-                                            />
-                                            <Select
-                                              label="充電槍規格"
-                                              data={connectorTypeOptions}
-                                              value={tempConnector.connectorType || 'Type 2'}
-                                              onChange={(value) => setTempConnector(prev => ({ ...prev, connectorType: value || 'Type 2' }))}
-                                              size="xs"
-                                            />
-                                          </Group>
-
-                                          <Group grow>
-                                            <Select
-                                              label="狀態"
-                                              data={connectorStatusOptions}
-                                              value={tempConnector.status || 'Unknown'}
-                                              onChange={(value) => setTempConnector(prev => ({ ...prev, status: value || 'Unknown' }))}
-                                              size="xs"
-                                            />
-                                            <TextInput
-                                              label="功率 (kW)"
-                                              value={tempConnector.powerKw?.toString() || '22'}
-                                              onChange={(e) => {
-                                                const value = parseFloat(e.currentTarget.value) || 0;
-                                                setTempConnector(prev => ({ ...prev, powerKw: value }));
-                                              }}
-                                              size="xs"
-                                              type="number"
-                                            />
-                                          </Group>
-                                          
-                                          <Group grow>
-                                            <Select
-                                              label="電力輸出方式"
-                                              data={powerOutputOptions}
-                                              value={tempConnector.powerOutput || 'AC'}
-                                              onChange={(value) => setTempConnector(prev => ({ ...prev, powerOutput: value || 'AC' }))}
-                                              size="xs"
-                                            />
-                                            <Box>
-                                              <Text size="xs" fw={500} mb="4px">是否支援 EVCCID</Text>
-                                              <Radio.Group
-                                                value={tempConnector.supportsEVCCID ? 'yes' : 'no'}
-                                                onChange={(value) => setTempConnector(prev => ({ ...prev, supportsEVCCID: value === 'yes' }))}
-                                                size="xs"
-                                              >
-                                                <Group gap="md">
-                                                  <Radio value="yes" label="是" />
-                                                  <Radio value="no" label="否" />
-                                                </Group>
-                                              </Radio.Group>
-                                            </Box>
-                                          </Group>
-                                          
-                                          <Stack gap="4px">
-                                            <Textarea
-                                              label="充電費率"
-                                              placeholder="請輸入充電費率資訊，可支援不同時段費率"
-                                              value={tempConnector.chargingRate || ''}
-                                              onChange={(e) => {
-                                                const value = e.currentTarget.value;
-                                                if (value.length <= 1000) {
-                                                  setTempConnector(prev => ({ ...prev, chargingRate: value }));
-                                                }
-                                              }}
-                                              size="xs"
-                                              rows={4}
-                                              error={tempConnector.chargingRate && tempConnector.chargingRate.length > 1000 ? '不可超過 1000 字' : ''}
-                                            />
-                                            <Text size="10px" c="dimmed" style={{ lineHeight: '1.2' }}>
-                                              <strong>填寫範例：</strong><br/>
-                                              平日 08:00–18:00：TWD$ 6 元/kWh<br/>
-                                              假日 10:00–20:00：TWD$ 6.5 元/kWh<br/>
-                                              離峰 22:00-05:00：TWD$ 5.5 元/kWh
-                                            </Text>
-                                            <Text size="10px" c="dimmed">
-                                              字數：{tempConnector.chargingRate?.length || 0}/1000
-                                            </Text>
-                                          </Stack>
-                                          
-                                          <Group justify="flex-end" gap="xs" mt="xs">
-                                            <Button size="xs" variant="outline" onClick={handleCancelConnector}>
-                                              取消
-                                            </Button>
-                                            <Button 
-                                              size="xs" 
-                                              onClick={() => handleSaveConnector(service.id, evse.id)}
-                                              disabled={!tempConnector.connectorNumber || (tempConnector.chargingRate ? tempConnector.chargingRate.length > 1000 : false)}
-                                            >
-                                              儲存充電槍
-                                            </Button>
-                                          </Group>
-                                        </Stack>
-                                      </Card>
-                                    )}
-                                </Stack>
-                              </Card>
-                            )))}
-                            
-                            {/* 新增 EVSE 表單 */}
-                            {editingEVSEId && !service.evses.find(e => e.id === editingEVSEId) && (
-                              <Card withBorder bg="#ffffff" style={{ 
-                                border: '2px dashed #228be6',
-                                borderRadius: '8px'
-                              }}>
-                                <Stack gap="12px">
-                                  <Group justify="space-between">
-                                    <Group gap="xs">
-                                      <Box 
-                                        style={{
-                                          width: '6px',
-                                          height: '20px',
-                                          backgroundColor: '#228be6',
-                                          borderRadius: '3px'
-                                        }}
-                                      />
-                                      <Text fw={600} size="md" style={{ color: '#495057' }}>新增充電樁</Text>
-                                    </Group>
-                                  </Group>
-
-                                    <TextInput
-                                      label="樓層資訊"
-                                      placeholder="例: 1F, B1, B2..."
-                                      value={tempEVSE.floor || ''}
-                                      onChange={(e) => {
-                                        const value = e.currentTarget.value;
-                                        setTempEVSE(prev => ({ ...prev, floor: value }));
-                                      }}
-                                      size="sm"
-                                    />
-                                    
-                                  <Group justify="flex-end" gap="xs">
-                                    <Button size="sm" variant="outline" onClick={handleCancelEVSE}>
-                                      取消
-                                    </Button>
-                                    <Button 
-                                      size="sm" 
-                                      onClick={() => handleSaveEVSE(service.id)}
-                                      disabled={!tempEVSE.floor}
-                                    >
-                                      儲存充電樁
-                                    </Button>
-                                  </Group>
-                                </Stack>
-                              </Card>
                             )}
                           </Stack>
                         </Box>
-                      </Stack>
+
+                        {/* 備註 */}
+                        {service.remarks && (
+                          <Box>
+                            <Group gap="xs" mb="xs">
+                              <IconNote size={14} color="#6c757d" />
+                              <Text size="xs" fw={600} style={{ color: '#6c757d', textTransform: 'uppercase' }}>
+                                備註資訊
+                              </Text>
+                            </Group>
+                            <Text size="sm" style={{ 
+                              color: '#495057', 
+                              lineHeight: '1.4'
+                            }}>
+                              {service.remarks}
+                            </Text>
+                          </Box>
+                        )}
+                      </div>
+
+                      {/* 充電設備列表（可展開） */}
+                      {service.evses.length > 0 && (
+                        <Box mt="md" pt="md" style={{ borderTop: '1px solid #e9ecef' }}>
+                          <Text size="sm" fw={600} mb="sm" style={{ color: '#495057' }}>充電設備列表</Text>
+                          <Stack gap="xs">
+                            {service.evses.map((evse, evseIndex) => (
+                              <Box key={evse.id}>
+                                {/* 充電樁標題 */}
+                                <Box
+                                  style={{
+                                    backgroundColor: '#f8f9fa',
+                                    border: '1px solid #dee2e6',
+                                    borderRadius: '8px',
+                                    padding: '12px 16px',
+                                  }}
+                                >
+                                  <Group justify="space-between" align="center">
+                                    <Group gap="sm">
+                                      <IconGasStation size={18} color="#228be6" />
+                                      <Text fw={600} style={{ color: '#495057' }}>
+                                        充電樁 #{evseIndex + 1} {evse.floor && `(${evse.floor})`}
+                                      </Text>
+                                      <Badge variant="light" color="blue" size="sm">
+                                        {evse.connectors.length} 支充電槍
+                                      </Badge>
+                                    </Group>
+                                    <Button
+                                      size="xs"
+                                      variant="light"
+                                      onClick={() => handleAddConnector(service.id, evse.id)}
+                                    >
+                                      新增充電槍
+                                    </Button>
+                                  </Group>
+                                </Box>
+
+                                {/* 充電槍列表 */}
+                                {evse.connectors.length > 0 && (
+                                  <Box mt="xs" style={{ paddingLeft: '16px' }}>
+                                    <Stack gap="xs">
+                                      {evse.connectors.map((connector) => (
+                                        <Box
+                                          key={connector.id}
+                                          style={{
+                                            backgroundColor: '#ffffff',
+                                            border: '1px solid #e9ecef',
+                                            borderRadius: '6px',
+                                            padding: '8px 12px',
+                                          }}
+                                        >
+                                          <Stack gap="xs">
+                                            <Group justify="space-between" align="center">
+                                              <Group gap="sm">
+                                                <Text size="sm" fw={500} style={{ color: '#495057' }}>
+                                                  槍號: {connector.connectorNumber}
+                                                </Text>
+                                                <Badge
+                                                  size="sm"
+                                                  color={
+                                                    connector.status === 'AVAILABLE' ? 'green' : 
+                                                    connector.status === 'CHARGING' ? 'blue' : 
+                                                    connector.status === 'FAULTED' ? 'red' : 'gray'
+                                                  }
+                                                >
+                                                  {connector.status}
+                                                </Badge>
+                                              </Group>
+                                              <Group gap="xs">
+                                                <Button size="xs" variant="subtle" color="blue">
+                                                  編輯
+                                                </Button>
+                                                <Button size="xs" variant="subtle" color="red">
+                                                  刪除
+                                                </Button>
+                                              </Group>
+                                            </Group>
+                                            
+                                            {/* 詳細規格資訊 */}
+                                            <Stack gap="xs" style={{ paddingLeft: '8px' }}>
+                                              {/* 第一行：技術規格 */}
+                                              <Group gap="lg">
+                                                <Text size="xs" c="dimmed">
+                                                  <strong>規格:</strong> {connector.connectorType}
+                                                </Text>
+                                                <Text size="xs" c="dimmed">
+                                                  <strong>功率:</strong> {connector.powerKw}kW
+                                                </Text>
+                                                <Text size="xs" c="dimmed">
+                                                  <strong>輸出:</strong> {connector.powerOutput}
+                                                </Text>
+                                                <Text size="xs" c="dimmed">
+                                                  <strong>EVCCID:</strong> {connector.supportsEVCCID ? '支援' : '不支援'}
+                                                </Text>
+                                              </Group>
+                                              
+                                              {/* 第二行：費率資訊（自由文字形式） */}
+                                              {connector.chargingRate && (
+                                                <Box>
+                                                  <Text size="xs" c="dimmed" style={{ lineHeight: '1.4' }}>
+                                                    <Text span fw={500} c="dark">費率說明：</Text>
+                                                    {connector.chargingRate}
+                                                  </Text>
+                                                </Box>
+                                              )}
+                                            </Stack>
+                                          </Stack>
+                                        </Box>
+                                      ))}
+                                    </Stack>
+                                  </Box>
+                                )}
+                              </Box>
+                            ))}
+                          </Stack>
+                        </Box>
+                      )}
                     </Card>
                   ))}
 
-                  {/* 充電服務初始狀態區塊 - 置中顯示按鈕和提示 */}
+                  {/* 充電服務初始狀態區塊 - 美化提示和引導 */}
                   {chargingServices.length === 0 && !isAddingChargingService && (
-                    <Box ta="center" py="xl">
-                      <Button
-                        leftSection={<IconBolt size={16} />}
-                        onClick={() => setIsAddingChargingService(true)}
-                        size="md"
-                      >
-                        開始設定充電服務
-                      </Button>
-                    </Box>
+                    <Card withBorder bg="#f8f9fa" style={{ 
+                      border: '2px dashed #dee2e6',
+                      borderRadius: '8px',
+                      textAlign: 'center',
+                      padding: '40px 20px'
+                    }}>
+                      <Stack gap="md" align="center">
+                        <IconBolt size={48} color="#868e96" />
+                        <Stack gap="xs" align="center">
+                          <Text size="md" fw={600} style={{ color: '#495057' }}>
+                            尚未設定充電服務
+                          </Text>
+                          <Text size="sm" style={{ color: '#6c757d' }}>
+                            開始建立這個地點的充電服務，設定營運業者、營業時間和充電設備資訊
+                          </Text>
+                        </Stack>
+                        <Button 
+                          leftSection={<IconBolt size={16} />}
+                          onClick={() => setIsAddingChargingService(true)}
+                          variant="filled"
+                          color="blue"
+                          size="sm"
+                        >
+                          立即設定充電服務
+                        </Button>
+                      </Stack>
+                    </Card>
                   )}
 
 
@@ -1524,8 +1542,8 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
                           />
 
                           <Textarea
-                            label="小編精選資訊"
-                            placeholder="請輸入特色說明、使用建議或貼心提醒等精選資訊"
+                            label="備註"
+                            placeholder="請輸入相關備註資訊或特殊說明"
                             value={newChargingService.remarks || ''}
                             onChange={(e) => {
                               const value = e.currentTarget.value;
@@ -1743,34 +1761,193 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
                       )}
                     </Stack>
                   </Modal>
-                </Stack>
-              </Tabs.Panel>
 
-              <Tabs.Panel value="fueling" pt="lg">
-                <Text size="sm" c="dimmed" ta="center" py="xl">
-                  加油服務功能開發中...
-                </Text>
-              </Tabs.Panel>
+                  {/* 新增充電樁 Modal */}
+                  <Modal
+                    opened={isAddingEVSE}
+                    onClose={handleCloseEVSEModal}
+                    title={
+                      <Group gap="xs">
+                        <IconGasStation size={20} color="#1976d2" />
+                        <Text fw={600} style={{ color: '#1976d2' }}>
+                          新增充電樁
+                        </Text>
+                      </Group>
+                    }
+                    size="md"
+                    centered
+                  >
+                    <Stack gap="md">
+                      <TextInput
+                        label="樓層資訊"
+                        placeholder="例: 1F, B1, B2..."
+                        value={newEVSE.floor || ''}
+                        onChange={(e) => {
+                          const value = e.currentTarget.value;
+                          setNewEVSE(prev => ({ ...prev, floor: value }));
+                        }}
+                        size="sm"
+                        required
+                      />
+                      
+                      <Group justify="flex-end" gap="xs" mt="lg">
+                        <Button variant="outline" onClick={handleCloseEVSEModal}>
+                          取消
+                        </Button>
+                        <Button 
+                          onClick={handleSaveEVSE}
+                          disabled={!newEVSE.floor}
+                        >
+                          新增充電樁
+                        </Button>
+                      </Group>
+                    </Stack>
+                  </Modal>
 
-              <Tabs.Panel value="maintenance" pt="lg">  
-                <Text size="sm" c="dimmed" ta="center" py="xl">
-                  保修服務功能開發中...
-                </Text>
-              </Tabs.Panel>
+                  {/* 新增充電槍 Modal */}
+                  <Modal
+                    opened={isAddingConnector}
+                    onClose={handleCloseConnectorModal}
+                    title={
+                      <Group gap="xs">
+                        <IconBolt size={20} color="#1976d2" />
+                        <Text fw={600} style={{ color: '#1976d2' }}>
+                          新增充電槍
+                        </Text>
+                      </Group>
+                    }
+                    size="lg"
+                    centered
+                  >
+                    <Stack gap="md">
+                      <Group grow>
+                        <TextInput
+                          label="充電槍號"
+                          placeholder="例: A1, B2..."
+                          value={newConnector.connectorNumber || ''}
+                          onChange={(e) => {
+                            const value = e.currentTarget.value;
+                            setNewConnector(prev => ({ ...prev, connectorNumber: value }));
+                          }}
+                          size="sm"
+                          required
+                        />
+                        <Select
+                          label="充電槍規格"
+                          data={connectorTypeOptions}
+                          value={newConnector.connectorType || 'Type 2'}
+                          onChange={(value) => setNewConnector(prev => ({ ...prev, connectorType: value || 'Type 2' }))}
+                          size="sm"
+                        />
+                      </Group>
 
-              <Tabs.Panel value="washing" pt="lg">
-                <Text size="sm" c="dimmed" ta="center" py="xl">
-                  洗車服務功能開發中...
-                </Text>
-              </Tabs.Panel>
+                      <Group grow>
+                        <Select
+                          label="狀態"
+                          data={connectorStatusOptions}
+                          value={newConnector.status || 'Unknown'}
+                          onChange={(value) => setNewConnector(prev => ({ ...prev, status: value || 'Unknown' }))}
+                          size="sm"
+                        />
+                        <TextInput
+                          label="功率 (kW)"
+                          value={newConnector.powerKw?.toString() || '22'}
+                          onChange={(e) => {
+                            const value = parseFloat(e.currentTarget.value) || 0;
+                            setNewConnector(prev => ({ ...prev, powerKw: value }));
+                          }}
+                          size="sm"
+                          type="number"
+                        />
+                      </Group>
+                      
+                      <Group grow>
+                        <Select
+                          label="電力輸出方式"
+                          data={powerOutputOptions}
+                          value={newConnector.powerOutput || 'AC'}
+                          onChange={(value) => setNewConnector(prev => ({ ...prev, powerOutput: value || 'AC' }))}
+                          size="sm"
+                        />
+                        <Select
+                          label="是否支援 EVCCID"
+                          data={[
+                            { value: 'yes', label: '是' },
+                            { value: 'no', label: '否' }
+                          ]}
+                          value={newConnector.supportsEVCCID ? 'yes' : 'no'}
+                          onChange={(value) => setNewConnector(prev => ({ ...prev, supportsEVCCID: value === 'yes' }))}
+                          size="sm"
+                        />
+                      </Group>
+                      
+                      <Textarea
+                        label="充電費率"
+                        placeholder="請輸入充電費率資訊，可支援不同時段費率"
+                        value={newConnector.chargingRate || ''}
+                        onChange={(e) => {
+                          const value = e.currentTarget.value;
+                          setNewConnector(prev => ({ ...prev, chargingRate: value }));
+                        }}
+                        size="sm"
+                        rows={3}
+                      />
+                      
+                      <Group justify="flex-end" gap="xs" mt="lg">
+                        <Button variant="outline" onClick={handleCloseConnectorModal}>
+                          取消
+                        </Button>
+                        <Button 
+                          onClick={handleSaveConnector}
+                          disabled={!newConnector.connectorNumber}
+                        >
+                          新增充電槍
+                        </Button>
+                      </Group>
+                    </Stack>
+                  </Modal>
+                    </Stack>
+                  </Tabs.Panel>
 
-              <Tabs.Panel value="parking" pt="lg">
-                <Text size="sm" c="dimmed" ta="center" py="xl">
-                  停車服務功能開發中...
-                </Text>
-              </Tabs.Panel>
+                  <Tabs.Panel value="fueling">
+                    <Stack gap="md" align="center" py="xl">
+                      <IconGasStation size={48} color="#9ca3af" />
+                      <Text size="sm" c="dimmed" ta="center">
+                        加油服務功能開發中...
+                      </Text>
+                    </Stack>
+                  </Tabs.Panel>
+
+                  <Tabs.Panel value="maintenance">
+                    <Stack gap="md" align="center" py="xl">
+                      <IconTool size={48} color="#9ca3af" />
+                      <Text size="sm" c="dimmed" ta="center">
+                        保修服務功能開發中...
+                      </Text>
+                    </Stack>
+                  </Tabs.Panel>
+
+                  <Tabs.Panel value="washing">
+                    <Stack gap="md" align="center" py="xl">
+                      <IconSpray size={48} color="#9ca3af" />
+                      <Text size="sm" c="dimmed" ta="center">
+                        洗車服務功能開發中...
+                      </Text>
+                    </Stack>
+                  </Tabs.Panel>
+
+                  <Tabs.Panel value="parking">
+                    <Stack gap="md" align="center" py="xl">
+                      <IconCar size={48} color="#9ca3af" />
+                      <Text size="sm" c="dimmed" ta="center">
+                        停車服務功能開發中...
+                      </Text>
+                    </Stack>
+                  </Tabs.Panel>
+                </Box>
+              </Box>
             </Tabs>
-          </div>
+          </Card>
         </Stack>
       </Box>
     </Box>
