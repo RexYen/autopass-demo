@@ -102,7 +102,7 @@ if (typeof document !== 'undefined') {
 }
 
 // Fix for default markers in Leaflet
-delete (L.Icon.Default.prototype as any)._getIconUrl;
+delete (L.Icon.Default.prototype as L.Icon.Default)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
@@ -506,7 +506,7 @@ export function MapManagement({ onViewDetail }: MapManagementProps) {
         const openPopup = () => {
           try {
             markerRef.openPopup();
-          } catch (err) {
+          } catch {
             setTimeout(openPopup, 50);
           }
         };
@@ -1029,8 +1029,24 @@ export function MapManagement({ onViewDetail }: MapManagementProps) {
                     }}
                     onClick={() => onListItemClick(resource)}
                   >
-                    <Box>
-                      <Text size="sm" fw={500} mb="4px" style={{ color: '#000' }}>
+                    <Box style={{ position: 'relative' }}>
+                      {/* 營運狀態圓點 - 右上角 */}
+                      <Box
+                        style={{
+                          position: 'absolute',
+                          top: '2px',
+                          right: '2px',
+                          width: '8px',
+                          height: '8px',
+                          borderRadius: '50%',
+                          backgroundColor: 
+                            resource.status === '營運中' ? '#12b886' : 
+                            resource.status === '維護中' ? '#fab005' : '#fa5252'
+                        }}
+                        title={resource.status}
+                      />
+
+                      <Text size="sm" fw={500} mb="4px" style={{ color: '#000', paddingRight: '15px' }}>
                         {resource.placeName}
                       </Text>
                       <Text size="xs" c="dimmed" mb="6px" style={{ lineHeight: '1.3' }}>
