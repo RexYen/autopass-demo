@@ -149,6 +149,19 @@ const mockMapResources = [
     status: '營運中',
     remarks: '地下停車場，提供充電服務',
     createdAt: '2024-01-15',
+    // 服務列表
+    services: [
+      {
+        type: '停車場',
+        name: '台北101地下停車場',
+        status: '營運中'
+      },
+      {
+        type: '充電站',
+        name: '台北101超級充電站',
+        status: '營運中'
+      }
+    ],
     // 停車場詳細資訊
     parkingInfo: {
       totalSpaces: 850,
@@ -181,6 +194,14 @@ const mockMapResources = [
     status: '營運中',
     remarks: '戶外停車場',
     createdAt: '2024-01-20',
+    // 服務列表
+    services: [
+      {
+        type: '停車場',
+        name: '中正紀念堂戶外停車場',
+        status: '營運中'
+      }
+    ],
     parkingInfo: {
       totalSpaces: 320,
       availableSpaces: 89,
@@ -203,6 +224,14 @@ const mockMapResources = [
     status: '維護中',
     remarks: '快充站點，暫停服務進行設備更新',
     createdAt: '2024-02-01',
+    // 服務列表
+    services: [
+      {
+        type: '充電站',
+        name: '台北車站7-ELEVEN快充站',
+        status: '維護中'
+      }
+    ],
     chargingInfo: {
       totalChargers: 6,
       availableChargers: 0,
@@ -224,6 +253,19 @@ const mockMapResources = [
     status: '營運中',
     remarks: '24小時營業，設有快充設備',
     createdAt: '2024-02-10',
+    // 服務列表
+    services: [
+      {
+        type: '停車場',
+        name: '西門町24H停車場',
+        status: '營運中'
+      },
+      {
+        type: '充電站',
+        name: '西門町U-POWER充電站',
+        status: '營運中'
+      }
+    ],
     parkingInfo: {
       totalSpaces: 450,
       availableSpaces: 123,
@@ -254,6 +296,14 @@ const mockMapResources = [
     status: '營運中',
     remarks: '夜市專用停車場',
     createdAt: '2024-02-15',
+    // 服務列表
+    services: [
+      {
+        type: '停車場',
+        name: '士林夜市專用停車場',
+        status: '營運中'
+      }
+    ],
     parkingInfo: {
       totalSpaces: 180,
       availableSpaces: 45,
@@ -361,9 +411,13 @@ export function MapManagement({ onViewDetail }: MapManagementProps) {
         );
         matchesSearch = distance <= 30; // 30公尺範圍
       } else {
-        // 文字搜尋
-        matchesSearch = resource.placeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                       resource.address.toLowerCase().includes(searchTerm.toLowerCase());
+        // 文字搜尋 - 包含場所名稱、地址和服務名稱
+        const searchLower = searchTerm.toLowerCase();
+        matchesSearch = resource.placeName.toLowerCase().includes(searchLower) ||
+                       resource.address.toLowerCase().includes(searchLower) ||
+                       (resource.services && resource.services.some((service: any) => 
+                         service.name.toLowerCase().includes(searchLower)
+                       ));
       }
       
       const matchesServiceType = !filterServiceType || resource.serviceTypes.includes(filterServiceType);
@@ -621,12 +675,12 @@ export function MapManagement({ onViewDetail }: MapManagementProps) {
         <Group gap="16px" align="end">
           {/* Search */}
           <TextInput
-            placeholder="請輸入場所名稱、地址或經緯度 (如: 25.0330, 121.5654)"
+            placeholder="請輸入場所名稱、地址、服務名稱或經緯度"
             leftSection={<IconSearch size={16} />}
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.currentTarget.value)}
             style={{ 
-              maxWidth: '420px',
+              maxWidth: '450px',
               width: '100%'
             }}
             styles={{
@@ -1052,26 +1106,47 @@ export function MapManagement({ onViewDetail }: MapManagementProps) {
                       <Text size="xs" c="dimmed" mb="6px" style={{ lineHeight: '1.3' }}>
                         {resource.address}
                       </Text>
-                      <Group gap="4px">
-                        {resource.serviceTypes.map((type) => (
-                          <Badge
-                            key={type}
-                            size="xs"
-                            variant="light"
-                            styles={{
-                              root: {
-                                backgroundColor: `rgba(${
-                                  type === '停車場' ? '76,110,245' : '18,184,134'
-                                },0.1)`,
-                                fontSize: '10px',
-                                padding: '2px 6px',
-                              },
-                            }}
-                          >
-                            {type}
-                          </Badge>
-                        ))}
-                      </Group>
+                      
+                      {/* 服務名稱列表 */}
+                      {resource.services && resource.services.length > 0 && (
+                        <div style={{ marginBottom: '6px' }}>
+                          {resource.services.map((service: any, index: number) => (
+                            <div key={index} style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: '6px', 
+                              marginBottom: '3px' 
+                            }}>
+                              <Badge
+                                size="xs"
+                                variant="light"
+                                styles={{
+                                  root: {
+                                    backgroundColor: `rgba(${
+                                      service.type === '停車場' ? '76,110,245' : '18,184,134'
+                                    },0.15)`,
+                                    fontSize: '9px',
+                                    padding: '2px 5px',
+                                    borderRadius: '10px',
+                                    fontWeight: 500,
+                                    color: service.type === '停車場' ? '#4c6ef5' : '#12b886'
+                                  },
+                                }}
+                              >
+                                {service.type}
+                              </Badge>
+                              <Text size="xs" style={{ 
+                                color: '#495057', 
+                                fontSize: '11px', 
+                                lineHeight: '1.2',
+                                fontWeight: 500
+                              }}>
+                                {service.name}
+                              </Text>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </Box>
                   </Paper>
                 ))}

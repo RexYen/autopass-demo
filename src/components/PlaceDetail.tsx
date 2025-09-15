@@ -11,7 +11,6 @@ import {
   Textarea,
   Card,
   ActionIcon,
-  Tabs,
   Modal,
   Tooltip,
 } from '@mantine/core'
@@ -19,14 +18,11 @@ import {
   IconArrowLeft,
   IconTrash,
   IconBolt,
-  IconCar,
   IconPhone,
   IconClock,
   IconWorld,
   IconMapPin,
   IconGasStation,
-  IconTool,
-  IconSpray,
   IconNote,
   IconPhoto,
   IconPlus,
@@ -34,6 +30,10 @@ import {
   IconUpload,
   IconEdit,
   IconTag,
+  IconCar,
+  IconTool,
+  IconSpray,
+  IconSettings,
 } from '@tabler/icons-react'
 
 import { useState } from 'react'
@@ -209,30 +209,15 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
   const [addingStep, setAddingStep] = useState<'basic' | 'schedule' | 'dataSource'>('basic')
   
   // 添加 CSS 樣式
-  const tabStyle = `
-    .mantine-Tabs-tab {
-      transition: all 0.2s ease !important;
-      color: #6b7280 !important;
-    }
-    
-    .mantine-Tabs-tab:hover {
+  const customStyle = `
+    .service-type-card:hover {
       background-color: #f8fafc !important;
-      color: #0284c7 !important;
-      border-radius: 8px 8px 0 0 !important;
-    }
-    
-    .mantine-Tabs-tab[data-active="true"] {
-      background-color: #ffffff !important;
-      color: #0284c7 !important;
-      border-bottom: 2px solid #0284c7 !important;
-      font-weight: 600 !important;
+      border-color: #1976d2 !important;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(25, 118, 210, 0.15) !important;
     }
   `
   
-  // 地點圖片管理
-  const [placePhotos, setPlacePhotos] = useState<string[]>(place.photos || [])
-  // 如果是空值（新地點），預設為編輯模式；有資料則為查看模式
-  const [isEditingPhotos, setIsEditingPhotos] = useState((place.photos || []).length === 0)
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null)
   const [editingStep, setEditingStep] = useState<'basic' | 'schedule' | 'dataSource'>('basic')
   
@@ -261,6 +246,9 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
   const [isEditingEditorChoice, setIsEditingEditorChoice] = useState(false)
   const [editorChoiceText, setEditorChoiceText] = useState(place.editorChoice || '')
   
+  // 服務類型選擇狀態
+  const [isServiceTypeModalOpen, setIsServiceTypeModalOpen] = useState(false)
+  
   // const [expandedService, setExpandedService] = useState<string | null>(null) // Tab設計不需要
   
   const { showSuccess } = useNotification()
@@ -274,6 +262,7 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
     operatingHours: '',
     remarks: '',
     officialWebsite: '',
+    photos: [],
     evses: []
   })
 
@@ -349,7 +338,7 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
       status: newChargingService.status!,
       phone: newChargingService.phone || '',
       operatingHours: operatingHoursStr,
-      photos: [],
+      photos: newChargingService.photos || [],
       remarks: newChargingService.remarks || '',
       officialWebsite: newChargingService.officialWebsite || '',
       evses: newChargingService.evses || []
@@ -373,6 +362,7 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
       operatingHours: '',
       remarks: '',
       officialWebsite: '',
+      photos: [],
       evses: []
     })
     setOperatingHours({
@@ -396,6 +386,7 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
       operatingHours: service.operatingHours,
       remarks: service.remarks,
       officialWebsite: service.officialWebsite,
+      photos: service.photos,
       evses: service.evses
     })
     
@@ -442,6 +433,7 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
             operatingHours: operatingHoursStr,
             remarks: newChargingService.remarks || '',
             officialWebsite: newChargingService.officialWebsite || '',
+            photos: newChargingService.photos || [],
           }
         : service
     ))
@@ -539,38 +531,6 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
     })
   }
 
-  // 圖片管理函數
-  const handleEditPhotos = () => {
-    setIsEditingPhotos(true)
-  }
-
-  const handleSavePhotos = () => {
-    // TODO: 實際的儲存邏輯到後端
-    setIsEditingPhotos(false)
-    showSuccess('圖片已儲存', '儲存成功')
-  }
-
-  const handleCancelEditPhotos = () => {
-    // 重置回原始狀態
-    setPlacePhotos(place.photos || [])
-    setIsEditingPhotos(false)
-  }
-
-  const handleAddPhoto = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!isEditingPhotos) return
-    
-    const files = event.target.files
-    if (files) {
-      const newPhotos = Array.from(files).map(file => URL.createObjectURL(file))
-      setPlacePhotos(prev => [...prev, ...newPhotos])
-    }
-  }
-
-  const handleRemovePhoto = (index: number) => {
-    if (!isEditingPhotos) return
-    
-    setPlacePhotos(prev => prev.filter((_, i) => i !== index))
-  }
 
   return (
     <Box
@@ -582,7 +542,7 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
         maxWidth: '100%',
       }}
     >
-      <style>{tabStyle}</style>
+      <style>{customStyle}</style>
       {/* Header */}
       <Group 
         justify="space-between" 
@@ -836,269 +796,57 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
             </Box>
           </Card>
 
-          {/* 地點圖片區域 */}
-          <Card withBorder radius="8px" shadow="sm" bg="#ffffff">
-            <Stack gap="md">
-              <Group justify="space-between" align="center">
-                <Group gap="sm">
-                  <IconPhoto size={20} color="#495057" />
-                  <Text size="md" fw={600} style={{ color: '#495057' }}>
-                    地點圖片
-                  </Text>
-                  <Text size="sm" c="dimmed">
-                    ({placePhotos.length}/10)
-                  </Text>
-                </Group>
-                
-                {/* 編輯/儲存按鈕 */}
-                {!isEditingPhotos ? (
-                  <Button
-                    size="sm"
-                    variant="light"
-                    onClick={handleEditPhotos}
-                  >
-                    編輯圖片
-                  </Button>
-                ) : (
-                  /* 編輯模式下，只有當有圖片時才顯示儲存按鈕 */
-                  placePhotos.length > 0 && (
-                    <Group gap="sm">
-                      {/* 只有在原本有圖片的情況下才顯示取消按鈕 */}
-                      {(place.photos || []).length > 0 && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={handleCancelEditPhotos}
-                        >
-                          取消
-                        </Button>
-                      )}
-                      <Button
-                        size="sm"
-                        variant="filled"
-                        color="blue"
-                        onClick={handleSavePhotos}
-                      >
-                        {(place.photos || []).length === 0 ? '儲存圖片' : '儲存變更'}
-                      </Button>
-                    </Group>
-                  )
-                )}
-              </Group>
-              
-              {/* 隱藏的檔案輸入 */}
-              <input
-                id="photo-upload"
-                type="file"
-                multiple
-                accept="image/*"
-                style={{ display: 'none' }}
-                onChange={handleAddPhoto}
-              />
-              
-              {placePhotos.length === 0 ? (
-                <Card withBorder bg="#f8f9fa" style={{ 
-                  border: '2px dashed #dee2e6',
-                  borderRadius: '8px',
-                  textAlign: 'center',
-                  padding: '40px 20px'
-                }}>
-                  <Stack gap="md" align="center">
-                    <IconPhoto size={48} color="#868e96" />
-                    <Stack gap="xs" align="center">
-                      <Text size="md" fw={600} style={{ color: '#495057' }}>
-                        尚未上傳圖片
-                      </Text>
-                      <Text size="sm" style={{ color: '#6c757d' }}>
-                        為這個地點添加照片，讓使用者更容易找到位置
-                      </Text>
-                    </Stack>
-                    {isEditingPhotos && (
-                      <Button 
-                        leftSection={<IconUpload size={16} />}
-                        onClick={() => document.getElementById('photo-upload')?.click()}
-                        variant="light"
-                        size="sm"
-                      >
-                        立即上傳圖片
-                      </Button>
-                    )}
-                  </Stack>
-                </Card>
-              ) : (
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
-                  gap: '12px'
-                }}>
-                  {placePhotos.map((photo, index) => (
-                    <Box
-                      key={index}
-                      style={{
-                        position: 'relative',
-                        borderRadius: '8px',
-                        overflow: 'hidden',
-                        backgroundColor: '#f8f9fa',
-                        border: '1px solid #dee2e6'
-                      }}
-                    >
-                      <img
-                        src={photo}
-                        alt={`地點照片 ${index + 1}`}
-                        style={{
-                          width: '100%',
-                          height: '120px',
-                          objectFit: 'cover',
-                          display: 'block'
-                        }}
-                      />
-                      {isEditingPhotos && (
-                        <ActionIcon
-                          variant="filled"
-                          color="red"
-                          size="sm"
-                          style={{
-                            position: 'absolute',
-                            top: '8px',
-                            right: '8px'
-                          }}
-                          onClick={() => handleRemovePhoto(index)}
-                        >
-                          <IconX size={12} />
-                        </ActionIcon>
-                      )}
-                    </Box>
-                  ))}
-                  
-                  {/* 新增圖片按鈕 - 僅在編輯模式顯示 */}
-                  {isEditingPhotos && placePhotos.length < 10 && (
-                    <Box
-                      style={{
-                        height: '120px',
-                        border: '2px dashed #adb5bd',
-                        borderRadius: '8px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        cursor: 'pointer',
-                        backgroundColor: '#f8f9fa',
-                        transition: 'all 0.2s ease'
-                      }}
-                      onClick={() => document.getElementById('photo-upload')?.click()}
-                    >
-                      <Stack align="center" gap="xs">
-                        <IconPlus size={24} color="#6c757d" />
-                        <Text size="xs" c="dimmed">新增圖片</Text>
-                      </Stack>
-                    </Box>
-                  )}
-                </div>
-              )}
-            </Stack>
-          </Card>
 
-          {/* 服務管理 - 側邊導航式設計 (方案D) */}
+          {/* 充電服務管理 */}
           <Card withBorder radius="12px" shadow="xs" bg="#ffffff" style={{ 
             border: '1px solid #f1f3f4',
             overflow: 'hidden'
           }}>
+            {/* Header */}
+            <Box style={{
+              backgroundColor: '#ffffff',
+              borderBottom: '1px solid #e9ecef',
+              padding: '24px 24px 16px 24px'
+            }}>
+              <Group gap="md" align="center">
+                <Group gap="xs" align="center">
+                  <Box
+                    style={{
+                      padding: '6px',
+                      borderRadius: '6px',
+                      backgroundColor: '#e3f2fd',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    <IconSettings size={18} color="#1976d2" />
+                  </Box>
+                  <Title order={3} style={{ color: '#1976d2', fontWeight: 600 }}>
+                    服務管理
+                  </Title>
+                </Group>
+                
+                {/* 服務類型顯示 */}
+                {chargingServices.length > 0 && (
+                  <Badge size="sm" variant="light" color="blue" leftSection={<IconBolt size={12} />}>
+                    充電服務 {chargingServices.length}
+                  </Badge>
+                )}
+                {chargingServices.length === 0 && (
+                  <Text size="sm" c="dimmed">
+                    尚未設定服務
+                  </Text>
+                )}
+              </Group>
+            </Box>
 
-            {/* Top Navigation Tabs */}
-            <Tabs defaultValue="charging" variant="default">
-              {/* Tab Navigation */}
-              <Tabs.List style={{
-                backgroundColor: '#ffffff',
-                borderBottom: '1px solid #e9ecef',
-                padding: '16px 24px 0 24px',
-                gap: '8px'
-              }}>
-                <Tabs.Tab 
-                  value="charging" 
-                  leftSection={<IconBolt size={18} />}
-                  style={{
-                    padding: '12px 16px',
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    borderRadius: '8px 8px 0 0',
-                    border: 'none',
-                    backgroundColor: 'transparent'
-                  }}
-                >
-                  充電服務 {chargingServices.length > 0 && (
-                    <Badge size="sm" variant="light" color="blue" style={{ marginLeft: '8px' }}>
-                      {chargingServices.length}
-                    </Badge>
-                  )}
-                </Tabs.Tab>
-                
-                <Tabs.Tab 
-                  value="fueling" 
-                  leftSection={<IconGasStation size={18} />}
-                  style={{
-                    padding: '12px 16px',
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    borderRadius: '8px 8px 0 0',
-                    border: 'none',
-                    backgroundColor: 'transparent'
-                  }}
-                >
-                  加油服務
-                </Tabs.Tab>
-                
-                <Tabs.Tab 
-                  value="maintenance" 
-                  leftSection={<IconTool size={18} />}
-                  style={{
-                    padding: '12px 16px',
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    borderRadius: '8px 8px 0 0',
-                    border: 'none',
-                    backgroundColor: 'transparent'
-                  }}
-                >
-                  保修服務
-                </Tabs.Tab>
-                
-                <Tabs.Tab 
-                  value="washing" 
-                  leftSection={<IconSpray size={18} />}
-                  style={{
-                    padding: '12px 16px',
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    borderRadius: '8px 8px 0 0',
-                    border: 'none',
-                    backgroundColor: 'transparent'
-                  }}
-                >
-                  洗車服務
-                </Tabs.Tab>
-                
-                <Tabs.Tab 
-                  value="parking" 
-                  leftSection={<IconCar size={18} />}
-                  style={{
-                    padding: '12px 16px',
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    borderRadius: '8px 8px 0 0',
-                    border: 'none',
-                    backgroundColor: 'transparent'
-                  }}
-                >
-                  停車服務
-                </Tabs.Tab>
-              </Tabs.List>
-
-              {/* Content Area */}
-              <Box style={{ 
-                backgroundColor: '#ffffff',
-                padding: '24px',
-                minHeight: '500px'
-              }}>
-                  <Tabs.Panel value="charging">
+            {/* Content Area */}
+            <Box style={{ 
+              backgroundColor: '#ffffff',
+              padding: '24px',
+              minHeight: '500px'
+            }}>
                     <Stack gap="lg">
                   {/* 充電服務 Dashboard 型卡片 */}
                   {chargingServices.map((service) => (
@@ -1263,6 +1011,74 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
                           )}
                         </Group>
                       </Box>
+
+                      {/* 服務圖片展示 */}
+                      {service.photos && service.photos.length > 0 && (
+                        <Box mt="md" pt="md" style={{ 
+                          borderTop: '1px solid #f1f3f4'
+                        }}>
+                          <Group gap="xs" mb="sm">
+                            <Box
+                              style={{
+                                width: '20px',
+                                height: '20px',
+                                borderRadius: '4px',
+                                backgroundColor: '#f0f9ff',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                              }}
+                            >
+                              <IconPhoto size={12} color="#0369a1" />
+                            </Box>
+                            <Text size="sm" fw={600} style={{ color: '#374151' }}>
+                              服務圖片
+                            </Text>
+                          </Group>
+                          <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
+                            gap: '8px',
+                            maxHeight: '200px',
+                            overflowY: 'auto'
+                          }}>
+                            {service.photos.map((photo, index) => (
+                              <Box
+                                key={index}
+                                style={{
+                                  borderRadius: '6px',
+                                  overflow: 'hidden',
+                                  backgroundColor: '#f8f9fa',
+                                  border: '1px solid #e2e8f0',
+                                  cursor: 'pointer',
+                                  transition: 'transform 0.2s ease',
+                                }}
+                                onClick={() => {
+                                  // 點擊圖片可以放大查看
+                                  window.open(photo, '_blank')
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.transform = 'scale(1.02)'
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.transform = 'scale(1)'
+                                }}
+                              >
+                                <img
+                                  src={photo}
+                                  alt={`${service.name} 服務照片 ${index + 1}`}
+                                  style={{
+                                    width: '100%',
+                                    height: '80px',
+                                    objectFit: 'cover',
+                                    display: 'block'
+                                  }}
+                                />
+                              </Box>
+                            ))}
+                          </div>
+                        </Box>
+                      )}
 
                       {/* 充電設備列表 */}
                       {service.evses.length > 0 ? (
@@ -1682,6 +1498,8 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
                                 const value = e.currentTarget.value;
                                 setNewChargingService(prev => ({ ...prev, name: value }));
                               }}
+                              required
+                              withAsterisk
                             />
                             <Select
                               label="營運業者品牌"
@@ -1691,6 +1509,8 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
                               onChange={(value) => {
                                 setNewChargingService(prev => ({ ...prev, brand: value || '' }));
                               }}
+                              required
+                              withAsterisk
                               clearable
                             />
                           </Group>
@@ -1736,9 +1556,153 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
                             rows={3}
                           />
 
+                          {/* 服務圖片上傳 */}
+                          <Box>
+                            <Group gap="sm" mb="sm">
+                              <IconPhoto size={16} color="#495057" />
+                              <Text size="sm" fw={600} style={{ color: '#495057' }}>
+                                服務圖片
+                              </Text>
+                              <Text size="xs" c="dimmed">
+                                ({(newChargingService.photos || []).length}/5)
+                              </Text>
+                            </Group>
+                            
+                            {/* 隱藏的檔案輸入 */}
+                            <input
+                              id="service-photo-upload"
+                              type="file"
+                              multiple
+                              accept="image/*"
+                              style={{ display: 'none' }}
+                              onChange={(e) => {
+                                const files = e.target.files
+                                if (files) {
+                                  const newPhotos = Array.from(files).map(file => URL.createObjectURL(file))
+                                  setNewChargingService(prev => ({ 
+                                    ...prev, 
+                                    photos: [...(prev.photos || []), ...newPhotos].slice(0, 5)
+                                  }))
+                                }
+                              }}
+                            />
+                            
+                            {(newChargingService.photos || []).length === 0 ? (
+                              <Card withBorder bg="#f8f9fa" style={{ 
+                                border: '2px dashed #dee2e6',
+                                borderRadius: '8px',
+                                textAlign: 'center',
+                                padding: '24px 16px'
+                              }}>
+                                <Stack gap="sm" align="center">
+                                  <IconPhoto size={32} color="#868e96" />
+                                  <Stack gap="xs" align="center">
+                                    <Text size="sm" fw={500} style={{ color: '#495057' }}>
+                                      上傳服務圖片
+                                    </Text>
+                                    <Text size="xs" style={{ color: '#6c757d' }}>
+                                      為這個服務添加相關照片
+                                    </Text>
+                                  </Stack>
+                                  <Button 
+                                    leftSection={<IconUpload size={14} />}
+                                    onClick={() => document.getElementById('service-photo-upload')?.click()}
+                                    variant="light"
+                                    size="xs"
+                                  >
+                                    選擇圖片
+                                  </Button>
+                                </Stack>
+                              </Card>
+                            ) : (
+                              <div style={{
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))',
+                                gap: '8px'
+                              }}>
+                                {(newChargingService.photos || []).map((photo, index) => (
+                                  <Box
+                                    key={index}
+                                    style={{
+                                      position: 'relative',
+                                      borderRadius: '6px',
+                                      overflow: 'hidden',
+                                      backgroundColor: '#f8f9fa',
+                                      border: '1px solid #dee2e6'
+                                    }}
+                                  >
+                                    <img
+                                      src={photo}
+                                      alt={`服務照片 ${index + 1}`}
+                                      style={{
+                                        width: '100%',
+                                        height: '80px',
+                                        objectFit: 'cover',
+                                        display: 'block'
+                                      }}
+                                    />
+                                    <ActionIcon
+                                      variant="filled"
+                                      color="red"
+                                      size="xs"
+                                      style={{
+                                        position: 'absolute',
+                                        top: '4px',
+                                        right: '4px'
+                                      }}
+                                      onClick={() => {
+                                        setNewChargingService(prev => ({
+                                          ...prev,
+                                          photos: (prev.photos || []).filter((_, i) => i !== index)
+                                        }))
+                                      }}
+                                    >
+                                      <IconX size={10} />
+                                    </ActionIcon>
+                                  </Box>
+                                ))}
+                                
+                                {/* 新增圖片按鈕 */}
+                                {(newChargingService.photos || []).length < 5 && (
+                                  <Box
+                                    style={{
+                                      height: '80px',
+                                      border: '2px dashed #adb5bd',
+                                      borderRadius: '6px',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      cursor: 'pointer',
+                                      backgroundColor: '#f8f9fa',
+                                      transition: 'all 0.2s ease'
+                                    }}
+                                    onClick={() => document.getElementById('service-photo-upload')?.click()}
+                                  >
+                                    <Stack align="center" gap="xs">
+                                      <IconPlus size={16} color="#6c757d" />
+                                      <Text size="xs" c="dimmed">新增</Text>
+                                    </Stack>
+                                  </Box>
+                                )}
+                              </div>
+                            )}
+                          </Box>
+
                           <Group justify="flex-end" mt="lg">
-                            <Button variant="outline" onClick={handleCloseModal}>
-                              取消
+                            <Button 
+                              variant="outline" 
+                              onClick={() => {
+                                if (editingServiceId) {
+                                  // 編輯模式直接關閉
+                                  handleCloseModal()
+                                } else {
+                                  // 新增模式回到服務選擇
+                                  setIsAddingChargingService(false)
+                                  setIsServiceTypeModalOpen(true)
+                                }
+                              }}
+                            >
+                              {editingServiceId ? '取消' : '返回選擇服務'}
                             </Button>
                             <Button 
                               onClick={handleNextStep}
@@ -2101,105 +2065,240 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
                       color="blue"
                       size="md"
                       leftSection={<IconPlus size={18} />}
-                      onClick={() => setIsAddingChargingService(true)}
+                      onClick={() => setIsServiceTypeModalOpen(true)}
                       style={{
                         minWidth: '180px'
                       }}
                     >
-                      新增充電服務
+                      新增服務
                     </Button>
                   </Box>
-                    </Stack>
-                  </Tabs.Panel>
-
-                <Tabs.Panel value="fueling">
-                  <Box style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center',
-                    height: '400px'
-                  }}>
-                    <Stack gap="lg" align="center">
-                      <IconGasStation size={64} color="#9ca3af" />
-                      <Stack gap="xs" align="center">
-                        <Text size="lg" fw={600} style={{ color: '#495057' }}>
-                          加油服務
-                        </Text>
-                        <Text size="sm" c="dimmed" ta="center">
-                          此功能正在開發中，敬請期待
-                        </Text>
-                      </Stack>
-                    </Stack>
-                  </Box>
-                </Tabs.Panel>
-
-                <Tabs.Panel value="maintenance">
-                  <Box style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center',
-                    height: '400px'
-                  }}>
-                    <Stack gap="lg" align="center">
-                      <IconTool size={64} color="#9ca3af" />
-                      <Stack gap="xs" align="center">
-                        <Text size="lg" fw={600} style={{ color: '#495057' }}>
-                          保修服務
-                        </Text>
-                        <Text size="sm" c="dimmed" ta="center">
-                          此功能正在開發中，敬請期待
-                        </Text>
-                      </Stack>
-                    </Stack>
-                  </Box>
-                </Tabs.Panel>
-
-                <Tabs.Panel value="washing">
-                  <Box style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center',
-                    height: '400px'
-                  }}>
-                    <Stack gap="lg" align="center">
-                      <IconSpray size={64} color="#9ca3af" />
-                      <Stack gap="xs" align="center">
-                        <Text size="lg" fw={600} style={{ color: '#495057' }}>
-                          洗車服務
-                        </Text>
-                        <Text size="sm" c="dimmed" ta="center">
-                          此功能正在開發中，敬請期待
-                        </Text>
-                      </Stack>
-                    </Stack>
-                  </Box>
-                </Tabs.Panel>
-
-                <Tabs.Panel value="parking">
-                  <Box style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center',
-                    height: '400px'
-                  }}>
-                    <Stack gap="lg" align="center">
-                      <IconCar size={64} color="#9ca3af" />
-                      <Stack gap="xs" align="center">
-                        <Text size="lg" fw={600} style={{ color: '#495057' }}>
-                          停車服務
-                        </Text>
-                        <Text size="sm" c="dimmed" ta="center">
-                          此功能正在開發中，敬請期待
-                        </Text>
-                      </Stack>
-                    </Stack>
-                  </Box>
-                </Tabs.Panel>
-              </Box>
-            </Tabs>
+            </Stack>
+            </Box>
           </Card>
         </Stack>
       </Box>
+
+      {/* 服務類型選擇 Modal */}
+      <Modal
+        opened={isServiceTypeModalOpen}
+        onClose={() => setIsServiceTypeModalOpen(false)}
+        title={
+          <Group gap="xs">
+            <IconPlus size={20} color="#1976d2" />
+            <Text fw={600} style={{ color: '#1976d2' }}>
+              選擇服務類型
+            </Text>
+          </Group>
+        }
+        size="md"
+        centered
+      >
+        <Stack gap="md">
+          <Text size="sm" c="dimmed" mb="lg">
+            請選擇您要新增的服務類型
+          </Text>
+          
+          <Stack gap="xs">
+            {/* 充電服務 - 可點擊 */}
+            <Card
+              withBorder
+              radius="8px"
+              style={{ 
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                border: '1px solid #e9ecef'
+              }}
+              onClick={() => {
+                setIsServiceTypeModalOpen(false)
+                setIsAddingChargingService(true)
+              }}
+              className="service-type-card"
+            >
+              <Group gap="md" align="center" p="sm">
+                <Box
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '8px',
+                    backgroundColor: '#e3f2fd',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <IconBolt size={20} color="#1976d2" />
+                </Box>
+                <div style={{ flex: 1 }}>
+                  <Text fw={600} style={{ color: '#1976d2' }}>
+                    充電服務
+                  </Text>
+                  <Text size="sm" c="dimmed">
+                    設定電動車充電站和充電槍
+                  </Text>
+                </div>
+                <Badge color="green" variant="light" size="sm">
+                  可用
+                </Badge>
+              </Group>
+            </Card>
+
+            {/* 停車服務 - 不可點擊 */}
+            <Card
+              withBorder
+              radius="8px"
+              style={{ 
+                border: '1px solid #e9ecef',
+                opacity: 0.6
+              }}
+            >
+              <Group gap="md" align="center" p="sm">
+                <Box
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '8px',
+                    backgroundColor: '#f8f9fa',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <IconCar size={20} color="#6c757d" />
+                </Box>
+                <div style={{ flex: 1 }}>
+                  <Text fw={600} style={{ color: '#6c757d' }}>
+                    停車服務
+                  </Text>
+                  <Text size="sm" c="dimmed">
+                    設定停車場和停車位資訊
+                  </Text>
+                </div>
+                <Badge color="gray" variant="light" size="sm">
+                  開發中
+                </Badge>
+              </Group>
+            </Card>
+
+            {/* 加油服務 - 不可點擊 */}
+            <Card
+              withBorder
+              radius="8px"
+              style={{ 
+                border: '1px solid #e9ecef',
+                opacity: 0.6
+              }}
+            >
+              <Group gap="md" align="center" p="sm">
+                <Box
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '8px',
+                    backgroundColor: '#f8f9fa',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <IconGasStation size={20} color="#6c757d" />
+                </Box>
+                <div style={{ flex: 1 }}>
+                  <Text fw={600} style={{ color: '#6c757d' }}>
+                    加油服務
+                  </Text>
+                  <Text size="sm" c="dimmed">
+                    設定加油站和油槍資訊
+                  </Text>
+                </div>
+                <Badge color="gray" variant="light" size="sm">
+                  開發中
+                </Badge>
+              </Group>
+            </Card>
+
+            {/* 洗車服務 - 不可點擊 */}
+            <Card
+              withBorder
+              radius="8px"
+              style={{ 
+                border: '1px solid #e9ecef',
+                opacity: 0.6
+              }}
+            >
+              <Group gap="md" align="center" p="sm">
+                <Box
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '8px',
+                    backgroundColor: '#f8f9fa',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <IconSpray size={20} color="#6c757d" />
+                </Box>
+                <div style={{ flex: 1 }}>
+                  <Text fw={600} style={{ color: '#6c757d' }}>
+                    洗車服務
+                  </Text>
+                  <Text size="sm" c="dimmed">
+                    設定洗車場和洗車設備
+                  </Text>
+                </div>
+                <Badge color="gray" variant="light" size="sm">
+                  開發中
+                </Badge>
+              </Group>
+            </Card>
+
+            {/* 保修服務 - 不可點擊 */}
+            <Card
+              withBorder
+              radius="8px"
+              style={{ 
+                border: '1px solid #e9ecef',
+                opacity: 0.6
+              }}
+            >
+              <Group gap="md" align="center" p="sm">
+                <Box
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '8px',
+                    backgroundColor: '#f8f9fa',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <IconTool size={20} color="#6c757d" />
+                </Box>
+                <div style={{ flex: 1 }}>
+                  <Text fw={600} style={{ color: '#6c757d' }}>
+                    保修服務
+                  </Text>
+                  <Text size="sm" c="dimmed">
+                    設定維修廠和保養服務
+                  </Text>
+                </div>
+                <Badge color="gray" variant="light" size="sm">
+                  開發中
+                </Badge>
+              </Group>
+            </Card>
+          </Stack>
+
+          <Group justify="flex-end" mt="lg">
+            <Button variant="outline" onClick={() => setIsServiceTypeModalOpen(false)}>
+              取消
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
 
       {/* 小編精選編輯 Modal */}
       <Modal
