@@ -1,25 +1,39 @@
 import React, { useState, useCallback } from 'react'
-import { 
-  Stack, 
+import {
+  Stack,
   NavLink,
   Box,
   Badge,
+  Text,
+  Divider,
 } from '@mantine/core'
 import {
   IconBrandAsana,
-  IconAddressBook, 
+  IconAddressBook,
   IconMap2,
   IconBuildingStore,
   IconReportMoney,
   IconChevronDown,
+  IconLayoutDashboard,
+  IconClipboardList,
+  IconHistory,
 } from '@tabler/icons-react'
 
-// Logo image
-const autopassLogo = "/autopass.png"
+const autopassLogo = '/autopass.png'
+
+export type NavigationView =
+  | 'welcome'
+  | 'vendor-list'
+  | 'map-management'
+  | 'store-management'
+  | 'task-management'
+  | 'autopass-dashboard'
+  | 'autopass-tickets'
+  | 'autopass-history'
 
 interface NavigationProps {
-  currentView?: string;
-  onNavigate?: (view: 'welcome' | 'vendor-list' | 'map-management' | 'store-management' | 'task-management') => void;
+  currentView?: string
+  onNavigate?: (view: NavigationView) => void
 }
 
 export function Navigation({ currentView, onNavigate }: NavigationProps) {
@@ -27,30 +41,59 @@ export function Navigation({ currentView, onNavigate }: NavigationProps) {
     switch (currentView) {
       case 'vendor-list':
       case 'vendor-detail':
-        return 'vendors';
+        return 'vendors'
       case 'map-management':
-        return 'maps';
+        return 'maps'
       case 'store-management':
-        return 'stores';
+        return 'stores'
       case 'task-management':
-        return 'tasks';
+        return 'tasks'
+      case 'autopass-dashboard':
+        return 'autopass-dashboard'
+      case 'autopass-tickets':
+      case 'autopass-ticket-detail':
+        return 'autopass-tickets'
+      case 'autopass-history':
+        return 'autopass-history'
       case 'welcome':
-        return 'none'; // 首頁時不高亮任何選項
+        return 'none'
       default:
-        return 'none';
+        return 'none'
     }
-  }, [currentView]);
+  }, [currentView])
 
   const [active, setActive] = useState(getActiveKey())
 
-  // 同步 active 狀態與 currentView
   React.useEffect(() => {
-    setActive(getActiveKey());
-  }, [currentView, getActiveKey]);
+    setActive(getActiveKey())
+  }, [currentView, getActiveKey])
+
+  const navItemStyles = (isActive: boolean) => ({
+    root: {
+      borderRadius: 4,
+      padding: '12px',
+      height: '50px',
+      width: '216px',
+      display: 'flex',
+      alignItems: 'center',
+      marginBottom: 0,
+      backgroundColor: isActive ? 'rgba(34,139,230,0.1)' : '#ffffff',
+      color: isActive ? '#228be6' : '#000000',
+    },
+    label: {
+      fontWeight: 700,
+      fontSize: '14px',
+      lineHeight: '20px',
+      fontFamily: 'Noto Sans TC, sans-serif',
+    },
+    section: {
+      marginRight: '12px',
+    },
+  } as const)
 
   return (
-    <Stack gap={0} h="100%" style={{ height: '901px' }}>
-      {/* Logo 區域 - 可點擊返回首頁 */}
+    <Stack gap={0} h="100%" style={{ minHeight: '901px' }}>
+      {/* Logo */}
       <Box
         mx="12px"
         mb="0"
@@ -63,24 +106,24 @@ export function Navigation({ currentView, onNavigate }: NavigationProps) {
           padding: '12px',
           backgroundColor: '#ffffff',
           borderRadius: '4px',
-          width: 'calc(100% - 24px)', // 確保不會超出容器寬度
+          width: 'calc(100% - 24px)',
           maxWidth: '216px',
-          minWidth: '192px', // 設定最小寬度避免太窄
-          overflow: 'hidden', // 防止內容溢出
+          minWidth: '192px',
+          overflow: 'hidden',
           cursor: 'pointer',
         }}
       >
-        <img 
-          src={autopassLogo} 
-          alt="Autopass" 
-          style={{ 
+        <img
+          src={autopassLogo}
+          alt="Autopass"
+          style={{
             height: '40px',
             width: 'auto',
-            maxWidth: '140px', // 增加 logo 最大寬度
+            maxWidth: '140px',
             objectFit: 'contain',
-            flexShrink: 0, // 防止 logo 被壓縮
-            imageRendering: 'crisp-edges', // 改善PNG解析度
-          }} 
+            flexShrink: 0,
+            imageRendering: 'crisp-edges',
+          }}
         />
         <Badge
           variant="light"
@@ -96,154 +139,122 @@ export function Navigation({ currentView, onNavigate }: NavigationProps) {
               borderRadius: '16px',
               padding: '2px 12px',
               border: 'none',
-              flexShrink: 0, // 防止 badge 被壓縮
-              whiteSpace: 'nowrap', // 防止文字換行
-            }
+              flexShrink: 0,
+              whiteSpace: 'nowrap',
+            },
           }}
         >
-          v2.0.0
+          v2.1.0
         </Badge>
       </Box>
 
-      {/* 導航項目區域 */}
+      {/* 通行費自動繳（新功能放最前面） */}
+      <Stack gap={0} px="12px" mt="8px">
+        <Box px="12px" pb="6px">
+          <Text
+            size="xs"
+            c="dimmed"
+            fw={600}
+            style={{ letterSpacing: '0.4px', fontFamily: 'Noto Sans TC, sans-serif' }}
+          >
+            通行費自動繳
+          </Text>
+        </Box>
+
+        <NavLink
+          href="#"
+          label="Dashboard"
+          leftSection={<IconLayoutDashboard size={16} />}
+          active={active === 'autopass-dashboard'}
+          onClick={() => {
+            setActive('autopass-dashboard')
+            onNavigate?.('autopass-dashboard')
+          }}
+          styles={navItemStyles(active === 'autopass-dashboard')}
+        />
+        <NavLink
+          href="#"
+          label="查繳任務"
+          leftSection={<IconClipboardList size={16} />}
+          active={active === 'autopass-tickets'}
+          onClick={() => {
+            setActive('autopass-tickets')
+            onNavigate?.('autopass-tickets')
+          }}
+          styles={navItemStyles(active === 'autopass-tickets')}
+        />
+        <NavLink
+          href="#"
+          label="歷史任務"
+          leftSection={<IconHistory size={16} />}
+          active={active === 'autopass-history'}
+          onClick={() => {
+            setActive('autopass-history')
+            onNavigate?.('autopass-history')
+          }}
+          styles={navItemStyles(active === 'autopass-history')}
+        />
+      </Stack>
+
+      <Divider my="16px" mx="20px" />
+
+      {/* 既有：場站營運（保留作為其他系統入口） */}
       <Stack gap={0} px="12px">
-        {/* 任務管理 */}
+        <Box px="12px" pb="6px">
+          <Text
+            size="xs"
+            c="dimmed"
+            fw={600}
+            style={{ letterSpacing: '0.4px', fontFamily: 'Noto Sans TC, sans-serif' }}
+          >
+            場站營運
+          </Text>
+        </Box>
+
         <NavLink
           href="#"
           label="任務管理"
           leftSection={<IconBrandAsana size={16} />}
           active={active === 'tasks'}
           onClick={() => {
-            setActive('tasks');
-            onNavigate?.('task-management');
+            setActive('tasks')
+            onNavigate?.('task-management')
           }}
-          styles={{
-            root: {
-              borderRadius: 4,
-              padding: '12px',
-              height: '50px',
-              width: '216px',
-              display: 'flex',
-              alignItems: 'center',
-              marginBottom: 0,
-              backgroundColor: active === 'tasks' ? 'rgba(34,139,230,0.1)' : '#ffffff',
-              color: active === 'tasks' ? '#228be6' : '#000000',
-            },
-            label: {
-              fontWeight: 700,
-              fontSize: '14px',
-              lineHeight: '20px',
-              fontFamily: 'Noto Sans TC, sans-serif',
-            },
-            section: {
-              marginRight: '12px',
-            }
-          }}
+          styles={navItemStyles(active === 'tasks')}
         />
-
-        {/* 業者管理 - 當前選中 */}
         <NavLink
           href="#"
           label="業者管理"
           leftSection={<IconAddressBook size={16} />}
           active={active === 'vendors'}
           onClick={() => {
-            setActive('vendors');
-            onNavigate?.('vendor-list');
+            setActive('vendors')
+            onNavigate?.('vendor-list')
           }}
-          styles={{
-            root: {
-              borderRadius: 4,
-              padding: '12px',
-              height: '50px',
-              width: '216px',
-              display: 'flex',
-              alignItems: 'center',
-              marginBottom: 0,
-              backgroundColor: active === 'vendors' ? 'rgba(34,139,230,0.1)' : '#ffffff',
-              color: active === 'vendors' ? '#228be6' : '#000000',
-            },
-            label: {
-              fontWeight: 700,
-              fontSize: '14px',
-              lineHeight: '20px',
-              fontFamily: 'Noto Sans TC, sans-serif',
-            },
-            section: {
-              marginRight: '12px',
-            }
-          }}
+          styles={navItemStyles(active === 'vendors')}
         />
-
-        {/* 圖資管理 */}
         <NavLink
           href="#"
           label="圖資管理"
           leftSection={<IconMap2 size={16} />}
           active={active === 'maps'}
           onClick={() => {
-            setActive('maps');
-            onNavigate?.('map-management');
+            setActive('maps')
+            onNavigate?.('map-management')
           }}
-          styles={{
-            root: {
-              borderRadius: 4,
-              padding: '12px',
-              height: '50px',
-              width: '216px',
-              display: 'flex',
-              alignItems: 'center',
-              marginBottom: 0,
-              backgroundColor: active === 'maps' ? 'rgba(34,139,230,0.1)' : '#ffffff',
-              color: active === 'maps' ? '#228be6' : '#000000',
-            },
-            label: {
-              fontWeight: 700,
-              fontSize: '14px',
-              lineHeight: '20px',
-              fontFamily: 'Noto Sans TC, sans-serif',
-            },
-            section: {
-              marginRight: '12px',
-            }
-          }}
+          styles={navItemStyles(active === 'maps')}
         />
-
-        {/* 商店管理 */}
         <NavLink
           href="#"
           label="商店管理"
           leftSection={<IconBuildingStore size={16} />}
           active={active === 'stores'}
           onClick={() => {
-            setActive('stores');
-            onNavigate?.('store-management');
+            setActive('stores')
+            onNavigate?.('store-management')
           }}
-          styles={{
-            root: {
-              borderRadius: 4,
-              padding: '12px',
-              height: '50px',
-              width: '216px',
-              display: 'flex',
-              alignItems: 'center',
-              marginBottom: 0,
-              backgroundColor: active === 'stores' ? 'rgba(34,139,230,0.1)' : '#ffffff',
-              color: active === 'stores' ? '#228be6' : '#000000',
-            },
-            label: {
-              fontWeight: 700,
-              fontSize: '14px',
-              lineHeight: '20px',
-              fontFamily: 'Noto Sans TC, sans-serif',
-            },
-            section: {
-              marginRight: '12px',
-            }
-          }}
+          styles={navItemStyles(active === 'stores')}
         />
-
-        {/* 財務管理 */}
         <NavLink
           href="#"
           label="財務管理"
@@ -251,28 +262,7 @@ export function Navigation({ currentView, onNavigate }: NavigationProps) {
           rightSection={<IconChevronDown size={16} />}
           active={active === 'finance'}
           onClick={() => setActive('finance')}
-          styles={{
-            root: {
-              borderRadius: 4,
-              padding: '12px',
-              height: '50px',
-              width: '216px',
-              display: 'flex',
-              alignItems: 'center',
-              marginBottom: 0,
-              backgroundColor: active === 'finance' ? 'rgba(34,139,230,0.1)' : '#ffffff',
-              color: active === 'finance' ? '#228be6' : '#000000',
-            },
-            label: {
-              fontWeight: 700,
-              fontSize: '14px',
-              lineHeight: '20px',
-              fontFamily: 'Noto Sans TC, sans-serif',
-            },
-            section: {
-              marginRight: '12px',
-            }
-          }}
+          styles={navItemStyles(active === 'finance')}
         />
       </Stack>
     </Stack>

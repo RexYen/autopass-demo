@@ -8,82 +8,142 @@ import { StoreManagement } from './components/StoreManagement'
 import { TaskManagement } from './components/TaskManagement'
 import { Navigation } from './components/Navigation'
 import { Welcome } from './components/Welcome'
+import { AutopassDashboard } from './components/AutopassDashboard'
+import { AutopassTickets } from './components/AutopassTickets'
+import { AutopassTicketDetail } from './components/AutopassTicketDetail'
 import { NotificationProvider } from './hooks/useNotification'
+import type { TicketStatus } from './types/autopass'
 
-type CurrentView = 'welcome' | 'vendor-list' | 'vendor-detail' | 'map-management' | 'store-management' | 'task-management'
+type CurrentView =
+  | 'welcome'
+  | 'vendor-list'
+  | 'vendor-detail'
+  | 'map-management'
+  | 'store-management'
+  | 'task-management'
+  | 'autopass-dashboard'
+  | 'autopass-tickets'
+  | 'autopass-ticket-detail'
+  | 'autopass-history'
 
 function App() {
-  const [currentView, setCurrentView] = useState<CurrentView>('welcome');
-  const [selectedVendorName, setSelectedVendorName] = useState<string>('');
-  const [isNewVendor, setIsNewVendor] = useState<boolean>(false);
+  const [currentView, setCurrentView] = useState<CurrentView>('autopass-dashboard')
+  const [selectedVendorName, setSelectedVendorName] = useState<string>('')
+  const [isNewVendor, setIsNewVendor] = useState<boolean>(false)
+  const [selectedTicketId, setSelectedTicketId] = useState<string>('')
+  const [ticketsInitialFilter, setTicketsInitialFilter] = useState<TicketStatus | undefined>()
+  const [ticketReturnView, setTicketReturnView] = useState<'autopass-tickets' | 'autopass-history'>(
+    'autopass-tickets',
+  )
 
   const handleViewVendor = (vendorName: string, isNew: boolean = false) => {
-    setSelectedVendorName(vendorName);
-    setIsNewVendor(isNew);
-    setCurrentView('vendor-detail');
-  };
+    setSelectedVendorName(vendorName)
+    setIsNewVendor(isNew)
+    setCurrentView('vendor-detail')
+  }
 
   const handleBackToList = () => {
-    setCurrentView('vendor-list');
-    setSelectedVendorName('');
-    setIsNewVendor(false);
-  };
+    setCurrentView('vendor-list')
+    setSelectedVendorName('')
+    setIsNewVendor(false)
+  }
 
-  const handleNavigate = (view: CurrentView) => {
-    setCurrentView(view);
-    if (view !== 'vendor-detail') {
-      setSelectedVendorName('');
-      setIsNewVendor(false);
+  const handleNavigate = (view: Exclude<CurrentView, 'vendor-detail' | 'autopass-ticket-detail'>) => {
+    setCurrentView(view)
+    if (view !== 'autopass-tickets') {
+      setTicketsInitialFilter(undefined)
     }
-  };
+    setSelectedVendorName('')
+    setIsNewVendor(false)
+  }
+
+  const handleJumpToTickets = (filterStatus?: TicketStatus) => {
+    setTicketsInitialFilter(filterStatus)
+    setCurrentView('autopass-tickets')
+  }
+
+  const handleViewTicket = (ticketId: string, fromView: 'autopass-tickets' | 'autopass-history' = 'autopass-tickets') => {
+    setSelectedTicketId(ticketId)
+    setTicketReturnView(fromView)
+    setCurrentView('autopass-ticket-detail')
+  }
+
+  const handleBackToTickets = () => {
+    setCurrentView(ticketReturnView)
+    setSelectedTicketId('')
+  }
 
   const renderMainContent = () => {
     switch (currentView) {
       case 'welcome':
-        return <Welcome onNavigate={handleNavigate} />;
+        return <Welcome onNavigate={handleNavigate} />
       case 'vendor-detail':
         return (
-          <VendorDetail 
+          <VendorDetail
             vendorName={selectedVendorName}
             onBack={handleBackToList}
             isNewVendor={isNewVendor}
           />
-        );
+        )
       case 'map-management':
-        return <MapManagement />;
+        return <MapManagement />
       case 'task-management':
-        return <TaskManagement />;
+        return <TaskManagement />
       case 'store-management':
-        return <StoreManagement 
-          onViewVendor={(vendorId) => {
-            // 根據vendorId找到對應的業者名稱並跳轉到業者詳情
-            const vendorNames = ['世潮企業股份有限公司', '經國能源股份有限公司平鎮分公司', '連展電能科技股份有限公司', '車容坊股份有限公司鳳壹營業所', '坤業加油站有限公司莒光路營業所'];
-            const vendorName = vendorNames[vendorId - 1];
-            if (vendorName) {
-              handleViewVendor(vendorName);
-            }
-          }}
-          onViewPlace={() => {
-            // 跳轉到地圖管理頁面
-            setCurrentView('map-management');
-          }}
-          onViewStore={(storeId) => {
-            // TODO: 實現商店詳情頁面
-            console.log('Navigate to store detail:', storeId);
-          }}
-        />;
+        return (
+          <StoreManagement
+            onViewVendor={(vendorId) => {
+              const vendorNames = [
+                '世潮企業股份有限公司',
+                '經國能源股份有限公司平鎮分公司',
+                '連展電能科技股份有限公司',
+                '車容坊股份有限公司鳳壹營業所',
+                '坤業加油站有限公司莒光路營業所',
+              ]
+              const vendorName = vendorNames[vendorId - 1]
+              if (vendorName) handleViewVendor(vendorName)
+            }}
+            onViewPlace={() => setCurrentView('map-management')}
+            onViewStore={(storeId) => {
+              console.log('Navigate to store detail:', storeId)
+            }}
+          />
+        )
       case 'vendor-list':
-        return <VendorManagement onViewVendor={handleViewVendor} />;
+        return <VendorManagement onViewVendor={handleViewVendor} />
+      case 'autopass-dashboard':
+        return <AutopassDashboard onJumpToTickets={handleJumpToTickets} />
+      case 'autopass-tickets':
+        return (
+          <AutopassTickets
+            onViewDetail={(id) => handleViewTicket(id, 'autopass-tickets')}
+            initialStatusFilter={ticketsInitialFilter}
+          />
+        )
+      case 'autopass-ticket-detail':
+        return (
+          <AutopassTicketDetail
+            ticketId={selectedTicketId}
+            onBack={handleBackToTickets}
+          />
+        )
+      case 'autopass-history':
+        return (
+          <AutopassTickets
+            onViewDetail={(id) => handleViewTicket(id, 'autopass-history')}
+            mode="history"
+          />
+        )
       default:
-        return <Welcome onNavigate={handleNavigate} />;
+        return <AutopassDashboard onJumpToTickets={handleJumpToTickets} />
     }
-  };
+  }
 
   return (
     <NotificationProvider>
       <AppShell
         navbar={{ width: 240, breakpoint: 'sm', collapsed: { desktop: false } }}
-        padding='md'
+        padding="md"
         styles={{
           main: {
             backgroundColor: '#f8f9fa',
@@ -92,23 +152,21 @@ function App() {
           navbar: {
             backgroundColor: '#ffffff',
             borderRight: 'none',
-          }
+          },
         }}
       >
         <AppShell.Navbar p={0}>
           <Navigation currentView={currentView} onNavigate={handleNavigate} />
         </AppShell.Navbar>
 
-        <AppShell.Main>
-          {renderMainContent()}
-        </AppShell.Main>
+        <AppShell.Main>{renderMainContent()}</AppShell.Main>
       </AppShell>
-      <Notifications 
-        position="bottom-right" 
+      <Notifications
+        position="bottom-right"
         styles={{
           root: {
             right: '20px !important',
-          }
+          },
         }}
       />
     </NotificationProvider>
