@@ -1,58 +1,5 @@
-/* 覆蓋 Mantine Notifications 的預設樣式 */
-.mantine-Notifications-root .mantine-Notification-root {
-  background: transparent !important;
-  border: none !important;
-  padding: 0 !important;
-  box-shadow: none !important;
-}
-
-.mantine-Notifications-root .mantine-Notification-root::before {
-  display: none !important;
-}
-
-.mantine-Notifications-root .mantine-Notification-icon {
-  display: none !important;
-}
-
-.mantine-Notifications-root .mantine-Notification-loader {
-  display: none !important;
-}
-
-.mantine-Notifications-root .mantine-Notification-closeButton {
-  display: none !important;
-}
-
-.mantine-Notifications-root .mantine-Notification-description {
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-.mantine-Notifications-root .mantine-Notification-body {
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-/* 強制設定通知容器位置 */
+/* Notification 容器位置 */
 .mantine-Notifications-root {
   right: 20px !important;
   position: fixed !important;
-}
-
-/* 針對不同視窗寬度都強制設定 */
-@media (min-width: 320px) {
-  .mantine-Notifications-root {
-    right: 20px !important;
-  }
-}
-
-@media (min-width: 768px) {
-  .mantine-Notifications-root {
-    right: 20px !important;
-  }
-}
-
-@media (min-width: 1024px) {
-  .mantine-Notifications-root {
-    right: 20px !important;
-  }
 }

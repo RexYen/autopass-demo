@@ -22,13 +22,13 @@
 
 ```
 通行費自動繳
-├── 🎫 查繳任務        /autopass-tickets      ← 預設入口（非終結態）
-│   └── 任務詳情      /autopass-tickets/:id
-├── 📋 歷史任務        /autopass-history       ← 終結態（paid/no-fee/counter-required/unable-to-close）
-└── 📤 對帳匯出       /autopass-export
+├── 🎫 查繳任務        /autopass/tickets      ← 預設入口（非終結態）
+│       └─（任務詳情：右側 Drawer，無獨立 URL）
+├── 📋 歷史任務        /autopass/history       ← 終結態（paid/no-fee/counter-required/unable-to-close）
+└── 📤 對帳匯出       /autopass/export
 ```
 
-實際以 `currentView` state 切換（沿用 `App.tsx` 模式）。Dashboard 已移除，預設 view 為查繳任務。
+實際以 `currentView` state 切換（沿用 `App.tsx` 模式）。Dashboard 已移除，預設 view 為查繳任務。**任務詳情改為 Drawer**（不再是獨立頁面），無深度連結；舊 `/autopass/tickets/:id` 路徑會 redirect 回列表。
 
 ## 3. 工單流程概念
 
@@ -82,7 +82,7 @@
 | 需臨櫃繳費（整單） | `counter-required` | 寄信引導臨櫃 | 終結 |
 | 查詢失敗 | `query-failed` | 寄信「請更新資料」 | 等用戶更新 → 自動回待查詢 |
 | 查到待繳費用 | `invoice-success`（成功）/ `invoice-failed`（失敗） | 同步請款 | 成功 → 線下代繳 → 確認；失敗 → 寄信 + 等重試 |
-| 查到 + 部分臨櫃 | 同上，但 ticket 多 `counterAmount` 欄位 | 同上 + 通知用戶臨櫃自繳 | 同上 |
+| 查到 + 部分臨櫃 | 同上（資料層與「查到金額」一致，臨櫃金額不存）| 同上 + 通知用戶臨櫃自繳 | 同上 |
 
 ## 4. 頁面內容
 
@@ -91,6 +91,8 @@
 **核心設計目標：列表頁完成主要操作，詳情頁只做歷程查看與深度編輯。**
 
 #### 結構
+
+> 卡片底部 CTA 區由左至右為：**主 CTA（依狀態）｜ 查看詳情 icon button（👁，非終結態才顯示）｜ ⋮ 選單**。終結態的主 CTA 本來就是「查看詳情」，不再重複顯示獨立 icon。
 
 - **服務 Tabs（5 個）**：ETC 通行費 / 汽燃費 / 汽燃費逾期罰緩 / 交通罰緩 / 違反強制險罰緩。每個 tab 計數即時顯示。
 - **搜尋**：車牌、用戶名、Ticket ID、身分證／統編。
@@ -110,10 +112,10 @@
 
 | Status | 主 CTA | 主 CTA 行為 | ⋮ 選單（依狀態） | ⋮ 選單（通用尾巴） |
 | --- | --- | --- | --- | --- |
-| `pending-query` | 回填查詢結果 | 開 Modal（5 選 1） | — | 加備註 / 查看詳情 / 複製 ID |
-| `query-failed` | 補寄通知信 | 開確認 Modal → 確認後寄信 | 強制改為待查詢 / 修改車籍資料 / 標記為無法結單（開確認 Modal → 確認後 `unable-to-close`，移到 history） | 加備註 / 查看詳情 / 複製 ID |
-| `invoice-failed` | 重試請款 | 開確認 Modal（顯示金額／上次失敗原因）→ 確認後模擬同步請款成功 → `invoice-success` | 補寄付款通知信 / 標記為無法結單（開確認 Modal → 確認後 `unable-to-close`，移到 history） | 加備註 / 查看詳情 / 複製 ID |
-| `invoice-success` | 確認已代繳 | 開確認 Modal（顯示金額／混合說明）→ 確認後 `paid` 並移到歷史 | — | 加備註 / 查看詳情 / 複製 ID |
+| `pending-query` | 回填查詢結果 | 開 Modal（5 選 1） | — | 加備註 / 複製 ID |
+| `query-failed` | 補寄通知信 | 開確認 Modal → 確認後寄信 | 標記為無法結單（開確認 Modal → 確認後 `unable-to-close`，移到 history） | 加備註 / 複製 ID |
+| `invoice-failed` | 重試請款 | 開確認 Modal（顯示金額／上次失敗原因）→ 確認後模擬同步請款成功 → `invoice-success` | 補寄付款通知信 / 標記為無法結單（開確認 Modal → 確認後 `unable-to-close`，移到 history） | 加備註 / 複製 ID |
+| `invoice-success` | 確認已代繳 | 開確認 Modal（顯示金額／混合說明）→ 確認後 `paid` 並移到歷史 | — | 加備註 / 複製 ID |
 | 終結態（paid / no-fee / counter-required / unable-to-close） | 查看詳情 | 進詳情頁 | — | 加備註 / 複製 ID |
 
 > 終結態因為沒有業務動作，主 CTA 退回為「查看詳情」維持版面一致。
@@ -124,18 +126,19 @@
 - 票上摘要（Ticket ID、服務、用戶、車牌）
 - 線下查繳平台連結（`platformUrl`，外連）
 - Radio 5 選 1：無需繳費 / 整單臨櫃 / 查詢失敗 / 查到金額 / 查到+部分臨櫃
-- 條件式金額輸入：
-  - 「查到金額」→ 1 個 `NumberInput`（線上可繳）
-  - 「查到+部分臨櫃」→ 2 個 `NumberInput`（線上可繳 + 臨櫃須繳）
-- 提交後即時更新對應卡片的 `status` / `amount` / `counterAmount`，並 toast 模擬請款結果
+- 條件式金額輸入：「查到金額」與「查到+部分臨櫃」皆只填 1 個 `NumberInput`（線上可繳），臨櫃金額不填，由用戶自繳、後台不追蹤
+- 「混合」與「純線上」資料層相同（`status: invoice-success`, `amount: X`, `counterAmount: null`），差別只在 toast 訊息有沒有提示「臨櫃部分自繳」
+- 提交後即時更新對應卡片的 `status` / `amount`，並 toast 模擬請款結果
 
 #### 「確認已代繳」Modal
 
-`invoice-success` 卡片主 CTA 觸發。為避免誤點直接結案，加一層確認：
+`invoice-success` 卡片主 CTA 觸發。為避免誤點直接結案，加一層確認，並要求上傳繳費證明：
 - 票上摘要（Ticket ID、服務、用戶）
 - 強調代繳平台（`serviceMeta.platform`）
 - 線上代繳金額；混合狀態並列顯示臨櫃部分（用戶自繳）並補充說明「混合單僅就線上部分結案，臨櫃部分由用戶自行處理」
-- 確認後 → `paid`，toast 提示已結案；取消則保持 `invoice-success`
+- **繳費證明截圖（必填，至少 1 張）**：`FileButton` 多選 `image/*`，下方 3 欄 grid 顯示縮圖、檔名 chip、左上角刪除 ✕；至少 1 張才能送出
+- **「插入示意圖」按鈕（demo 限定）**：點一下動態生成 2 張帶本票資訊的 SVG 截圖（平台名、金額、單號、時間），供展示流程時不需準備真檔案；正式環境應拿掉
+- 提交時將 File 轉 data URI（demo），存入 `proofOverrides` 並 toast 顯示張數；正式環境應改為上傳雲儲存後存 URL
 
 #### 「補寄通知信」Modal
 
@@ -178,20 +181,35 @@
 
 ### 4.2 Ticket 詳情（`AutopassTicketDetail.tsx`）
 
-**新角色**：歷程查看與深度編輯（多筆 invoice_orders、emailLogs、notes、修改車籍）。狀態流轉以列表頁為主，詳情頁保留覆寫狀態的逃生口。
+**新定位（簡化後）**：右側 Drawer，**只讀為主**——查訂單歷程 / 備註 / 自動發信。所有狀態流轉動作都收回列表頁卡片的主 CTA + Modal，詳情頁不再提供「下一步動作」面板與覆寫狀態 ⋮ menu。
 
-兩欄 layout：
-- **左 8/12**：Title block（含 Stepper）/ failReason banner / 金額卡 / 下一步動作 / 歷史紀錄 Tabs（訂單歷程 · 備註 · 自動發信）
-- **右 4/12 sticky**：Properties Sidebar（含停留時間 aging）
+**Drawer 規格**：
+- 寬度 720px，從右側展開
+- Header sticky：左側「✕ 關閉 + Ticket ID」、右側「{當前} / {總數} + 上一張 / 下一張」按鈕
+- Body 單欄垂直流（不再 8/4 Grid sidebar）
+- prev/next 在 `filtered`（當前篩選條件下的全集）內巡覽，跨頁時自動翻頁
+
+**內容區塊（由上至下）：**
+1. **Hero card**（合併 Title / 金額 / Stepper 為單卡，三行階層）：
+   - Row 1：服務名（h3）＋狀態 Badge ＋ 右上角平台外連
+   - Row 2：用戶 · 車牌（monospace）· Aging（≥3 天紅）
+   - Row 3：金額 hero（24px，含混合單臨櫃補充）｜ Stepper（金額不存在時 Stepper 全寬）
+2. **failReason banner**（紅色 Alert，僅 `query-failed` / `invoice-failed`，padding/字級已壓縮）
+3. **Properties**（次要識別欄位，2 欄 grid）：身分證／統編 / 出生 / 車種 / 車主名稱（法人）— `用戶`、`車牌`、`平台` 已上移到 Hero，這裡不重複
+4. **Tabs**：訂單歷程 / 備註（含新增 Textarea）/ 自動發信（Timeline）/ 繳費證明（縮圖 grid + 點擊放大 lightbox），字級 14px
 
 #### 流程訊號（Phase C）
 
 | 訊號 | 位置 | 觸發條件 | 說明 |
 | --- | --- | --- | --- |
-| **生命週期 Stepper** | Title block 底 | 一律顯示 | 四階段「查詢 → 請款 → 代繳 → 結案」。當前藍色 dot、已完成綠色勾、失敗紅色 X、未到灰色、跳過虛線—（如 no-fee 直接 1→4）。狀態映射見 `getStepStatuses` |
+| **生命週期 Stepper** | Title block 卡片底 | 一律顯示 | 四階段「查詢 → 請款 → 代繳 → 結案」。當前藍色 dot、已完成綠色勾、失敗紅色 X、未到灰色、跳過虛線—（如 no-fee 直接 1→4）。狀態映射見 `getStepStatuses` |
 | **failReason banner** | Title block 後（Alert）| `query-failed` / `invoice-failed` | invoice-failed 從最近一筆 failed `invoiceOrder.failReason` 拉；query-failed 從最新一筆 `notes[0].content` 拉；缺資料時顯示 fallback 文案 |
 | **金額卡** | failReason 後 | `ticket.amount !== null` | 露出線上可繳金額；`counterAmount` > 0 時並排顯示「臨櫃須繳金額（用戶自繳）」 |
-| **Aging** | Sidebar 狀態下方 | 一律顯示 | 依 `updatedAt` 對 `DEMO_NOW`（demo 鎖在 2026-05-07 12:00）計算停留時間。≥ 3 天變紅；其他依 hours/days/分鐘自適配 |
+| **Aging** | Title block 內（icon + 文字）| 一律顯示 | 依 `updatedAt` 對 `DEMO_NOW`（demo 鎖在 2026-05-07 12:00）計算停留時間。≥ 3 天變紅；其他依 hours/days/分鐘自適配 |
+
+#### 備註新增
+
+備註只能新增、不可編輯。送出後寫進 `AutopassTickets` 的 `noteOverrides: Record<id, TicketNote[]>`，與 mock 原有 notes 合併顯示。Drawer 關掉再開不會丟失（state 在父元件）。
 
 #### 動態顯示欄位
 
@@ -229,6 +247,7 @@ Ticket {
   invoiceOrders: InvoiceOrder[],
   notes: TicketNote[],
   emailLogs: EmailLog[],
+  paymentProofs?: string[],         // 繳費證明截圖（demo 用 data URI；正式環境為雲儲存 URL）
 }
 ```
 
@@ -262,7 +281,6 @@ Ticket {
 
 ## 7. 後續可改點 / TODO
 
-- [ ] 列表頁與詳情頁狀態同步（目前 list 用 `statusOverrides`、detail 用自己的 `useState`，互不可見）
 - [ ] Modal 加「模擬扣款失敗」開關，讓 demo 可走 invoice-failed 分支
 - [ ] 「修改車籍資料」、「加備註」做成真表單而非 toast
 - [ ] 4.7 對帳匯出規格確定後接上

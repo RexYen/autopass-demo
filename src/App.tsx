@@ -8,19 +8,7 @@ import { StoreManagement } from './components/StoreManagement'
 import { TaskManagement } from './components/TaskManagement'
 import { Navigation } from './components/Navigation'
 import { AutopassTickets } from './components/AutopassTickets'
-import { AutopassTicketDetail } from './components/AutopassTicketDetail'
 import { NotificationProvider } from './hooks/useNotification'
-
-function TicketDetailPage() {
-  const { id } = useParams<{ id: string }>()
-  const navigate = useNavigate()
-  return (
-    <AutopassTicketDetail
-      ticketId={id ?? ''}
-      onBack={() => navigate(-1)}
-    />
-  )
-}
 
 function StoreManagementPage() {
   const navigate = useNavigate()
@@ -65,7 +53,6 @@ type CurrentView =
   | 'store-management'
   | 'task-management'
   | 'autopass-tickets'
-  | 'autopass-ticket-detail'
   | 'autopass-history'
 
 function AppContent() {
@@ -79,7 +66,6 @@ function AppContent() {
     if (path === '/map') return 'map-management'
     if (path === '/stores') return 'store-management'
     if (path === '/tasks') return 'task-management'
-    if (path.startsWith('/autopass/tickets/')) return 'autopass-ticket-detail'
     if (path === '/autopass/tickets') return 'autopass-tickets'
     if (path === '/autopass/history') return 'autopass-history'
     return 'autopass-tickets'
@@ -87,7 +73,7 @@ function AppContent() {
 
   const currentView = pathToView(pathname)
 
-  const handleNavigate = (view: Exclude<CurrentView, 'vendor-detail' | 'autopass-ticket-detail'>) => {
+  const handleNavigate = (view: Exclude<CurrentView, 'vendor-detail'>) => {
     const viewToPath: Record<string, string> = {
       welcome: '/',
       'vendor-list': '/vendors',
@@ -128,15 +114,9 @@ function AppContent() {
           <Route path="/map" element={<MapManagement />} />
           <Route path="/stores" element={<StoreManagementPage />} />
           <Route path="/tasks" element={<TaskManagement />} />
-          <Route
-            path="/autopass/tickets"
-            element={<AutopassTickets onViewDetail={(id) => navigate(`/autopass/tickets/${id}`)} />}
-          />
-          <Route path="/autopass/tickets/:id" element={<TicketDetailPage />} />
-          <Route
-            path="/autopass/history"
-            element={<AutopassTickets onViewDetail={(id) => navigate(`/autopass/tickets/${id}`)} mode="history" />}
-          />
+          <Route path="/autopass/tickets" element={<AutopassTickets />} />
+          <Route path="/autopass/tickets/:id" element={<Navigate to="/autopass/tickets" replace />} />
+          <Route path="/autopass/history" element={<AutopassTickets mode="history" />} />
           <Route path="*" element={<Navigate to="/autopass/tickets" replace />} />
         </Routes>
       </AppShell.Main>

@@ -169,6 +169,7 @@ export interface Ticket {
   invoiceOrders: InvoiceOrder[]
   notes: TicketNote[]
   emailLogs: EmailLog[]
+  paymentProofs?: string[]     // 繳費證明截圖（demo 用 data URI；正式為雲儲存 URL）
 }
 
 export interface UpcomingSchedule {
