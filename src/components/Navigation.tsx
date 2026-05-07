@@ -14,7 +14,6 @@ import {
   IconBuildingStore,
   IconReportMoney,
   IconChevronDown,
-  IconLayoutDashboard,
   IconClipboardList,
   IconHistory,
 } from '@tabler/icons-react'
@@ -27,7 +26,6 @@ export type NavigationView =
   | 'map-management'
   | 'store-management'
   | 'task-management'
-  | 'autopass-dashboard'
   | 'autopass-tickets'
   | 'autopass-history'
 
@@ -48,8 +46,6 @@ export function Navigation({ currentView, onNavigate }: NavigationProps) {
         return 'stores'
       case 'task-management':
         return 'tasks'
-      case 'autopass-dashboard':
-        return 'autopass-dashboard'
       case 'autopass-tickets':
       case 'autopass-ticket-detail':
         return 'autopass-tickets'
@@ -161,17 +157,6 @@ export function Navigation({ currentView, onNavigate }: NavigationProps) {
           </Text>
         </Box>
 
-        <NavLink
-          href="#"
-          label="Dashboard"
-          leftSection={<IconLayoutDashboard size={16} />}
-          active={active === 'autopass-dashboard'}
-          onClick={() => {
-            setActive('autopass-dashboard')
-            onNavigate?.('autopass-dashboard')
-          }}
-          styles={navItemStyles(active === 'autopass-dashboard')}
-        />
         <NavLink
           href="#"
           label="查繳任務"

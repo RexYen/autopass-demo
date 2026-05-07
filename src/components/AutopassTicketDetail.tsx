@@ -45,11 +45,15 @@ import {
   IconDots,
   IconCreditCard,
   IconCalendar,
+  IconX,
+  IconHourglass,
+  IconAlertTriangle,
 } from '@tabler/icons-react'
 import { mockTickets } from '../data/autopassMock'
 import {
   STATUS_META,
   SERVICE_META,
+  SERVICE_QUERY_FIELDS,
   type Ticket,
   type TicketStatus,
   type InvoiceOrder,
@@ -57,7 +61,7 @@ import {
   type EmailLog,
 } from '../types/autopass'
 import { useNotification } from '../hooks/useNotification'
-import { maskId, maskDate } from '../utils/mask'
+import { maskDate } from '../utils/mask'
 
 interface AutopassTicketDetailProps {
   ticketId: string
@@ -116,6 +120,7 @@ export function AutopassTicketDetail({ ticketId, onBack }: AutopassTicketDetailP
 
   const statusMeta = STATUS_META[ticket.status]
   const serviceMeta = SERVICE_META[ticket.serviceType]
+  const queryFields = SERVICE_QUERY_FIELDS[ticket.serviceType]
 
   const transitionTo = (nextStatus: TicketStatus, opts?: { silent?: boolean }) => {
     const now = formatDate(new Date())
@@ -273,7 +278,72 @@ export function AutopassTicketDetail({ ticketId, onBack }: AutopassTicketDetailP
                   前往 {serviceMeta.platform}
                 </Button>
               </Group>
+
+              {/* Flow stepper */}
+              <Box mt="20px" pt="20px" style={{ borderTop: '1px solid #f1f3f5' }}>
+                <FlowStepper status={ticket.status} />
+              </Box>
             </Paper>
+
+            {/* failReason banner — query-failed / invoice-failed 才顯示 */}
+            {(() => {
+              const reason = getFailReason(ticket)
+              if (!reason) return null
+              const isQuery = ticket.status === 'query-failed'
+              return (
+                <Alert
+                  icon={<IconAlertTriangle size={20} />}
+                  color="red"
+                  radius="16px"
+                  styles={{
+                    root: { backgroundColor: '#fff5f5', border: '1px solid #ffc9c9' },
+                    title: { fontWeight: 600 },
+                  }}
+                  title={isQuery ? '查詢失敗原因' : '請款失敗原因'}
+                >
+                  {reason}
+                </Alert>
+              )
+            })()}
+
+            {/* 金額卡 — 有 amount 才顯示，混合狀態同時露出臨櫃金額 */}
+            {(ticket.amount !== null && ticket.amount !== undefined) && (
+              <Paper
+                shadow={cardShadow}
+                radius="16px"
+                p="20px"
+                style={{ backgroundColor: '#fff' }}
+              >
+                <Group gap="32px" wrap="wrap">
+                  <Box>
+                    <Text size="xs" c="dimmed" mb="4px">
+                      線上可繳金額
+                    </Text>
+                    <Text size="24px" fw={700} style={{ lineHeight: 1.2 }}>
+                      NT$ {ticket.amount.toLocaleString()}
+                    </Text>
+                  </Box>
+                  {ticket.counterAmount && ticket.counterAmount > 0 && (
+                    <>
+                      <Divider orientation="vertical" />
+                      <Box>
+                        <Group gap="6px" mb="4px">
+                          <Text size="xs" c="dimmed">
+                            臨櫃須繳金額
+                          </Text>
+                          <Badge size="xs" color="blue" variant="light">
+                            用戶自繳
+                          </Badge>
+                        </Group>
+                        <Text size="24px" fw={700} style={{ lineHeight: 1.2, color: '#1971c2' }}>
+                          NT$ {ticket.counterAmount.toLocaleString()}
+                        </Text>
+                      </Box>
+                    </>
+                  )}
+                </Group>
+              </Paper>
+            )}
 
             {/* Invoicing banner */}
             {ticket.status === 'invoicing' && (
@@ -556,27 +626,42 @@ export function AutopassTicketDetail({ ticketId, onBack }: AutopassTicketDetailP
                 </Badge>
               </PropRow>
 
+              {(() => {
+                const aging = getAging(ticket.updatedAt)
+                return (
+                  <PropRow icon={<IconHourglass size={14} />} label="停留時間">
+                    <Text size="sm" fw={500} c={aging.warning ? 'red.7' : 'dark.8'}>
+                      {aging.text}
+                    </Text>
+                  </PropRow>
+                )
+              })()}
+
               <PropRow icon={<IconUser size={14} />} label="用戶">
                 <Text size="sm" fw={500}>
                   {ticket.userName}
                 </Text>
               </PropRow>
 
-              <PropRow icon={<IconCar size={14} />} label="車牌">
-                <CopyableValue raw={ticket.plateNumber} display={ticket.plateNumber} />
-              </PropRow>
+              {queryFields.includes('plateNumber') && (
+                <PropRow icon={<IconCar size={14} />} label="車牌">
+                  <CopyableValue raw={ticket.plateNumber} display={ticket.plateNumber} />
+                </PropRow>
+              )}
 
-              <PropRow
-                icon={<IconCreditCard size={14} />}
-                label={ticket.driverInfo.ownerType === '法人' ? '統一編號' : '身分證'}
-              >
-                <CopyableValue
-                  raw={ticket.driverInfo.idNumber}
-                  display={maskId(ticket.driverInfo.idNumber)}
-                />
-              </PropRow>
+              {queryFields.includes('idNumber') && (
+                <PropRow
+                  icon={<IconCreditCard size={14} />}
+                  label={ticket.driverInfo.ownerType === '法人' ? '法人統一編號' : '身分證字號'}
+                >
+                  <CopyableValue
+                    raw={ticket.driverInfo.idNumber}
+                    display={ticket.driverInfo.idNumber}
+                  />
+                </PropRow>
+              )}
 
-              {ticket.driverInfo.birthDate && (
+              {queryFields.includes('birthDate') && ticket.driverInfo.birthDate && (
                 <PropRow icon={<IconCalendar size={14} />} label="出生年月日">
                   <CopyableValue
                     raw={ticket.driverInfo.birthDate}
@@ -585,11 +670,13 @@ export function AutopassTicketDetail({ ticketId, onBack }: AutopassTicketDetailP
                 </PropRow>
               )}
 
-              <PropRow icon={<IconCar size={14} />} label="車種">
-                <Text size="sm" fw={500}>
-                  {ticket.driverInfo.vehicleType}
-                </Text>
-              </PropRow>
+              {queryFields.includes('vehicleType') && (
+                <PropRow icon={<IconCar size={14} />} label="車種">
+                  <Text size="sm" fw={500}>
+                    {ticket.driverInfo.vehicleType}
+                  </Text>
+                </PropRow>
+              )}
 
               {ticket.driverInfo.fullName !== ticket.userName && (
                 <PropRow icon={<IconUser size={14} />} label="車主名稱">
@@ -1006,4 +1093,154 @@ function formatDate(d: Date): string {
   const hh = String(d.getHours()).padStart(2, '0')
   const mi = String(d.getMinutes()).padStart(2, '0')
   return `${yy}-${mm}-${dd} ${hh}:${mi}`
+}
+
+// =====================================================
+// Phase C: 流程訊號
+// =====================================================
+
+// demo 用：mock 資料停在 2026-05-04~06，將「現在」鎖在 2026-05-07 以呈現合理的停留天數
+const DEMO_NOW = new Date('2026-05-07T12:00:00')
+
+type StepStatus = 'done' | 'current' | 'error' | 'pending' | 'skipped'
+
+const FLOW_STEPS: { key: string; label: string }[] = [
+  { key: 'query', label: '查詢' },
+  { key: 'invoice', label: '請款' },
+  { key: 'remit', label: '代繳' },
+  { key: 'closed', label: '結案' },
+]
+
+function getStepStatuses(status: TicketStatus): StepStatus[] {
+  switch (status) {
+    case 'pending-query':
+      return ['current', 'pending', 'pending', 'pending']
+    case 'query-failed':
+      return ['error', 'pending', 'pending', 'pending']
+    case 'no-fee':
+    case 'counter-required':
+      return ['done', 'skipped', 'skipped', 'done']
+    case 'invoicing':
+      return ['done', 'current', 'pending', 'pending']
+    case 'invoice-failed':
+      return ['done', 'error', 'pending', 'pending']
+    case 'invoice-success':
+      return ['done', 'done', 'current', 'pending']
+    case 'paid':
+      return ['done', 'done', 'done', 'done']
+    case 'unable-to-close':
+      return ['done', 'done', 'done', 'error']
+  }
+}
+
+function FlowStepper({ status }: { status: TicketStatus }) {
+  const statuses = getStepStatuses(status)
+
+  const nodes: React.ReactNode[] = []
+  FLOW_STEPS.forEach((step, i) => {
+    nodes.push(<StepNode key={`s-${step.key}`} status={statuses[i]} label={step.label} />)
+    if (i < FLOW_STEPS.length - 1) {
+      const prev = statuses[i]
+      const next = statuses[i + 1]
+      const active = prev === 'done' && (next === 'done' || next === 'current')
+      const dashed = prev === 'skipped' || next === 'skipped'
+      nodes.push(<StepConnector key={`c-${step.key}`} active={active} dashed={dashed} />)
+    }
+  })
+
+  return (
+    <Group gap={0} align="flex-start" wrap="nowrap" style={{ width: '100%' }}>
+      {nodes}
+    </Group>
+  )
+}
+
+function StepNode({ status, label }: { status: StepStatus; label: string }) {
+  const styleMap: Record<StepStatus, { bg: string; border: string; iconColor: string; labelColor: string; bold: boolean }> = {
+    done: { bg: '#0b7c4d', border: '#0b7c4d', iconColor: '#fff', labelColor: '#0b7c4d', bold: false },
+    current: { bg: '#1971c2', border: '#1971c2', iconColor: '#fff', labelColor: '#1971c2', bold: true },
+    error: { bg: '#c92a2a', border: '#c92a2a', iconColor: '#fff', labelColor: '#c92a2a', bold: true },
+    pending: { bg: '#fff', border: '#dee2e6', iconColor: '#adb5bd', labelColor: '#868e96', bold: false },
+    skipped: { bg: '#fff', border: '#dee2e6', iconColor: '#adb5bd', labelColor: '#adb5bd', bold: false },
+  }
+  const s = styleMap[status]
+
+  return (
+    <Stack gap={6} align="center" style={{ width: 80, flexShrink: 0 }}>
+      <Box
+        style={{
+          width: 26,
+          height: 26,
+          borderRadius: '50%',
+          backgroundColor: s.bg,
+          border: `2px solid ${s.border}`,
+          color: s.iconColor,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        {status === 'done' && <IconCheck size={14} stroke={3} />}
+        {status === 'current' && (
+          <Box style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#fff' }} />
+        )}
+        {status === 'error' && <IconX size={14} stroke={3} />}
+        {status === 'pending' && (
+          <Box style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#adb5bd' }} />
+        )}
+        {status === 'skipped' && (
+          <Text size="xs" fw={600} c="gray.5" style={{ lineHeight: 1 }}>
+            —
+          </Text>
+        )}
+      </Box>
+      <Text size="xs" fw={s.bold ? 600 : 400} style={{ color: s.labelColor }}>
+        {label}
+      </Text>
+    </Stack>
+  )
+}
+
+function StepConnector({ active, dashed }: { active: boolean; dashed: boolean }) {
+  return (
+    <Box
+      style={{
+        flex: 1,
+        height: dashed ? 0 : 2,
+        borderTop: dashed ? '2px dashed #dee2e6' : 'none',
+        backgroundColor: dashed ? 'transparent' : active ? '#0b7c4d' : '#dee2e6',
+        marginTop: 12,
+        minWidth: 24,
+      }}
+    />
+  )
+}
+
+function getFailReason(ticket: Ticket): string | null {
+  if (ticket.status === 'invoice-failed') {
+    const failed = [...ticket.invoiceOrders].reverse().find((i) => i.status === 'failed')
+    return failed?.failReason ?? '系統未回傳具體失敗原因，請查訂單歷程'
+  }
+  if (ticket.status === 'query-failed') {
+    return ticket.notes[0]?.content ?? '需人工排查車籍／資料比對'
+  }
+  return null
+}
+
+function getAging(updatedAt: string): { text: string; warning: boolean } {
+  // updatedAt 格式："2026-05-06 14:30"
+  const iso = updatedAt.replace(' ', 'T') + ':00'
+  const updated = new Date(iso)
+  if (Number.isNaN(updated.getTime())) {
+    return { text: updatedAt, warning: false }
+  }
+  const diffMs = DEMO_NOW.getTime() - updated.getTime()
+  if (diffMs < 0) return { text: '剛剛更新', warning: false }
+  const hours = Math.floor(diffMs / (1000 * 60 * 60))
+  const days = Math.floor(hours / 24)
+  if (days >= 3) return { text: `已停留 ${days} 天`, warning: true }
+  if (days >= 1) return { text: `已停留 ${days} 天`, warning: false }
+  if (hours >= 1) return { text: `${hours} 小時前更新`, warning: false }
+  const mins = Math.max(1, Math.floor(diffMs / (1000 * 60)))
+  return { text: `${mins} 分鐘前更新`, warning: false }
 }

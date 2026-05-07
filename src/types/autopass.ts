@@ -160,7 +160,8 @@ export interface Ticket {
   plateNumber: string
   serviceType: ServiceType
   cycle: string                // e.g. "2026/05"
-  amount: number | null
+  amount: number | null        // 線上可請款金額
+  counterAmount?: number | null // 臨櫃須繳金額（混合狀態才有值）
   status: TicketStatus
   createdAt: string
   updatedAt: string

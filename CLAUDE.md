@@ -8,13 +8,15 @@ This repository contains an Autopass Demo project - a prototype for vendor manag
 
 ### Project Structure
 
-- `autopass-demo/` - React + TypeScript + Mantine UI prototype project
+React + TypeScript + Mantine UI prototype project. Source lives at the repo root (`package.json`, `src/`, `vite.config.ts`).
 
 ### Commands
 
-- Build commands: `cd autopass-demo && npm run build`
-- Development server: `cd autopass-demo && npm run dev`
-- Linting commands: `cd autopass-demo && npm run lint`
+Run from the repo root:
+
+- Build: `npm run build`
+- Development server: `npm run dev`
+- Linting: `npm run lint`
 
 ## Architecture
 
@@ -42,6 +44,6 @@ This repository contains an Autopass Demo project - a prototype for vendor manag
 - 商店管理頁面
 
 ### 如何繼續開發
-1. 啟動開發服務器：`cd autopass-demo && npm run dev`
-2. 在瀏覽器打開：http://localhost:5173 或 http://localhost:5174
+1. 啟動開發服務器：`npm run dev`（在 repo 根目錄執行）
+2. 在瀏覽器打開 Vite 顯示的 Local URL（預設 http://localhost:5173，被佔用時會自動往後找）
 3. 修改代碼後會自動更新頁面

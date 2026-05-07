@@ -1,18 +1,61 @@
-import { useState } from 'react'
 import { AppShell } from '@mantine/core'
 import { Notifications } from '@mantine/notifications'
+import { Routes, Route, useNavigate, useParams, Navigate, useLocation } from 'react-router-dom'
 import { VendorManagement } from './components/VendorManagement'
 import { VendorDetail } from './components/VendorDetail'
 import { MapManagement } from './components/MapManagement'
 import { StoreManagement } from './components/StoreManagement'
 import { TaskManagement } from './components/TaskManagement'
 import { Navigation } from './components/Navigation'
-import { Welcome } from './components/Welcome'
-import { AutopassDashboard } from './components/AutopassDashboard'
 import { AutopassTickets } from './components/AutopassTickets'
 import { AutopassTicketDetail } from './components/AutopassTicketDetail'
 import { NotificationProvider } from './hooks/useNotification'
-import type { TicketStatus } from './types/autopass'
+
+function TicketDetailPage() {
+  const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
+  return (
+    <AutopassTicketDetail
+      ticketId={id ?? ''}
+      onBack={() => navigate(-1)}
+    />
+  )
+}
+
+function StoreManagementPage() {
+  const navigate = useNavigate()
+  const vendorNames = [
+    '世潮企業股份有限公司',
+    '經國能源股份有限公司平鎮分公司',
+    '連展電能科技股份有限公司',
+    '車容坊股份有限公司鳳壹營業所',
+    '坤業加油站有限公司莒光路營業所',
+  ]
+  return (
+    <StoreManagement
+      onViewVendor={(vendorId) => {
+        const name = vendorNames[vendorId - 1]
+        if (name) navigate(`/vendors/${encodeURIComponent(name)}`)
+      }}
+      onViewPlace={() => navigate('/map')}
+      onViewStore={(storeId) => {
+        console.log('Navigate to store detail:', storeId)
+      }}
+    />
+  )
+}
+
+function VendorDetailPage() {
+  const { name } = useParams<{ name: string }>()
+  const navigate = useNavigate()
+  return (
+    <VendorDetail
+      vendorName={decodeURIComponent(name ?? '')}
+      onBack={() => navigate('/vendors')}
+      isNewVendor={false}
+    />
+  )
+}
 
 type CurrentView =
   | 'welcome'
@@ -21,146 +64,90 @@ type CurrentView =
   | 'map-management'
   | 'store-management'
   | 'task-management'
-  | 'autopass-dashboard'
   | 'autopass-tickets'
   | 'autopass-ticket-detail'
   | 'autopass-history'
 
-function App() {
-  const [currentView, setCurrentView] = useState<CurrentView>('autopass-dashboard')
-  const [selectedVendorName, setSelectedVendorName] = useState<string>('')
-  const [isNewVendor, setIsNewVendor] = useState<boolean>(false)
-  const [selectedTicketId, setSelectedTicketId] = useState<string>('')
-  const [ticketsInitialFilter, setTicketsInitialFilter] = useState<TicketStatus | undefined>()
-  const [ticketReturnView, setTicketReturnView] = useState<'autopass-tickets' | 'autopass-history'>(
-    'autopass-tickets',
-  )
+function AppContent() {
+  const navigate = useNavigate()
 
-  const handleViewVendor = (vendorName: string, isNew: boolean = false) => {
-    setSelectedVendorName(vendorName)
-    setIsNewVendor(isNew)
-    setCurrentView('vendor-detail')
+  const { pathname } = useLocation()
+
+  const pathToView = (path: string): CurrentView => {
+    if (path.startsWith('/vendors/')) return 'vendor-detail'
+    if (path === '/vendors') return 'vendor-list'
+    if (path === '/map') return 'map-management'
+    if (path === '/stores') return 'store-management'
+    if (path === '/tasks') return 'task-management'
+    if (path.startsWith('/autopass/tickets/')) return 'autopass-ticket-detail'
+    if (path === '/autopass/tickets') return 'autopass-tickets'
+    if (path === '/autopass/history') return 'autopass-history'
+    return 'autopass-tickets'
   }
 
-  const handleBackToList = () => {
-    setCurrentView('vendor-list')
-    setSelectedVendorName('')
-    setIsNewVendor(false)
-  }
+  const currentView = pathToView(pathname)
 
   const handleNavigate = (view: Exclude<CurrentView, 'vendor-detail' | 'autopass-ticket-detail'>) => {
-    setCurrentView(view)
-    if (view !== 'autopass-tickets') {
-      setTicketsInitialFilter(undefined)
+    const viewToPath: Record<string, string> = {
+      welcome: '/',
+      'vendor-list': '/vendors',
+      'map-management': '/map',
+      'store-management': '/stores',
+      'task-management': '/tasks',
+      'autopass-tickets': '/autopass/tickets',
+      'autopass-history': '/autopass/history',
     }
-    setSelectedVendorName('')
-    setIsNewVendor(false)
-  }
-
-  const handleJumpToTickets = (filterStatus?: TicketStatus) => {
-    setTicketsInitialFilter(filterStatus)
-    setCurrentView('autopass-tickets')
-  }
-
-  const handleViewTicket = (ticketId: string, fromView: 'autopass-tickets' | 'autopass-history' = 'autopass-tickets') => {
-    setSelectedTicketId(ticketId)
-    setTicketReturnView(fromView)
-    setCurrentView('autopass-ticket-detail')
-  }
-
-  const handleBackToTickets = () => {
-    setCurrentView(ticketReturnView)
-    setSelectedTicketId('')
-  }
-
-  const renderMainContent = () => {
-    switch (currentView) {
-      case 'welcome':
-        return <Welcome onNavigate={handleNavigate} />
-      case 'vendor-detail':
-        return (
-          <VendorDetail
-            vendorName={selectedVendorName}
-            onBack={handleBackToList}
-            isNewVendor={isNewVendor}
-          />
-        )
-      case 'map-management':
-        return <MapManagement />
-      case 'task-management':
-        return <TaskManagement />
-      case 'store-management':
-        return (
-          <StoreManagement
-            onViewVendor={(vendorId) => {
-              const vendorNames = [
-                '世潮企業股份有限公司',
-                '經國能源股份有限公司平鎮分公司',
-                '連展電能科技股份有限公司',
-                '車容坊股份有限公司鳳壹營業所',
-                '坤業加油站有限公司莒光路營業所',
-              ]
-              const vendorName = vendorNames[vendorId - 1]
-              if (vendorName) handleViewVendor(vendorName)
-            }}
-            onViewPlace={() => setCurrentView('map-management')}
-            onViewStore={(storeId) => {
-              console.log('Navigate to store detail:', storeId)
-            }}
-          />
-        )
-      case 'vendor-list':
-        return <VendorManagement onViewVendor={handleViewVendor} />
-      case 'autopass-dashboard':
-        return <AutopassDashboard onJumpToTickets={handleJumpToTickets} />
-      case 'autopass-tickets':
-        return (
-          <AutopassTickets
-            onViewDetail={(id) => handleViewTicket(id, 'autopass-tickets')}
-            initialStatusFilter={ticketsInitialFilter}
-          />
-        )
-      case 'autopass-ticket-detail':
-        return (
-          <AutopassTicketDetail
-            ticketId={selectedTicketId}
-            onBack={handleBackToTickets}
-          />
-        )
-      case 'autopass-history':
-        return (
-          <AutopassTickets
-            onViewDetail={(id) => handleViewTicket(id, 'autopass-history')}
-            mode="history"
-          />
-        )
-      default:
-        return <AutopassDashboard onJumpToTickets={handleJumpToTickets} />
-    }
+    navigate(viewToPath[view] ?? '/autopass/tickets')
   }
 
   return (
-    <NotificationProvider>
-      <AppShell
-        navbar={{ width: 240, breakpoint: 'sm', collapsed: { desktop: false } }}
-        padding="md"
-        styles={{
-          main: {
-            backgroundColor: '#f8f9fa',
-            minHeight: '100vh',
-          },
-          navbar: {
-            backgroundColor: '#ffffff',
-            borderRight: 'none',
-          },
-        }}
-      >
-        <AppShell.Navbar p={0}>
-          <Navigation currentView={currentView} onNavigate={handleNavigate} />
-        </AppShell.Navbar>
+    <AppShell
+      navbar={{ width: 240, breakpoint: 'sm', collapsed: { desktop: false } }}
+      padding="md"
+      styles={{
+        main: {
+          backgroundColor: '#f8f9fa',
+          minHeight: '100vh',
+        },
+        navbar: {
+          backgroundColor: '#ffffff',
+          borderRight: 'none',
+        },
+      }}
+    >
+      <AppShell.Navbar p={0}>
+        <Navigation currentView={currentView} onNavigate={handleNavigate} />
+      </AppShell.Navbar>
 
-        <AppShell.Main>{renderMainContent()}</AppShell.Main>
-      </AppShell>
+      <AppShell.Main>
+        <Routes>
+          <Route path="/" element={<Navigate to="/autopass/tickets" replace />} />
+          <Route path="/vendors" element={<VendorManagement onViewVendor={(name) => navigate(`/vendors/${encodeURIComponent(name)}`)} />} />
+          <Route path="/vendors/:name" element={<VendorDetailPage />} />
+          <Route path="/vendors/new" element={<VendorDetail vendorName="" onBack={() => navigate('/vendors')} isNewVendor={true} />} />
+          <Route path="/map" element={<MapManagement />} />
+          <Route path="/stores" element={<StoreManagementPage />} />
+          <Route path="/tasks" element={<TaskManagement />} />
+          <Route
+            path="/autopass/tickets"
+            element={<AutopassTickets onViewDetail={(id) => navigate(`/autopass/tickets/${id}`)} />}
+          />
+          <Route path="/autopass/tickets/:id" element={<TicketDetailPage />} />
+          <Route
+            path="/autopass/history"
+            element={<AutopassTickets onViewDetail={(id) => navigate(`/autopass/tickets/${id}`)} mode="history" />}
+          />
+          <Route path="*" element={<Navigate to="/autopass/tickets" replace />} />
+        </Routes>
+      </AppShell.Main>
+    </AppShell>
+  )
+}
+
+function App() {
+  return (
+    <NotificationProvider>
+      <AppContent />
       <Notifications
         position="bottom-right"
         styles={{
