@@ -105,7 +105,7 @@ export const STATUS_META: Record<
   { label: string; group: '待查' | '查詢' | '請款' | '繳款' | '例外'; color: string; bg: string }
 > = {
   'pending-query':       { label: '待查詢',     group: '待查', color: '#495057', bg: 'rgba(134,142,150,0.15)' },
-  'no-fee':              { label: '不需繳費',   group: '查詢', color: '#1971c2', bg: 'rgba(34,139,230,0.12)' },
+  'no-fee':              { label: '無需繳費',   group: '查詢', color: '#1971c2', bg: 'rgba(34,139,230,0.12)' },
   'query-failed':        { label: '查詢失敗',   group: '例外', color: '#c92a2a', bg: 'rgba(250,82,82,0.12)' },
   'invoice-success':     { label: '請款成功',   group: '請款', color: '#0b7c4d', bg: 'rgba(18,184,134,0.15)' },
   'invoice-failed':      { label: '請款失敗',   group: '例外', color: '#c92a2a', bg: 'rgba(250,82,82,0.12)' },
