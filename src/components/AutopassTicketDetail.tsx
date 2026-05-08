@@ -13,7 +13,6 @@ import {
   Timeline,
   ActionIcon,
   SimpleGrid,
-  CopyButton,
   Tooltip,
   Alert,
   Tabs,
@@ -22,32 +21,30 @@ import {
   Modal,
 } from '@mantine/core'
 import {
-  IconUser,
-  IconCar,
-  IconReceipt,
   IconMessageDots,
   IconMail,
   IconCircleCheck,
   IconCircleX,
   IconCircleDot,
-  IconCopy,
   IconCheck,
   IconExternalLink,
-  IconCreditCard,
-  IconCalendar,
   IconX,
-  IconHourglass,
   IconAlertTriangle,
   IconChevronLeft,
   IconChevronRight,
   IconPhoto,
+  IconActivity,
+  IconCirclePlus,
+  IconClipboardCheck,
 } from '@tabler/icons-react'
 import {
   STATUS_META,
   SERVICE_META,
   SERVICE_QUERY_FIELDS,
+  OUTCOME_META,
   type Ticket,
   type TicketStatus,
+  type TicketOutcomeKind,
   type InvoiceOrder,
 } from '../types/autopass'
 import { maskDate } from '../utils/mask'
@@ -55,8 +52,10 @@ import { maskDate } from '../utils/mask'
 const cardShadow =
   '0px 7px 7px -5px rgba(0,0,0,0.04), 0px 10px 15px -5px rgba(0,0,0,0.1), 0px 1px 3px 0px rgba(0,0,0,0.05)'
 
-// demo 用：mock 資料停在 2026-05-04~06，將「現在」鎖在 2026-05-07 以呈現合理的停留天數
-const DEMO_NOW = new Date('2026-05-07T12:00:00')
+const monoStyle = {
+  fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+  letterSpacing: '0.5px',
+}
 
 interface AutopassTicketDetailProps {
   ticket: Ticket | null
@@ -96,7 +95,13 @@ export function AutopassTicketDetail({
       withCloseButton={false}
       padding={0}
       styles={{
-        body: { padding: 0, height: '100%' },
+        body: {
+          padding: 0,
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          backgroundColor: '#f8f9fa',
+        },
         content: { display: 'flex', flexDirection: 'column' },
       }}
     >
@@ -138,8 +143,6 @@ function DetailContent({
   const statusMeta = STATUS_META[ticket.status]
   const serviceMeta = SERVICE_META[ticket.serviceType]
   const queryFields = SERVICE_QUERY_FIELDS[ticket.serviceType]
-  const idLabel = ticket.driverInfo.ownerType === '法人' ? '法人統一編號' : '身分證字號'
-  const aging = getAging(ticket.updatedAt)
   const failReason = getFailReason(ticket)
   const proofs = ticket.paymentProofs ?? []
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null)
@@ -159,14 +162,9 @@ function DetailContent({
           zIndex: 10,
         }}
       >
-        <Group gap="8px" wrap="nowrap">
-          <ActionIcon variant="subtle" color="gray" size="md" onClick={onClose} aria-label="關閉">
-            <IconX size={18} />
-          </ActionIcon>
-          <Text size="xs" c="dimmed" fw={500}>
-            {ticket.id}
-          </Text>
-        </Group>
+        <ActionIcon variant="subtle" color="gray" size="md" onClick={onClose} aria-label="關閉">
+          <IconX size={18} />
+        </ActionIcon>
         <Group gap="6px" wrap="nowrap">
           {position && (
             <Text size="xs" c="dimmed" mr="4px">
@@ -201,7 +199,7 @@ function DetailContent({
       </Group>
 
       {/* Body */}
-      <Box style={{ flex: 1, overflowY: 'auto', backgroundColor: '#f8f9fa' }}>
+      <Box style={{ flex: 1, overflowY: 'auto' }}>
         <Stack gap="14px" p="20px">
           {/* Hero：服務 + 狀態 + identity + 金額 + Stepper 合一 */}
           <Paper shadow={cardShadow} radius="12px" p="20px">
@@ -244,62 +242,57 @@ function DetailContent({
                   size="sm"
                   fw={500}
                   c="blue"
-                  style={{ textDecoration: 'none' }}
+                  style={{ textDecoration: 'none', ...monoStyle }}
                 >
-                  {serviceMeta.platform}
+                  {ticket.id}
                 </Text>
                 <IconExternalLink size={12} color="#228be6" />
               </Group>
             </Group>
 
-            {/* Row 2：identity + aging */}
+            {/* Row 2：identity（與列表卡片同步顯示的欄位） */}
             <Group gap="8px" mt="10px" wrap="wrap" align="center">
               <Text size="sm" fw={600} c="dark.8">
                 {ticket.userName}
               </Text>
-              <Text size="sm" c="gray.5">
-                ·
-              </Text>
-              <Text
-                size="sm"
-                fw={600}
-                c="dark.8"
-                style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', letterSpacing: '0.5px' }}
-              >
-                {ticket.plateNumber}
-              </Text>
-              <Text size="sm" c="gray.5">
-                ·
-              </Text>
-              <Group gap="3px">
-                <IconHourglass size={13} color={aging.warning ? '#c92a2a' : '#868e96'} />
-                <Text size="sm" c={aging.warning ? 'red.7' : 'dimmed'} fw={500}>
-                  {aging.text}
-                </Text>
-              </Group>
+              {queryFields.includes('plateNumber') && (
+                <>
+                  <IdentityDot />
+                  <Text size="sm" fw={600} c="dark.8" style={monoStyle}>
+                    {ticket.plateNumber}
+                  </Text>
+                </>
+              )}
+              {queryFields.includes('idNumber') && (
+                <>
+                  <IdentityDot />
+                  <Text size="sm" fw={600} c="dark.8" style={monoStyle}>
+                    {ticket.driverInfo.idNumber}
+                  </Text>
+                </>
+              )}
+              {queryFields.includes('birthDate') && ticket.driverInfo.birthDate && (
+                <>
+                  <IdentityDot />
+                  <Text size="sm" fw={600} c="dark.8" style={monoStyle}>
+                    {maskDate(ticket.driverInfo.birthDate)}
+                  </Text>
+                </>
+              )}
+              {queryFields.includes('vehicleType') && (
+                <>
+                  <IdentityDot />
+                  <Text size="sm" fw={500} c="dark.8">
+                    {ticket.driverInfo.vehicleType}
+                  </Text>
+                </>
+              )}
             </Group>
 
-            {/* Row 3：金額 + Stepper（金額不存在時 Stepper 全寬） */}
-            <Group mt="18px" align="center" gap="24px" wrap="nowrap">
-              {ticket.amount !== null && ticket.amount !== undefined && (
-                <Box style={{ flexShrink: 0, paddingRight: 16, borderRight: '1px solid #f1f3f5' }}>
-                  <Text size="xs" c="dimmed" mb="2px" fw={500}>
-                    金額
-                  </Text>
-                  <Text fz="24px" fw={700} style={{ lineHeight: 1.1, letterSpacing: '-0.5px' }}>
-                    NT$ {ticket.amount.toLocaleString()}
-                  </Text>
-                  {ticket.counterAmount && ticket.counterAmount > 0 && (
-                    <Text size="xs" c="blue.7" fw={500} mt="4px">
-                      ＋ 臨櫃 NT$ {ticket.counterAmount.toLocaleString()}（用戶自繳）
-                    </Text>
-                  )}
-                </Box>
-              )}
-              <Box style={{ flex: 1, minWidth: 0 }}>
-                <FlowStepper status={ticket.status} />
-              </Box>
-            </Group>
+            {/* Row 3：Stepper */}
+            <Box mt="18px">
+              <FlowStepper status={ticket.status} />
+            </Box>
           </Paper>
 
           {/* failReason banner */}
@@ -319,47 +312,6 @@ function DetailContent({
             </Alert>
           )}
 
-          {/* 次要 Properties — 只放 hero 沒有的識別欄位 */}
-          {(queryFields.includes('idNumber') ||
-            (queryFields.includes('birthDate') && ticket.driverInfo.birthDate) ||
-            queryFields.includes('vehicleType') ||
-            ticket.driverInfo.fullName !== ticket.userName) && (
-            <Paper shadow={cardShadow} radius="12px" px="16px" py="14px">
-              <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md" verticalSpacing="10px">
-                {queryFields.includes('idNumber') && (
-                  <PropRow icon={<IconCreditCard size={13} />} label={idLabel}>
-                    <CopyableValue
-                      raw={ticket.driverInfo.idNumber}
-                      display={ticket.driverInfo.idNumber}
-                    />
-                  </PropRow>
-                )}
-                {queryFields.includes('birthDate') && ticket.driverInfo.birthDate && (
-                  <PropRow icon={<IconCalendar size={13} />} label="出生年月日">
-                    <CopyableValue
-                      raw={ticket.driverInfo.birthDate}
-                      display={maskDate(ticket.driverInfo.birthDate)}
-                    />
-                  </PropRow>
-                )}
-                {queryFields.includes('vehicleType') && (
-                  <PropRow icon={<IconCar size={13} />} label="車種">
-                    <Text size="sm" fw={500}>
-                      {ticket.driverInfo.vehicleType}
-                    </Text>
-                  </PropRow>
-                )}
-                {ticket.driverInfo.fullName !== ticket.userName && (
-                  <PropRow icon={<IconUser size={13} />} label="車主名稱">
-                    <Text size="sm" fw={500} truncate>
-                      {ticket.driverInfo.fullName}
-                    </Text>
-                  </PropRow>
-                )}
-              </SimpleGrid>
-            </Paper>
-          )}
-
           {/* Tabs：歷程 */}
           <Paper
             shadow={cardShadow}
@@ -367,7 +319,7 @@ function DetailContent({
             style={{ overflow: 'hidden' }}
           >
             <Tabs
-              defaultValue="orders"
+              defaultValue="activity"
               styles={{
                 list: { borderBottom: '1px solid #e9ecef', paddingLeft: 12, paddingRight: 12 },
                 tab: {
@@ -379,29 +331,8 @@ function DetailContent({
               }}
             >
               <Tabs.List>
-                <Tabs.Tab value="orders" leftSection={<IconReceipt size={14} />}>
-                  訂單歷程
-                  {ticket.invoiceOrders.length > 0 && (
-                    <Text component="span" size="xs" c="dimmed" ml="6px">
-                      {ticket.invoiceOrders.length}
-                    </Text>
-                  )}
-                </Tabs.Tab>
-                <Tabs.Tab value="notes" leftSection={<IconMessageDots size={14} />}>
-                  備註
-                  {ticket.notes.length > 0 && (
-                    <Text component="span" size="xs" c="dimmed" ml="6px">
-                      {ticket.notes.length}
-                    </Text>
-                  )}
-                </Tabs.Tab>
-                <Tabs.Tab value="emails" leftSection={<IconMail size={14} />}>
-                  自動發信
-                  {ticket.emailLogs.length > 0 && (
-                    <Text component="span" size="xs" c="dimmed" ml="6px">
-                      {ticket.emailLogs.length}
-                    </Text>
-                  )}
+                <Tabs.Tab value="activity" leftSection={<IconActivity size={14} />}>
+                  Activity
                 </Tabs.Tab>
                 <Tabs.Tab value="proofs" leftSection={<IconPhoto size={14} />}>
                   繳費證明
@@ -413,144 +344,13 @@ function DetailContent({
                 </Tabs.Tab>
               </Tabs.List>
 
-              <Tabs.Panel value="orders" p="16px">
-                {ticket.invoiceOrders.length === 0 ? (
-                  <Box py="24px" style={{ textAlign: 'center' }}>
-                    <Text c="dimmed" size="sm">
-                      尚無請款訂單
-                    </Text>
-                  </Box>
-                ) : (
-                  <Stack gap="10px">
-                    {ticket.invoiceOrders.map((inv) => (
-                      <Card key={inv.id} withBorder p="14px" radius="8px">
-                        <Group justify="space-between" wrap="nowrap">
-                          <Group gap="14px" wrap="nowrap">
-                            <Box
-                              style={{
-                                width: 36,
-                                height: 36,
-                                borderRadius: 8,
-                                backgroundColor: invoiceBg(inv.status),
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                              }}
-                            >
-                              {invoiceIcon(inv.status)}
-                            </Box>
-                            <Box>
-                              <Group gap="8px">
-                                <Text size="sm" fw={600} c="blue">
-                                  {inv.id}
-                                </Text>
-                                <Badge
-                                  variant="light"
-                                  size="sm"
-                                  color={invoiceColor(inv.status)}
-                                  styles={{ root: { fontWeight: 500, border: 'none' } }}
-                                >
-                                  {invoiceLabel(inv.status)}
-                                </Badge>
-                              </Group>
-                              <Text size="xs" c="dimmed" mt="2px">
-                                {inv.createdAt}
-                                {inv.note && ` · ${inv.note}`}
-                                {inv.failReason && (
-                                  <Text component="span" c="red.6" ml="4px">
-                                    （{inv.failReason}）
-                                  </Text>
-                                )}
-                              </Text>
-                            </Box>
-                          </Group>
-                          <Text fw={700} size="md">
-                            ${inv.amount.toLocaleString()}
-                          </Text>
-                        </Group>
-                      </Card>
-                    ))}
-                  </Stack>
-                )}
-              </Tabs.Panel>
-
-              <Tabs.Panel value="notes" p="16px">
-                <Stack gap="10px" mb="12px">
-                  {ticket.notes.length === 0 && (
-                    <Box py="20px" style={{ textAlign: 'center' }}>
-                      <Text size="sm" c="dimmed">
-                        尚無備註
-                      </Text>
-                    </Box>
-                  )}
-                  {ticket.notes.map((n) => (
-                    <Card key={n.id} p="12px" radius="8px" style={{ backgroundColor: '#f8f9fa' }}>
-                      <Group justify="space-between" mb="4px">
-                        <Text size="sm" fw={600}>
-                          {n.author}
-                        </Text>
-                        <Text size="xs" c="dimmed">
-                          {n.createdAt}
-                        </Text>
-                      </Group>
-                      <Text size="sm" c="dark.7">
-                        {n.content}
-                      </Text>
-                    </Card>
-                  ))}
-                </Stack>
-                <Group align="flex-end" gap="8px">
-                  <Textarea
-                    placeholder="輸入新備註... 送出後不可修改"
-                    value={newNote}
-                    onChange={(e) => onNewNoteChange(e.currentTarget.value)}
-                    autosize
-                    minRows={2}
-                    style={{ flex: 1 }}
-                  />
-                  <Button onClick={onAddNote} disabled={!newNote.trim()} size="sm">
-                    送出
-                  </Button>
-                </Group>
-              </Tabs.Panel>
-
-              <Tabs.Panel value="emails" p="16px">
-                {ticket.emailLogs.length === 0 ? (
-                  <Box py="20px" style={{ textAlign: 'center' }}>
-                    <Text size="sm" c="dimmed">
-                      尚未寄發任何信件
-                    </Text>
-                  </Box>
-                ) : (
-                  <Timeline bulletSize={20} lineWidth={2}>
-                    {ticket.emailLogs.map((e) => (
-                      <Timeline.Item
-                        key={e.id}
-                        bullet={<IconMail size={12} />}
-                        color={e.status === 'sent' ? 'teal' : 'red'}
-                        title={
-                          <Text size="sm" fw={600}>
-                            {e.subject}
-                          </Text>
-                        }
-                      >
-                        <Text size="xs" c="dimmed" mt="2px">
-                          模板{' '}
-                          <Text span fw={500}>
-                            {e.template}
-                          </Text>{' '}
-                          · 觸發狀態{' '}
-                          <Text span fw={500}>
-                            {statusLabel(e.triggerStatus)}
-                          </Text>
-                        </Text>
-                        <Text size="xs" c="dimmed" mt="2px">
-                          {e.sentAt} · {e.status === 'sent' ? '已寄出' : '寄送失敗'}
-                        </Text>
-                      </Timeline.Item>
-                    ))}
-                  </Timeline>
-                )}
+              <Tabs.Panel value="activity" p="16px">
+                <ActivityPanel
+                  ticket={ticket}
+                  newNote={newNote}
+                  onNewNoteChange={onNewNoteChange}
+                  onAddNote={onAddNote}
+                />
               </Tabs.Panel>
 
               <Tabs.Panel value="proofs" p="16px">
@@ -670,51 +470,381 @@ function DetailContent({
 // Sub-components
 // =====================================================
 
-function PropRow({
-  icon,
-  label,
-  children,
-}: {
-  icon: React.ReactNode
-  label: string
-  children: React.ReactNode
-}) {
+function IdentityDot() {
   return (
-    <Group justify="space-between" wrap="nowrap" align="flex-start" gap="md">
-      <Group gap="6px" wrap="nowrap" style={{ flexShrink: 0 }}>
-        <Box style={{ color: '#868e96', display: 'flex' }}>{icon}</Box>
-        <Text size="sm" c="dimmed">
-          {label}
-        </Text>
-      </Group>
-      <Box style={{ minWidth: 0, flexShrink: 1, textAlign: 'right' }}>{children}</Box>
-    </Group>
+    <Text size="sm" c="gray.5">
+      ·
+    </Text>
   )
 }
 
-function CopyableValue({ raw, display }: { raw: string; display: string }) {
+// =====================================================
+// Activity（ClickUp 風格的歷程聚合）
+// =====================================================
+
+type ActivityEvent =
+  | { id: string; kind: 'created'; at: string; serviceLabel: string; cycle: string }
+  | {
+      id: string
+      kind: 'query-result'
+      at: string
+      finalStatus: TicketStatus
+      outcome?: TicketOutcomeKind
+      amount: number | null
+    }
+  | {
+      id: string
+      kind: 'invoice'
+      at: string
+      invoiceId: string
+      status: InvoiceOrder['status']
+      amount: number
+      failReason?: string
+      note?: string
+    }
+  | { id: string; kind: 'note'; at: string; author: string; content: string }
+  | {
+      id: string
+      kind: 'email'
+      at: string
+      subject: string
+      template: string
+      triggerStatus: TicketStatus | 'service-activated'
+      status: 'sent' | 'failed'
+    }
+
+function buildActivities(ticket: Ticket): ActivityEvent[] {
+  const events: ActivityEvent[] = [
+    {
+      id: `${ticket.id}-created`,
+      kind: 'created',
+      at: ticket.createdAt,
+      serviceLabel: SERVICE_META[ticket.serviceType].label,
+      cycle: ticket.cycle,
+    },
+  ]
+
+  // 合成「回填查詢結果」事件 — pending-query 以外，都視為已被營運人員回填過
+  if (ticket.status !== 'pending-query') {
+    events.push({
+      id: `${ticket.id}-query-result`,
+      kind: 'query-result',
+      at: inferQueryResultTime(ticket),
+      finalStatus: ticket.status,
+      outcome: ticket.outcome,
+      amount: ticket.amount,
+    })
+  }
+
+  ticket.invoiceOrders.forEach((inv) => {
+    events.push({
+      id: inv.id,
+      kind: 'invoice',
+      at: inv.createdAt,
+      invoiceId: inv.id,
+      status: inv.status,
+      amount: inv.amount,
+      failReason: inv.failReason,
+      note: inv.note,
+    })
+  })
+
+  ticket.notes.forEach((n) => {
+    events.push({
+      id: n.id,
+      kind: 'note',
+      at: n.createdAt,
+      author: n.author,
+      content: n.content,
+    })
+  })
+
+  ticket.emailLogs.forEach((e) => {
+    events.push({
+      id: e.id,
+      kind: 'email',
+      at: e.sentAt,
+      subject: e.subject,
+      template: e.template,
+      triggerStatus: e.triggerStatus,
+      status: e.status,
+    })
+  })
+
+  // 由新到舊
+  events.sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0))
+  return events
+}
+
+function inferQueryResultTime(ticket: Ticket): string {
+  const candidates: string[] = []
+  if (ticket.invoiceOrders[0]) candidates.push(ticket.invoiceOrders[0].createdAt)
+  if (ticket.emailLogs[0]) candidates.push(ticket.emailLogs[0].sentAt)
+  if (candidates.length === 0) return ticket.updatedAt
+  candidates.sort()
+  return shiftMinutes(candidates[0], -1)
+}
+
+// 簡易時戳位移；只在跨日時退而求其次回原值
+function shiftMinutes(stamp: string, delta: number): string {
+  const [date, time] = stamp.split(' ')
+  if (!time) return stamp
+  const [hh, mm] = time.split(':').map(Number)
+  const total = hh * 60 + mm + delta
+  if (total < 0 || total >= 24 * 60) return stamp
+  const newHh = Math.floor(total / 60)
+  const newMm = total % 60
+  return `${date} ${String(newHh).padStart(2, '0')}:${String(newMm).padStart(2, '0')}`
+}
+
+function queryResultLabel(ev: Extract<ActivityEvent, { kind: 'query-result' }>): string {
+  if (ev.outcome) return OUTCOME_META[ev.outcome].label
+  if (ev.finalStatus === 'query-failed') return '查詢失敗'
+  return '回填查詢結果'
+}
+
+function ActivityPanel({
+  ticket,
+  newNote,
+  onNewNoteChange,
+  onAddNote,
+}: {
+  ticket: Ticket
+  newNote: string
+  onNewNoteChange: (v: string) => void
+  onAddNote: () => void
+}) {
+  const events = buildActivities(ticket)
+
   return (
-    <Group gap="4px" wrap="nowrap" justify="flex-end">
-      <Text size="sm" fw={500} truncate>
-        {display || '—'}
-      </Text>
-      {raw && (
-        <CopyButton value={raw} timeout={1500}>
-          {({ copied, copy }) => (
-            <Tooltip label={copied ? '已複製' : '複製完整值'} withArrow>
-              <ActionIcon
-                variant="subtle"
-                size="sm"
-                color={copied ? 'teal' : 'gray'}
-                onClick={copy}
-              >
-                {copied ? <IconCheck size={14} /> : <IconCopy size={14} />}
-              </ActionIcon>
-            </Tooltip>
-          )}
-        </CopyButton>
-      )}
-    </Group>
+    <Stack gap="14px">
+      {/* Comment input */}
+      <Box style={{ position: 'relative' }}>
+        <Textarea
+          placeholder="填寫備註..."
+          value={newNote}
+          onChange={(e) => onNewNoteChange(e.currentTarget.value)}
+          autosize
+          minRows={2}
+          maxRows={6}
+          styles={{
+            input: {
+              padding: '8px 12px',
+              paddingBottom: 36,
+              fontSize: 14,
+              lineHeight: 1.5,
+            },
+          }}
+        />
+        <Button
+          onClick={onAddNote}
+          disabled={!newNote.trim()}
+          size="xs"
+          style={{
+            position: 'absolute',
+            bottom: 8,
+            right: 8,
+          }}
+        >
+          送出
+        </Button>
+      </Box>
+
+      <Timeline bulletSize={26} lineWidth={2}>
+        {events.map((ev) => (
+          <Timeline.Item
+            key={ev.id}
+            bullet={renderActivityBullet(ev)}
+            color={activityColor(ev)}
+          >
+            <ActivityRow ev={ev} />
+          </Timeline.Item>
+        ))}
+      </Timeline>
+    </Stack>
+  )
+}
+
+function renderActivityBullet(ev: ActivityEvent): React.ReactNode {
+  switch (ev.kind) {
+    case 'created':
+      return <IconCirclePlus size={14} />
+    case 'query-result':
+      return <IconClipboardCheck size={14} />
+    case 'invoice':
+      if (ev.status === 'success') return <IconCircleCheck size={14} />
+      if (ev.status === 'failed') return <IconCircleX size={14} />
+      return <IconCircleDot size={14} />
+    case 'note':
+      return <IconMessageDots size={14} />
+    case 'email':
+      return <IconMail size={14} />
+  }
+}
+
+function activityColor(ev: ActivityEvent): string {
+  switch (ev.kind) {
+    case 'created':
+      return 'gray'
+    case 'query-result':
+      return ev.finalStatus === 'query-failed' ? 'red' : 'blue'
+    case 'invoice':
+      return ev.status === 'success' ? 'teal' : ev.status === 'failed' ? 'red' : 'yellow'
+    case 'note':
+      return 'gray'
+    case 'email':
+      return ev.status === 'sent' ? 'blue' : 'red'
+  }
+}
+
+function ActivityRow({ ev }: { ev: ActivityEvent }) {
+  switch (ev.kind) {
+    case 'created':
+      return (
+        <ActivityBody
+          actor="系統"
+          action="建立工單"
+          detail={`${ev.serviceLabel} · ${ev.cycle}`}
+          at={ev.at}
+        />
+      )
+    case 'query-result':
+      return (
+        <ActivityBody
+          actor="客服"
+          action="回填查詢結果"
+          detail={
+            <Group gap="6px" wrap="wrap" align="center">
+              <Text size="sm" fw={600} c="dark.8">
+                {queryResultLabel(ev)}
+              </Text>
+              {ev.amount !== null && ev.amount > 0 && (
+                <Text size="xs" c="dimmed">
+                  · 線上金額 NT$ {ev.amount.toLocaleString()}
+                </Text>
+              )}
+            </Group>
+          }
+          at={ev.at}
+        />
+      )
+    case 'invoice': {
+      const verb =
+        ev.status === 'success'
+          ? '請款成功'
+          : ev.status === 'failed'
+            ? '請款失敗'
+            : '發起請款'
+      return (
+        <ActivityBody
+          actor="系統"
+          action={verb}
+          at={ev.at}
+          detail={
+            <Card withBorder p="12px" radius="8px" mt="6px">
+              <Group justify="space-between" wrap="nowrap" align="center">
+                <Group gap="8px" wrap="wrap">
+                  <Text size="sm" fw={600} c="blue" style={monoStyle}>
+                    {ev.invoiceId}
+                  </Text>
+                  <Badge
+                    variant="light"
+                    size="sm"
+                    color={invoiceColor(ev.status)}
+                    styles={{ root: { fontWeight: 500, border: 'none' } }}
+                  >
+                    {invoiceLabel(ev.status)}
+                  </Badge>
+                </Group>
+                <Text fw={700} size="md">
+                  NT$ {ev.amount.toLocaleString()}
+                </Text>
+              </Group>
+              {(ev.note || ev.failReason) && (
+                <Box mt="6px">
+                  {ev.note && (
+                    <Text size="xs" c="dimmed">
+                      {ev.note}
+                    </Text>
+                  )}
+                  {ev.failReason && (
+                    <Text size="xs" c="red.6" mt="2px">
+                      失敗原因：{ev.failReason}
+                    </Text>
+                  )}
+                </Box>
+              )}
+            </Card>
+          }
+        />
+      )
+    }
+    case 'note':
+      return (
+        <ActivityBody
+          actor={ev.author}
+          action="加備註"
+          at={ev.at}
+          detail={
+            <Box
+              mt="6px"
+              p="10px 12px"
+              style={{ backgroundColor: '#f8f9fa', borderRadius: 8 }}
+            >
+              <Text size="sm" c="dark.7" style={{ whiteSpace: 'pre-wrap' }}>
+                {ev.content}
+              </Text>
+            </Box>
+          }
+        />
+      )
+    case 'email':
+      return (
+        <ActivityBody
+          actor="系統"
+          action={ev.status === 'sent' ? '寄送通知信' : '通知信寄送失敗'}
+          at={ev.at}
+          detail={
+            <Stack gap={2}>
+              <Text size="sm" fw={600} c="dark.8">
+                {ev.subject}
+              </Text>
+              <Text size="xs" c="dimmed">
+                模板 {ev.template} · 觸發於〈{statusLabel(ev.triggerStatus)}〉
+              </Text>
+            </Stack>
+          }
+        />
+      )
+  }
+}
+
+function ActivityBody({
+  actor,
+  action,
+  detail,
+  at,
+}: {
+  actor: string
+  action: string
+  detail?: React.ReactNode
+  at: string
+}) {
+  return (
+    <Box>
+      <Group gap="6px" wrap="wrap" align="baseline">
+        <Text size="sm" fw={600} c="dark.8">
+          {actor}
+        </Text>
+        <Text size="sm" c="dimmed">
+          {action}
+        </Text>
+        <Text size="xs" c="gray.5" ml="auto">
+          {at}
+        </Text>
+      </Group>
+      {detail && <Box mt="2px">{typeof detail === 'string' ? <Text size="sm" c="dark.7">{detail}</Text> : detail}</Box>}
+    </Box>
   )
 }
 
@@ -727,18 +857,6 @@ function invoiceLabel(s: InvoiceOrder['status']): string {
 }
 function invoiceColor(s: InvoiceOrder['status']) {
   return s === 'pending' ? 'yellow' : s === 'success' ? 'teal' : 'red'
-}
-function invoiceBg(s: InvoiceOrder['status']) {
-  return s === 'pending'
-    ? 'rgba(250,176,5,0.18)'
-    : s === 'success'
-      ? 'rgba(18,184,134,0.18)'
-      : 'rgba(250,82,82,0.15)'
-}
-function invoiceIcon(s: InvoiceOrder['status']) {
-  if (s === 'pending') return <IconCircleDot size={18} color="#b08000" />
-  if (s === 'success') return <IconCircleCheck size={18} color="#0b7c4d" />
-  return <IconCircleX size={18} color="#c92a2a" />
 }
 
 function statusLabel(s: TicketStatus | 'service-activated'): string {
@@ -766,10 +884,7 @@ function getStepStatuses(status: TicketStatus): StepStatus[] {
     case 'query-failed':
       return ['error', 'pending', 'pending', 'pending']
     case 'no-fee':
-    case 'counter-required':
       return ['done', 'skipped', 'skipped', 'done']
-    case 'invoicing':
-      return ['done', 'current', 'pending', 'pending']
     case 'invoice-failed':
       return ['done', 'error', 'pending', 'pending']
     case 'invoice-success':
@@ -878,19 +993,3 @@ function getFailReason(ticket: Ticket): string | null {
   return null
 }
 
-function getAging(updatedAt: string): { text: string; warning: boolean } {
-  const iso = updatedAt.replace(' ', 'T') + ':00'
-  const updated = new Date(iso)
-  if (Number.isNaN(updated.getTime())) {
-    return { text: updatedAt, warning: false }
-  }
-  const diffMs = DEMO_NOW.getTime() - updated.getTime()
-  if (diffMs < 0) return { text: '剛剛更新', warning: false }
-  const hours = Math.floor(diffMs / (1000 * 60 * 60))
-  const days = Math.floor(hours / 24)
-  if (days >= 3) return { text: `已停留 ${days} 天`, warning: true }
-  if (days >= 1) return { text: `已停留 ${days} 天`, warning: false }
-  if (hours >= 1) return { text: `${hours} 小時前更新`, warning: false }
-  const mins = Math.max(1, Math.floor(diffMs / (1000 * 60)))
-  return { text: `${mins} 分鐘前更新`, warning: false }
-}

@@ -93,10 +93,8 @@ export const SERVICE_QUERY_FIELDS: Record<ServiceType, QueryField[]> = {
 
 export type TicketStatus =
   | 'pending-query'      // 待查詢
-  | 'no-fee'             // 不需繳
-  | 'counter-required'   // 需臨櫃繳費
+  | 'no-fee'             // 不需繳費（含整單臨櫃，差異記在 outcome）
   | 'query-failed'       // 查詢失敗
-  | 'invoicing'          // 請款中
   | 'invoice-success'    // 請款成功
   | 'invoice-failed'     // 請款失敗
   | 'paid'               // 繳款成功
@@ -108,13 +106,25 @@ export const STATUS_META: Record<
 > = {
   'pending-query':       { label: '待查詢',     group: '待查', color: '#495057', bg: 'rgba(134,142,150,0.15)' },
   'no-fee':              { label: '不需繳費',   group: '查詢', color: '#1971c2', bg: 'rgba(34,139,230,0.12)' },
-  'counter-required':    { label: '需臨櫃繳費', group: '查詢', color: '#1971c2', bg: 'rgba(34,139,230,0.12)' },
   'query-failed':        { label: '查詢失敗',   group: '例外', color: '#c92a2a', bg: 'rgba(250,82,82,0.12)' },
-  'invoicing':           { label: '請款中',     group: '請款', color: '#b08000', bg: 'rgba(250,176,5,0.18)' },
   'invoice-success':     { label: '請款成功',   group: '請款', color: '#0b7c4d', bg: 'rgba(18,184,134,0.15)' },
   'invoice-failed':      { label: '請款失敗',   group: '例外', color: '#c92a2a', bg: 'rgba(250,82,82,0.12)' },
   'paid':                { label: '繳款成功',   group: '繳款', color: '#0b7c4d', bg: 'rgba(18,184,134,0.18)' },
   'unable-to-close':     { label: '無法結單',   group: '例外', color: '#5f3dc4', bg: 'rgba(173,58,204,0.12)' },
+}
+
+// 查詢結果回填後的細部 outcome（不影響主 status，只在詳情中標註）
+export type TicketOutcomeKind =
+  | 'no-fee'        // 平台查到 0 元，無應繳費用
+  | 'counter-only'  // 整單需臨櫃辦理
+  | 'online-full'   // 全額線上代繳
+  | 'online-mixed'  // 部分需臨櫃自繳（混合單，臨櫃部分由用戶自繳）
+
+export const OUTCOME_META: Record<TicketOutcomeKind, { label: string }> = {
+  'no-fee':       { label: '無應繳費用' },
+  'counter-only': { label: '整單需臨櫃辦理' },
+  'online-full':  { label: '全額線上代繳' },
+  'online-mixed': { label: '部分需臨櫃自繳' },
 }
 
 export interface InvoiceOrder {
@@ -161,8 +171,8 @@ export interface Ticket {
   serviceType: ServiceType
   cycle: string                // e.g. "2026/05"
   amount: number | null        // 線上可請款金額
-  counterAmount?: number | null // 臨櫃須繳金額（混合狀態才有值）
   status: TicketStatus
+  outcome?: TicketOutcomeKind  // 查詢結果回填後的細部 outcome
   createdAt: string
   updatedAt: string
   driverInfo: UserDriverInfo

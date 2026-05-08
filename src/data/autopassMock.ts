@@ -33,6 +33,7 @@ export const mockTickets: Ticket[] = [
     cycle: '2026/05',
     amount: 890,
     status: 'invoice-failed',
+    outcome: 'online-full',
     createdAt: '2026-05-04 10:00',
     updatedAt: '2026-05-05 09:12',
     driverInfo: {
@@ -80,6 +81,7 @@ export const mockTickets: Ticket[] = [
     cycle: '2026/05',
     amount: 1240,
     status: 'invoice-success',
+    outcome: 'online-full',
     createdAt: '2026-05-04 10:00',
     updatedAt: '2026-05-05 14:22',
     driverInfo: {
@@ -99,16 +101,7 @@ export const mockTickets: Ticket[] = [
       },
     ],
     notes: [],
-    emailLogs: [
-      {
-        id: 'E-8',
-        triggerStatus: 'invoice-success',
-        template: 'invoice-success-v1',
-        subject: '【自動繳通知】請款成功，待帳戶扣款確認',
-        sentAt: '2026-05-05 14:23',
-        status: 'sent',
-      },
-    ],
+    emailLogs: [],
   },
   {
     id: 'T-2026050014',
@@ -159,6 +152,7 @@ export const mockTickets: Ticket[] = [
     cycle: '2026/05',
     amount: 15600,
     status: 'invoice-success',
+    outcome: 'online-full',
     createdAt: '2026-05-04 10:00',
     updatedAt: '2026-05-05 16:30',
     driverInfo: {
@@ -177,16 +171,7 @@ export const mockTickets: Ticket[] = [
       },
     ],
     notes: [],
-    emailLogs: [
-      {
-        id: 'E-21',
-        triggerStatus: 'invoice-success',
-        template: 'invoice-success-v1',
-        subject: '【自動繳通知】請款成功，待帳戶扣款確認',
-        sentAt: '2026-05-05 16:31',
-        status: 'sent',
-      },
-    ],
+    emailLogs: [],
   },
 
   // ─── 汽燃費（個人） ────────────────────────────────────────
@@ -221,6 +206,7 @@ export const mockTickets: Ticket[] = [
     cycle: '2026/07',
     amount: 920,
     status: 'invoice-failed',
+    outcome: 'online-full',
     createdAt: '2026-05-05 08:00',
     updatedAt: '2026-05-06 10:44',
     driverInfo: {
@@ -260,6 +246,7 @@ export const mockTickets: Ticket[] = [
     cycle: '2026/07',
     amount: 1050,
     status: 'invoice-success',
+    outcome: 'online-full',
     createdAt: '2026-05-05 08:00',
     updatedAt: '2026-05-06 15:08',
     driverInfo: {
@@ -278,16 +265,7 @@ export const mockTickets: Ticket[] = [
       },
     ],
     notes: [],
-    emailLogs: [
-      {
-        id: 'E-12',
-        triggerStatus: 'invoice-success',
-        template: 'invoice-success-v1',
-        subject: '【自動繳通知】請款成功，待帳戶扣款確認',
-        sentAt: '2026-05-06 15:09',
-        status: 'sent',
-      },
-    ],
+    emailLogs: [],
   },
   {
     id: 'T-2026050017',
@@ -338,6 +316,7 @@ export const mockTickets: Ticket[] = [
     cycle: '2026/Q2',
     amount: 8500,
     status: 'invoice-success',
+    outcome: 'online-full',
     createdAt: '2026-05-01 10:00',
     updatedAt: '2026-05-03 16:11',
     driverInfo: {
@@ -390,6 +369,7 @@ export const mockTickets: Ticket[] = [
     cycle: '2026/W18',
     amount: 750,
     status: 'invoice-failed',
+    outcome: 'online-full',
     createdAt: '2026-05-06 06:00',
     updatedAt: '2026-05-06 13:19',
     driverInfo: {
@@ -428,8 +408,8 @@ export const mockTickets: Ticket[] = [
     serviceType: 'fuel-fee-overdue',
     cycle: '2026/W18',
     amount: 600,
-    counterAmount: 900,
     status: 'invoice-success',
+    outcome: 'online-mixed',
     createdAt: '2026-05-06 06:00',
     updatedAt: '2026-05-06 11:55',
     driverInfo: {
@@ -448,16 +428,7 @@ export const mockTickets: Ticket[] = [
       },
     ],
     notes: [],
-    emailLogs: [
-      {
-        id: 'E-14',
-        triggerStatus: 'invoice-success',
-        template: 'invoice-success-v1',
-        subject: '【自動繳通知】請款成功，待帳戶扣款確認',
-        sentAt: '2026-05-06 11:56',
-        status: 'sent',
-      },
-    ],
+    emailLogs: [],
   },
   {
     id: 'T-2026050022',
@@ -530,6 +501,7 @@ export const mockTickets: Ticket[] = [
     cycle: '2026/W18',
     amount: 900,
     status: 'invoice-failed',
+    outcome: 'online-full',
     createdAt: '2026-05-06 06:00',
     updatedAt: '2026-05-06 12:30',
     driverInfo: {
@@ -568,8 +540,8 @@ export const mockTickets: Ticket[] = [
     serviceType: 'traffic-fine-personal',
     cycle: '2026/W18',
     amount: 1200,
-    counterAmount: 400,
     status: 'invoice-success',
+    outcome: 'online-mixed',
     createdAt: '2026-05-06 06:00',
     updatedAt: '2026-05-06 14:33',
     driverInfo: {
@@ -588,16 +560,7 @@ export const mockTickets: Ticket[] = [
       },
     ],
     notes: [],
-    emailLogs: [
-      {
-        id: 'E-16',
-        triggerStatus: 'invoice-success',
-        template: 'invoice-success-v1',
-        subject: '【自動繳通知】請款成功，待帳戶扣款確認',
-        sentAt: '2026-05-06 14:34',
-        status: 'sent',
-      },
-    ],
+    emailLogs: [],
   },
   {
     id: 'T-2026050012',
@@ -648,6 +611,7 @@ export const mockTickets: Ticket[] = [
     cycle: '2026/W18',
     amount: 2400,
     status: 'invoice-failed',
+    outcome: 'online-full',
     createdAt: '2026-05-06 06:00',
     updatedAt: '2026-05-06 15:20',
     driverInfo: {
@@ -711,6 +675,7 @@ export const mockTickets: Ticket[] = [
     cycle: '2026/W18',
     amount: 3000,
     status: 'invoice-failed',
+    outcome: 'online-full',
     createdAt: '2026-05-06 06:00',
     updatedAt: '2026-05-06 16:05',
     driverInfo: {
@@ -750,6 +715,7 @@ export const mockTickets: Ticket[] = [
     cycle: '2026/W18',
     amount: 3000,
     status: 'invoice-success',
+    outcome: 'online-full',
     createdAt: '2026-05-06 06:00',
     updatedAt: '2026-05-06 17:45',
     driverInfo: {
@@ -768,16 +734,7 @@ export const mockTickets: Ticket[] = [
       },
     ],
     notes: [],
-    emailLogs: [
-      {
-        id: 'E-20',
-        triggerStatus: 'invoice-success',
-        template: 'invoice-success-v1',
-        subject: '【自動繳通知】請款成功，待帳戶扣款確認',
-        sentAt: '2026-05-06 17:46',
-        status: 'sent',
-      },
-    ],
+    emailLogs: [],
   },
   {
     id: 'T-2026050004',
@@ -828,6 +785,7 @@ export const mockTickets: Ticket[] = [
     cycle: '2026/07',
     amount: 1180,
     status: 'paid',
+    outcome: 'online-full',
     createdAt: '2026-05-01 10:00',
     updatedAt: '2026-05-04 14:30',
     driverInfo: {
@@ -866,6 +824,7 @@ export const mockTickets: Ticket[] = [
     cycle: '2026/05',
     amount: 0,
     status: 'no-fee',
+    outcome: 'no-fee',
     createdAt: '2026-05-04 10:00',
     updatedAt: '2026-05-04 10:30',
     driverInfo: {
@@ -896,7 +855,8 @@ export const mockTickets: Ticket[] = [
     serviceType: 'fuel-fee-overdue',
     cycle: '2026/W18',
     amount: 600,
-    status: 'counter-required',
+    status: 'no-fee',
+    outcome: 'counter-only',
     createdAt: '2026-05-06 06:00',
     updatedAt: '2026-05-06 09:42',
     driverInfo: {
@@ -918,7 +878,7 @@ export const mockTickets: Ticket[] = [
     emailLogs: [
       {
         id: 'E-5',
-        triggerStatus: 'counter-required',
+        triggerStatus: 'no-fee',
         template: 'counter-required-v1',
         subject: '【自動繳通知】請至監理機關臨櫃繳費',
         sentAt: '2026-05-06 09:43',

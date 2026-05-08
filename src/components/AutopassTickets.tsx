@@ -21,7 +21,6 @@ import {
   Modal,
   Radio,
   NumberInput,
-  FileButton,
   Image,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
@@ -49,7 +48,6 @@ import {
   IconAlertTriangle,
   IconUpload,
   IconPhoto,
-  IconPhotoPlus,
   IconTrash,
   IconEye,
 } from '@tabler/icons-react'
@@ -62,6 +60,8 @@ import {
   type Ticket,
   type TicketNote,
   type TicketStatus,
+  type EmailLog,
+  type InvoiceOrder,
 } from '../types/autopass'
 import { maskDate } from '../utils/mask'
 import { AutopassTicketDetail } from './AutopassTicketDetail'
@@ -75,7 +75,6 @@ interface AutopassTicketsProps {
 const TERMINAL_STATUSES: TicketStatus[] = [
   'paid',
   'no-fee',
-  'counter-required',
   'unable-to-close',
 ]
 
@@ -126,7 +125,7 @@ export function AutopassTickets({
 
   // demo 用 — 點 Modal 送出後本地端覆寫對應欄位，讓卡片狀態跟著流程走
   const [statusOverrides, setStatusOverrides] = useState<
-    Record<string, Partial<Pick<Ticket, 'status' | 'amount' | 'counterAmount'>>>
+    Record<string, Partial<Pick<Ticket, 'status' | 'amount' | 'outcome'>>>
   >({})
   const [queryModalTicketId, setQueryModalTicketId] = useState<string | null>(null)
   const [confirmPaidTicketId, setConfirmPaidTicketId] = useState<string | null>(null)
@@ -136,6 +135,8 @@ export function AutopassTickets({
   const [detailTicketId, setDetailTicketId] = useState<string | null>(null)
   const [noteOverrides, setNoteOverrides] = useState<Record<string, TicketNote[]>>({})
   const [proofOverrides, setProofOverrides] = useState<Record<string, string[]>>({})
+  const [emailOverrides, setEmailOverrides] = useState<Record<string, EmailLog[]>>({})
+  const [invoiceOverrides, setInvoiceOverrides] = useState<Record<string, InvoiceOrder[]>>({})
 
   // 當外部傳入新的 initialStatusFilter（例：從 Dashboard 跳過來），同步進來
   useEffect(() => {
@@ -145,13 +146,15 @@ export function AutopassTickets({
     }
   }, [initialStatusFilter])
 
-  // 套用 demo 覆寫（狀態 + 加備註 + 繳費證明）
+  // 套用 demo 覆寫（狀態 + 加備註 + 繳費證明 + 自動發信 + 新請款訂單）
   const tickets = useMemo(
     () =>
       mockTickets.map((t) => {
         const status = statusOverrides[t.id]
         const extraNotes = noteOverrides[t.id]
         const extraProofs = proofOverrides[t.id]
+        const extraEmails = emailOverrides[t.id]
+        const extraInvoices = invoiceOverrides[t.id]
         let merged: Ticket = status ? { ...t, ...status } : t
         if (extraNotes && extraNotes.length > 0) {
           merged = { ...merged, notes: [...extraNotes, ...merged.notes] }
@@ -162,9 +165,18 @@ export function AutopassTickets({
             paymentProofs: [...(merged.paymentProofs ?? []), ...extraProofs],
           }
         }
+        if (extraEmails && extraEmails.length > 0) {
+          merged = { ...merged, emailLogs: [...extraEmails, ...merged.emailLogs] }
+        }
+        if (extraInvoices && extraInvoices.length > 0) {
+          merged = {
+            ...merged,
+            invoiceOrders: [...merged.invoiceOrders, ...extraInvoices],
+          }
+        }
         return merged
       }),
-    [statusOverrides, noteOverrides, proofOverrides],
+    [statusOverrides, noteOverrides, proofOverrides, emailOverrides, invoiceOverrides],
   )
 
   const queryModalTicket = useMemo(
@@ -196,7 +208,7 @@ export function AutopassTickets({
   const handleQueryModalOpen = (ticketId: string) => setQueryModalTicketId(ticketId)
   const handleQueryModalClose = () => setQueryModalTicketId(null)
   const handleQueryResultSubmit = (
-    result: Partial<Pick<Ticket, 'status' | 'amount' | 'counterAmount'>>,
+    result: Partial<Pick<Ticket, 'status' | 'amount' | 'outcome'>>,
   ) => {
     if (!queryModalTicketId) return
     setStatusOverrides((prev) => ({
@@ -218,9 +230,25 @@ export function AutopassTickets({
       ...prev,
       [confirmPaidTicketId]: [...(prev[confirmPaidTicketId] ?? []), ...proofs],
     }))
+    const now = new Date()
+    const stamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+    setEmailOverrides((prev) => ({
+      ...prev,
+      [confirmPaidTicketId]: [
+        {
+          id: `E-${Date.now()}`,
+          triggerStatus: 'paid',
+          template: 'paid-v1',
+          subject: '【自動繳通知】繳費完成',
+          sentAt: stamp,
+          status: 'sent',
+        },
+        ...(prev[confirmPaidTicketId] ?? []),
+      ],
+    }))
     notifications.show({
       title: '已確認代繳完成',
-      message: `${confirmPaidTicketId} 已結案，已存入 ${proofs.length} 張繳費證明`,
+      message: `${confirmPaidTicketId} 已結案、已寄出繳費完成通知信、已存入 ${proofs.length} 張繳費證明`,
       color: 'teal',
     })
     setConfirmPaidTicketId(null)
@@ -228,16 +256,35 @@ export function AutopassTickets({
 
   const handleOpenRetryInvoiceModal = (ticketId: string) => setRetryInvoiceTicketId(ticketId)
   const handleRetryInvoiceClose = () => setRetryInvoiceTicketId(null)
-  const handleRetryInvoiceConfirm = () => {
+  const handleRetryInvoiceConfirm = (amount: number) => {
     if (!retryInvoiceTicketId) return
-    // demo：模擬同步請款成功
+    // demo：模擬同步請款成功；系統不能對同筆請款 retry，改發起一筆新的訂單
+    const now = new Date()
+    const stamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
     setStatusOverrides((prev) => ({
       ...prev,
-      [retryInvoiceTicketId]: { ...prev[retryInvoiceTicketId], status: 'invoice-success' },
+      [retryInvoiceTicketId]: {
+        ...prev[retryInvoiceTicketId],
+        status: 'invoice-success',
+        amount,
+      },
+    }))
+    setInvoiceOverrides((prev) => ({
+      ...prev,
+      [retryInvoiceTicketId]: [
+        ...(prev[retryInvoiceTicketId] ?? []),
+        {
+          id: `INV-${Date.now()}`,
+          amount,
+          createdAt: stamp,
+          status: 'success',
+          note: '重新發起請款',
+        },
+      ],
     }))
     notifications.show({
-      title: '重試請款成功',
-      message: '已向用戶重新請款，待代繳',
+      title: '已重新發起請款',
+      message: `已向用戶建立新請款 NT$ ${amount.toLocaleString()}，等待代繳`,
       color: 'teal',
     })
     setRetryInvoiceTicketId(null)
@@ -338,19 +385,41 @@ export function AutopassTickets({
     setPage(1)
   }
 
+  // 卡牌上對每個 ticket 實際顯示的可搜尋欄位（id / 用戶 + 該 service 對應的 query fields）
+  const ticketSearchValues = (t: Ticket): string[] => {
+    const fields = SERVICE_QUERY_FIELDS[t.serviceType]
+    const values: string[] = [t.id, t.userName]
+    if (fields.includes('plateNumber')) values.push(t.plateNumber)
+    if (fields.includes('idNumber')) values.push(t.driverInfo.idNumber)
+    if (fields.includes('birthDate') && t.driverInfo.birthDate) {
+      values.push(t.driverInfo.birthDate)
+    }
+    if (fields.includes('vehicleType')) values.push(t.driverInfo.vehicleType)
+    return values
+  }
+
   const filtered = useMemo(() => {
     const kw = search.trim().toLowerCase()
     return tabFiltered.filter((t) => {
       if (statusFilter && t.status !== statusFilter) return false
       if (!kw) return true
-      return (
-        t.id.toLowerCase().includes(kw) ||
-        t.userName.toLowerCase().includes(kw) ||
-        t.plateNumber.toLowerCase().includes(kw) ||
-        t.userId.toLowerCase().includes(kw)
-      )
+      return ticketSearchValues(t).some((v) => v.toLowerCase().includes(kw))
     })
   }, [tabFiltered, search, statusFilter])
+
+  // Placeholder 依 active tab 顯示欄位（聯集，因 tab 可能合併個人 / 法人）
+  const searchPlaceholder = useMemo(() => {
+    const fieldSet = new Set<string>()
+    TAB_TYPES[activeTab].forEach((type) => {
+      SERVICE_QUERY_FIELDS[type].forEach((f) => fieldSet.add(f))
+    })
+    const labels: string[] = ['Ticket ID', '用戶']
+    if (fieldSet.has('plateNumber')) labels.push('車牌')
+    if (fieldSet.has('idNumber')) labels.push('身分證／統編')
+    if (fieldSet.has('birthDate')) labels.push('出生年月日')
+    if (fieldSet.has('vehicleType')) labels.push('車種')
+    return `搜尋 ${labels.join('、')}`
+  }, [activeTab])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const pageData = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
@@ -404,9 +473,11 @@ export function AutopassTickets({
           >
             {isHistory ? '歷史任務' : '查繳任務'}
           </Title>
-          <Text size="sm" c="dimmed" mt="4px">
-            {isHistory ? `已結案 ${filtered.length} 筆` : `共 ${filtered.length} 筆任務`}
-          </Text>
+          {isHistory && (
+            <Text size="sm" c="dimmed" mt="4px">
+              已結案 {filtered.length} 筆
+            </Text>
+          )}
         </Box>
       </Group>
 
@@ -444,7 +515,7 @@ export function AutopassTickets({
       <Box px="24px" pt="16px" pb="16px">
         <Group gap="12px" align="flex-end" wrap="wrap">
           <TextInput
-            placeholder="搜尋車牌、用戶或 Ticket ID"
+            placeholder={searchPlaceholder}
             leftSection={<IconSearch size={16} />}
             value={search}
             onChange={(e) => {
@@ -819,7 +890,7 @@ function buildCardActionConfig(
     case 'invoice-failed':
       return {
         primary: {
-          label: '重試請款',
+          label: '重新發起請款',
           icon: <IconRefresh size={16} />,
           onClick: () => cb.onRetryInvoice(ticket.id),
         },
@@ -848,11 +919,10 @@ function buildCardActionConfig(
         actionItems: [],
         commonItems,
       }
-    case 'invoicing':
     default:
       return {
         primary: {
-          label: '查看請款進度',
+          label: '查看詳情',
           icon: <IconArrowRight size={16} />,
           onClick: () => cb.onViewDetail(ticket.id),
         },
@@ -995,7 +1065,9 @@ function CardCopyValue({ raw, display }: { raw: string; display: string }) {
   )
 }
 
-type QueryResultChoice = 'no-fee' | 'counter-required' | 'query-failed' | 'has-amount' | 'mixed'
+type QueryResultChoice = 'no-online-fee' | 'query-failed' | 'has-fee'
+type NoOnlineFeeReason = 'no-fee' | 'counter-required'
+type HasFeeMode = 'has-amount' | 'mixed'
 
 function QueryResultModal({
   ticket,
@@ -1006,14 +1078,18 @@ function QueryResultModal({
   ticket: Ticket | null
   opened: boolean
   onClose: () => void
-  onSubmit: (result: Partial<Pick<Ticket, 'status' | 'amount' | 'counterAmount'>>) => void
+  onSubmit: (result: Partial<Pick<Ticket, 'status' | 'amount' | 'outcome'>>) => void
 }) {
-  const [choice, setChoice] = useState<QueryResultChoice>('has-amount')
+  const [choice, setChoice] = useState<QueryResultChoice>('has-fee')
+  const [noOnlineFeeReason, setNoOnlineFeeReason] = useState<NoOnlineFeeReason>('no-fee')
+  const [hasFeeMode, setHasFeeMode] = useState<HasFeeMode>('has-amount')
   const [amount, setAmount] = useState<number | string>('')
 
   useEffect(() => {
     if (opened) {
-      setChoice('has-amount')
+      setChoice('has-fee')
+      setNoOnlineFeeReason('no-fee')
+      setHasFeeMode('has-amount')
       setAmount('')
     }
   }, [opened])
@@ -1023,28 +1099,28 @@ function QueryResultModal({
   const serviceMeta = SERVICE_META[ticket.serviceType]
 
   const canSubmit =
-    choice === 'no-fee' ||
-    choice === 'counter-required' ||
+    choice === 'no-online-fee' ||
     choice === 'query-failed' ||
-    ((choice === 'has-amount' || choice === 'mixed') && Number(amount) > 0)
+    (choice === 'has-fee' && Number(amount) > 0)
 
   const handleSubmit = () => {
     switch (choice) {
-      case 'no-fee':
-        onSubmit({ status: 'no-fee', amount: 0, counterAmount: null })
-        notifications.show({
-          title: '已標記為無需繳費',
-          message: `${ticket.id} 已結案`,
-          color: 'blue',
-        })
-        break
-      case 'counter-required':
-        onSubmit({ status: 'counter-required', amount: null, counterAmount: null })
-        notifications.show({
-          title: '已標記為需臨櫃繳費',
-          message: '已寄信引導用戶臨櫃辦理',
-          color: 'blue',
-        })
+      case 'no-online-fee':
+        if (noOnlineFeeReason === 'no-fee') {
+          onSubmit({ status: 'no-fee', amount: 0, outcome: 'no-fee' })
+          notifications.show({
+            title: '已標記為無應繳費用',
+            message: `${ticket.id} 已結案`,
+            color: 'blue',
+          })
+        } else {
+          onSubmit({ status: 'no-fee', amount: null, outcome: 'counter-only' })
+          notifications.show({
+            title: '已標記為整單需臨櫃辦理',
+            message: '已寄信引導用戶臨櫃辦理，本票已結案',
+            color: 'blue',
+          })
+        }
         break
       case 'query-failed':
         onSubmit({ status: 'query-failed' })
@@ -1054,24 +1130,20 @@ function QueryResultModal({
           color: 'red',
         })
         break
-      case 'has-amount': {
+      case 'has-fee': {
         const a = Number(amount)
-        // demo：模擬同步請款成功
-        onSubmit({ status: 'invoice-success', amount: a, counterAmount: null })
-        notifications.show({
-          title: '請款成功',
-          message: `已向用戶請款 NT$ ${a.toLocaleString()}，待代繳`,
-          color: 'teal',
+        // demo：模擬同步請款成功；mixed 的臨櫃部分由用戶自繳，後台不再追蹤
+        onSubmit({
+          status: 'invoice-success',
+          amount: a,
+          outcome: hasFeeMode === 'mixed' ? 'online-mixed' : 'online-full',
         })
-        break
-      }
-      case 'mixed': {
-        const a = Number(amount)
-        // demo：模擬同步請款成功；臨櫃部分由用戶自繳，後台不再追蹤
-        onSubmit({ status: 'invoice-success', amount: a, counterAmount: null })
         notifications.show({
           title: '請款成功',
-          message: `已向用戶請款 NT$ ${a.toLocaleString()}，並通知臨櫃部分自繳`,
+          message:
+            hasFeeMode === 'mixed'
+              ? `已向用戶請款 NT$ ${a.toLocaleString()}，並通知臨櫃部分自繳`
+              : `已向用戶請款 NT$ ${a.toLocaleString()}，待代繳`,
           color: 'teal',
         })
         break
@@ -1131,35 +1203,88 @@ function QueryResultModal({
           required
         >
           <Stack gap="xs" mt="xs">
-            <Radio value="no-fee" label="無需繳費" />
-            <Radio value="counter-required" label="需臨櫃繳費（整單）" />
+            <Radio value="no-online-fee" label="無需繳費" />
+            {choice === 'no-online-fee' && (
+              <Box
+                pl="28px"
+                style={{
+                  borderLeft: '2px solid #e9ecef',
+                  marginLeft: 8,
+                }}
+              >
+                <Radio.Group
+                  value={noOnlineFeeReason}
+                  onChange={(v) => setNoOnlineFeeReason(v as NoOnlineFeeReason)}
+                  label="原因"
+                  size="sm"
+                >
+                  <Stack gap="xs" mt="xs">
+                    <Radio
+                      value="no-fee"
+                      label="無應繳費用"
+                      description="平台查詢結果為零，直接結案"
+                    />
+                    <Radio
+                      value="counter-required"
+                      label="需臨櫃繳費（整單）"
+                      description="無法線上代繳，將寄信引導用戶臨櫃辦理"
+                    />
+                  </Stack>
+                </Radio.Group>
+              </Box>
+            )}
             <Radio
               value="query-failed"
               label="查詢失敗"
               description="系統會自動寄信通知用戶更新資料"
             />
-            <Radio value="has-amount" label="查到待繳費用" />
-            <Radio value="mixed" label="查到待繳費用 + 部分需臨櫃" />
+            <Radio value="has-fee" label="查到待繳費用" />
+            {choice === 'has-fee' && (
+              <Box
+                pl="28px"
+                style={{
+                  borderLeft: '2px solid #e9ecef',
+                  marginLeft: 8,
+                }}
+              >
+                <Stack gap="sm" mt="xs">
+                  <Radio.Group
+                    value={hasFeeMode}
+                    onChange={(v) => setHasFeeMode(v as HasFeeMode)}
+                    label="繳費範圍"
+                    size="sm"
+                  >
+                    <Stack gap="xs" mt="xs">
+                      <Radio
+                        value="has-amount"
+                        label="全額可線上代繳"
+                        description="查到的金額全數透過系統代繳"
+                      />
+                      <Radio
+                        value="mixed"
+                        label="部分需臨櫃自繳"
+                        description="僅就線上部分代繳，臨櫃部分由用戶自行處理"
+                      />
+                    </Stack>
+                  </Radio.Group>
+                  <NumberInput
+                    label="線上可繳金額 (NT$)"
+                    placeholder="輸入金額"
+                    value={amount}
+                    onChange={setAmount}
+                    min={0}
+                    thousandSeparator
+                    required
+                  />
+                  <Text size="xs" c="dimmed">
+                    送出後系統會立即向用戶發起請款，並當下回傳結果。
+                    {hasFeeMode === 'mixed' && '臨櫃部分由用戶自繳，後台不再追蹤金額。'}
+                  </Text>
+                </Stack>
+              </Box>
+            )}
           </Stack>
         </Radio.Group>
-
-        {(choice === 'has-amount' || choice === 'mixed') && (
-          <Stack gap="sm">
-            <NumberInput
-              label="線上可繳金額 (NT$)"
-              placeholder="輸入金額"
-              value={amount}
-              onChange={setAmount}
-              min={0}
-              thousandSeparator
-              required
-            />
-            <Text size="xs" c="dimmed">
-              送出後系統會立即向用戶發起請款，並當下回傳結果。
-              {choice === 'mixed' && '臨櫃部分由用戶自繳，後台不再追蹤金額。'}
-            </Text>
-          </Stack>
-        )}
 
         <Group justify="flex-end" mt="md">
           <Button variant="default" onClick={onClose}>
@@ -1278,7 +1403,7 @@ function ConfirmPaidModal({
   if (!ticket) return null
 
   const serviceMeta = SERVICE_META[ticket.serviceType]
-  const isMixed = !!(ticket.counterAmount && ticket.counterAmount > 0)
+  const isMixed = ticket.outcome === 'online-mixed'
   const canSubmit = files.length > 0 && !submitting
 
   const handleAppend = (newFiles: File[]) => {
@@ -1343,7 +1468,7 @@ function ConfirmPaidModal({
             padding: '14px 16px',
           }}
         >
-          <Group gap="32px" wrap="wrap">
+          <Group gap="12px" wrap="wrap" align="center">
             <Box>
               <Text size="xs" c="dimmed" mb={2}>
                 線上代繳金額
@@ -1353,26 +1478,16 @@ function ConfirmPaidModal({
               </Text>
             </Box>
             {isMixed && (
-              <Box>
-                <Group gap={6} mb={2}>
-                  <Text size="xs" c="dimmed">
-                    臨櫃部分
-                  </Text>
-                  <Badge size="xs" color="blue" variant="light">
-                    用戶自繳
-                  </Badge>
-                </Group>
-                <Text size="20px" fw={700} style={{ lineHeight: 1.2, color: '#1971c2' }}>
-                  NT$ {(ticket.counterAmount ?? 0).toLocaleString()}
-                </Text>
-              </Box>
+              <Badge size="sm" color="blue" variant="light">
+                部分需臨櫃自繳
+              </Badge>
             )}
           </Group>
         </Box>
 
         {isMixed && (
           <Text size="xs" c="dimmed">
-            混合單僅就線上部分結案，臨櫃須繳金額由用戶自行處理，不再追蹤。
+            混合單僅就線上部分結案，臨櫃部分由用戶自行處理，後台不再追蹤金額。
           </Text>
         )}
 
@@ -1387,35 +1502,21 @@ function ConfirmPaidModal({
                 請上傳代繳完成畫面，以供後續對帳追溯（至少 1 張）
               </Text>
             </Box>
-            <Group gap="6px" wrap="nowrap">
-              <Tooltip
-                label="Demo：自動產生 2 張帶本票資訊的示意截圖（供展示流程用）"
-                withArrow
-                multiline
-                w={220}
+            <Tooltip
+              label="Demo：自動產生 2 張帶本票資訊的示意截圖（供展示流程用）"
+              withArrow
+              multiline
+              w={220}
+            >
+              <Button
+                variant="light"
+                size="xs"
+                leftSection={<IconUpload size={14} />}
+                onClick={() => handleAppend(buildDemoProofFiles(ticket))}
               >
-                <Button
-                  variant="subtle"
-                  size="xs"
-                  leftSection={<IconPhotoPlus size={14} />}
-                  onClick={() => handleAppend(buildDemoProofFiles(ticket))}
-                >
-                  插入示意圖
-                </Button>
-              </Tooltip>
-              <FileButton onChange={handleAppend} accept="image/*" multiple>
-                {(props) => (
-                  <Button
-                    {...props}
-                    variant="light"
-                    size="xs"
-                    leftSection={<IconUpload size={14} />}
-                  >
-                    選擇圖片
-                  </Button>
-                )}
-              </FileButton>
-            </Group>
+                選擇圖片
+              </Button>
+            </Tooltip>
           </Group>
 
           {files.length === 0 ? (
@@ -1585,12 +1686,21 @@ function RetryInvoiceModal({
   ticket: Ticket | null
   opened: boolean
   onClose: () => void
-  onConfirm: () => void
+  onConfirm: (amount: number) => void
 }) {
+  const [amount, setAmount] = useState<number | string>('')
+
+  useEffect(() => {
+    if (opened && ticket) {
+      setAmount(ticket.amount ?? '')
+    }
+  }, [opened, ticket])
+
   if (!ticket) return null
 
   const serviceMeta = SERVICE_META[ticket.serviceType]
-  const lastFailed = [...ticket.invoiceOrders].reverse().find((i) => i.status === 'failed')
+  const numericAmount = Number(amount)
+  const canSubmit = numericAmount > 0
 
   return (
     <Modal
@@ -1601,7 +1711,7 @@ function RetryInvoiceModal({
       title={
         <Box>
           <Text size="md" fw={600}>
-            重試請款
+            重新發起請款
           </Text>
           <Text size="xs" c="dimmed" mt={2}>
             {ticket.id} · {serviceMeta.label} · {ticket.userName}
@@ -1611,41 +1721,25 @@ function RetryInvoiceModal({
     >
       <Stack gap="md">
         <Text size="sm" c="dark.7">
-          將重新向用戶綁定的支付工具發起<Text component="span" fw={600}>同步請款</Text>，當下回傳成功或失敗。
+          系統無法對同筆訂單重試，將以新填寫的金額向用戶<Text component="span" fw={600}>建立一筆新請款</Text>，並當下回傳成功或失敗。
         </Text>
 
-        <Box
-          style={{
-            background: '#f8f9fa',
-            borderRadius: 8,
-            padding: '14px 16px',
-          }}
-        >
-          <Text size="xs" c="dimmed" mb={4}>
-            請款金額
-          </Text>
-          <Text size="22px" fw={700} style={{ lineHeight: 1.2 }}>
-            NT$ {(ticket.amount ?? 0).toLocaleString()}
-          </Text>
-          {lastFailed?.failReason && (
-            <>
-              <Divider my="sm" />
-              <Text size="xs" c="dimmed" mb={4}>
-                上次失敗原因
-              </Text>
-              <Text size="sm" c="red.7" fw={500}>
-                {lastFailed.failReason}
-              </Text>
-            </>
-          )}
-        </Box>
+        <NumberInput
+          label="請款金額 (NT$)"
+          placeholder="輸入金額"
+          value={amount}
+          onChange={setAmount}
+          min={0}
+          thousandSeparator
+          required
+        />
 
         <Group justify="flex-end" mt="md">
           <Button variant="default" onClick={onClose}>
             取消
           </Button>
-          <Button color="blue" onClick={onConfirm}>
-            確認重試
+          <Button color="blue" onClick={() => onConfirm(numericAmount)} disabled={!canSubmit}>
+            確認發起請款
           </Button>
         </Group>
       </Stack>
