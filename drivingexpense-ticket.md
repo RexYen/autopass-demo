@@ -189,7 +189,7 @@
 | 狀態 | 色 | 業務語意 |
 | --- | --- | --- |
 | 待查詢 | 灰 `#495057` | 等線下去查 |
-| 不需繳費 | 藍 `#1971c2` | 查完無金額 / 整單臨櫃辦理（差異看 outcome） |
+| 無需繳費 | 藍 `#1971c2` | 查完無金額 / 整單臨櫃辦理（差異看 outcome） |
 | 請款成功 | 綠 `#0b7c4d` | 已向用戶收款，等線下代繳 |
 | 繳款成功 | 綠 `#0b7c4d` | 終結 |
 | 查詢失敗 / 請款失敗 | 紅 `#c92a2a` | 例外處理 |
@@ -280,7 +280,7 @@ Ticket {
 | Status | 中文 | Group | 是否終結 |
 | --- | --- | --- | --- |
 | `pending-query` | 待查詢 | 待查 | ✗ |
-| `no-fee` | 不需繳費（含整單臨櫃，差異看 outcome）| 查詢 | ✓ |
+| `no-fee` | 無需繳費（含整單臨櫃，差異看 outcome）| 查詢 | ✓ |
 | `query-failed` | 查詢失敗 | 例外 | ✗（用戶更新會自動回 pending-query） |
 | `invoice-success` | 請款成功 | 請款 | ✗（等線下代繳） |
 | `invoice-failed` | 請款失敗 | 例外 | ✗ |
@@ -330,3 +330,22 @@ npm run dev      # http://localhost:5173 或 5174
 npm run lint
 npm run build
 ```
+
+## 9. 部署
+
+部署於 Vercel：https://autopass-demo.vercel.app
+
+`vercel.json` 設定：
+
+```json
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "framework": "vite",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
+```
+
+> **rewrites 必要**：本專案使用 `BrowserRouter`，網址會是真實 path（如 `/autopass/tickets`）。沒有 catch-all rewrite 的話，refresh 帶 path 的網址會直接 404。靜態 asset（`/assets/*` 等）會在 rewrite 之前被命中，不受影響。
