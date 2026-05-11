@@ -116,13 +116,13 @@ export type TicketOutcomeKind =
   | 'no-fee'        // 平台查到 0 元，無應繳費用
   | 'counter-only'  // 整單需臨櫃辦理
   | 'online-full'   // 全額線上代繳
-  | 'online-mixed'  // 部分需臨櫃自繳（混合單，臨櫃部分由用戶自繳）
+  | 'online-mixed'  // 部分需臨櫃繳費（混合單，臨櫃部分由用戶自繳）
 
 export const OUTCOME_META: Record<TicketOutcomeKind, { label: string }> = {
   'no-fee':       { label: '無應繳費用' },
   'counter-only': { label: '整單需臨櫃辦理' },
   'online-full':  { label: '全額線上代繳' },
-  'online-mixed': { label: '部分需臨櫃自繳' },
+  'online-mixed': { label: '部分需臨櫃繳費' },
 }
 
 // 查詢失敗的細部原因

@@ -8,12 +8,12 @@ import {
   Box,
   Button,
   Badge,
-  Card,
   Textarea,
   Timeline,
   ActionIcon,
   Tooltip,
   Drawer,
+  Divider,
 } from '@mantine/core'
 import {
   IconMessageDots,
@@ -34,10 +34,12 @@ import {
   SERVICE_META,
   SERVICE_QUERY_FIELDS,
   OUTCOME_META,
+  QUERY_FAILURE_REASON_META,
   type Ticket,
   type TicketStatus,
   type TicketOutcomeKind,
   type InvoiceOrder,
+  type QueryFailureReason,
 } from '../types/autopass'
 import { maskDate } from '../utils/mask'
 
@@ -280,30 +282,13 @@ function DetailContent({
           </Paper>
 
           {/* Activity 歷程 */}
-          <Paper
-            shadow={cardShadow}
-            radius="12px"
-            style={{ overflow: 'hidden' }}
-          >
-            <Group
-              gap="8px"
-              px="14px"
-              py="12px"
-              style={{ borderBottom: '1px solid #e9ecef' }}
-            >
-              <IconActivity size={14} />
-              <Text size="sm" fw={600}>
-                Activity
-              </Text>
-            </Group>
-            <Box p="16px">
-              <ActivityPanel
-                ticket={ticket}
-                newNote={newNote}
-                onNewNoteChange={onNewNoteChange}
-                onAddNote={onAddNote}
-              />
-            </Box>
+          <Paper shadow={cardShadow} radius="12px" p="20px">
+            <ActivityPanel
+              ticket={ticket}
+              newNote={newNote}
+              onNewNoteChange={onNewNoteChange}
+              onAddNote={onAddNote}
+            />
           </Paper>
         </Stack>
       </Box>
@@ -336,12 +321,14 @@ type ActivityEvent =
       finalStatus: TicketStatus
       outcome?: TicketOutcomeKind
       amount: number | null
+      queryFailureReason?: QueryFailureReason
     }
   | {
       id: string
       kind: 'invoice'
       at: string
       invoiceId: string
+      invoiceUrl: string
       status: InvoiceOrder['status']
       amount: number
       note?: string
@@ -377,15 +364,18 @@ function buildActivities(ticket: Ticket): ActivityEvent[] {
       finalStatus: ticket.status,
       outcome: ticket.outcome,
       amount: ticket.amount,
+      queryFailureReason: ticket.queryFailureReason,
     })
   }
 
+  const invoiceUrl = SERVICE_META[ticket.serviceType].platformUrl
   ticket.invoiceOrders.forEach((inv) => {
     events.push({
       id: inv.id,
       kind: 'invoice',
       at: inv.createdAt,
       invoiceId: inv.id,
+      invoiceUrl,
       status: inv.status,
       amount: inv.amount,
       note: inv.note,
@@ -440,10 +430,10 @@ function shiftMinutes(stamp: string, delta: number): string {
   return `${date} ${String(newHh).padStart(2, '0')}:${String(newMm).padStart(2, '0')}`
 }
 
-function queryResultLabel(ev: Extract<ActivityEvent, { kind: 'query-result' }>): string {
+function queryResultChoiceLabel(ev: Extract<ActivityEvent, { kind: 'query-result' }>): string {
   if (ev.outcome) return OUTCOME_META[ev.outcome].label
   if (ev.finalStatus === 'query-failed') return '查詢失敗'
-  return '回填查詢結果'
+  return ''
 }
 
 function ActivityPanel({
@@ -460,38 +450,61 @@ function ActivityPanel({
   const events = buildActivities(ticket)
 
   return (
-    <Stack gap="14px">
-      {/* Comment input */}
-      <Box style={{ position: 'relative' }}>
-        <Textarea
-          placeholder="填寫備註..."
-          value={newNote}
-          onChange={(e) => onNewNoteChange(e.currentTarget.value)}
-          autosize
-          minRows={2}
-          maxRows={6}
-          styles={{
-            input: {
-              padding: '8px 12px',
-              paddingBottom: 36,
-              fontSize: 14,
-              lineHeight: 1.5,
-            },
-          }}
-        />
-        <Button
-          onClick={onAddNote}
-          disabled={!newNote.trim()}
-          size="xs"
-          style={{
-            position: 'absolute',
-            bottom: 8,
-            right: 8,
-          }}
-        >
-          送出
-        </Button>
+    <Stack gap="16px">
+      {/* Section header */}
+      <Group gap="8px" align="center">
+        <IconActivity size={16} color="#495057" />
+        <Text size="sm" fw={600} c="dark.8">
+          Activity
+        </Text>
+      </Group>
+
+      {/* Comment composer */}
+      <Box
+        p="12px"
+        style={{
+          backgroundColor: '#f8f9fa',
+          borderRadius: 10,
+          border: '1px solid #e9ecef',
+        }}
+      >
+        <Box style={{ position: 'relative' }}>
+          <Textarea
+            placeholder="填寫備註..."
+            value={newNote}
+            onChange={(e) => onNewNoteChange(e.currentTarget.value)}
+            autosize
+            minRows={2}
+            maxRows={6}
+            variant="unstyled"
+            styles={{
+              input: {
+                paddingTop: 4,
+                paddingRight: 8,
+                paddingBottom: 36,
+                paddingLeft: 8,
+                fontSize: 14,
+                lineHeight: 1.5,
+                backgroundColor: 'transparent',
+              },
+            }}
+          />
+          <Button
+            onClick={onAddNote}
+            disabled={!newNote.trim()}
+            size="xs"
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              right: 0,
+            }}
+          >
+            送出
+          </Button>
+        </Box>
       </Box>
+
+      <Divider color="#f1f3f5" />
 
       <Timeline bulletSize={26} lineWidth={2}>
         {events.map((ev) => (
@@ -545,32 +558,36 @@ function ActivityRow({ ev }: { ev: ActivityEvent }) {
     case 'created':
       return (
         <ActivityBody
-          actor="系統"
           action="建立工單"
           detail={`${ev.serviceLabel} · ${ev.cycle}`}
           at={ev.at}
         />
       )
-    case 'query-result':
+    case 'query-result': {
+      const choice = queryResultChoiceLabel(ev)
+      const title = choice ? `回填查詢結果 - ${choice}` : '回填查詢結果'
+      const reasonMeta = ev.queryFailureReason
+        ? QUERY_FAILURE_REASON_META[ev.queryFailureReason]
+        : null
+      const hasAmount = ev.amount !== null && ev.amount > 0
       return (
         <ActivityBody
-          actor="客服"
-          action="回填查詢結果"
+          action={title}
           detail={
-            <Group gap="6px" wrap="wrap" align="center">
-              <Text size="sm" fw={600} c="dark.8">
-                {queryResultLabel(ev)}
+            reasonMeta ? (
+              <Text size="xs" c="dimmed">
+                原因：{reasonMeta.label}
               </Text>
-              {ev.amount !== null && ev.amount > 0 && (
-                <Text size="xs" c="dimmed">
-                  · 線上金額 NT$ {ev.amount.toLocaleString()}
-                </Text>
-              )}
-            </Group>
+            ) : hasAmount ? (
+              <Text size="xs" c="dimmed">
+                線上金額 NT$ {ev.amount!.toLocaleString()}
+              </Text>
+            ) : undefined
           }
           at={ev.at}
         />
       )
+    }
     case 'invoice': {
       const verb =
         ev.status === 'success'
@@ -580,37 +597,24 @@ function ActivityRow({ ev }: { ev: ActivityEvent }) {
             : '發起請款'
       return (
         <ActivityBody
-          actor="系統"
           action={verb}
           at={ev.at}
           detail={
-            <Card withBorder p="12px" radius="8px" mt="6px">
-              <Group justify="space-between" wrap="nowrap" align="center">
-                <Group gap="8px" wrap="wrap">
-                  <Text size="sm" fw={600} c="blue" style={monoStyle}>
-                    {ev.invoiceId}
-                  </Text>
-                  <Badge
-                    variant="light"
-                    size="sm"
-                    color={invoiceColor(ev.status)}
-                    styles={{ root: { fontWeight: 500, border: 'none' } }}
-                  >
-                    {invoiceLabel(ev.status)}
-                  </Badge>
-                </Group>
-                <Text fw={700} size="md">
-                  NT$ {ev.amount.toLocaleString()}
-                </Text>
-              </Group>
-              {ev.note && (
-                <Box mt="6px">
-                  <Text size="xs" c="dimmed">
-                    {ev.note}
-                  </Text>
-                </Box>
-              )}
-            </Card>
+            <Group gap="4px" wrap="nowrap">
+              <Text
+                component="a"
+                href={ev.invoiceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                size="xs"
+                fw={500}
+                c="blue"
+                style={{ textDecoration: 'none', ...monoStyle }}
+              >
+                {ev.invoiceId}
+              </Text>
+              <IconExternalLink size={11} color="#228be6" />
+            </Group>
           }
         />
       )
@@ -618,7 +622,6 @@ function ActivityRow({ ev }: { ev: ActivityEvent }) {
     case 'note':
       return (
         <ActivityBody
-          actor={ev.author}
           action="加備註"
           at={ev.at}
           detail={
@@ -637,7 +640,6 @@ function ActivityRow({ ev }: { ev: ActivityEvent }) {
     case 'email':
       return (
         <ActivityBody
-          actor="系統"
           action={ev.status === 'sent' ? '寄送通知信' : '通知信寄送失敗'}
           at={ev.at}
           detail={
@@ -656,12 +658,10 @@ function ActivityRow({ ev }: { ev: ActivityEvent }) {
 }
 
 function ActivityBody({
-  actor,
   action,
   detail,
   at,
 }: {
-  actor: string
   action: string
   detail?: React.ReactNode
   at: string
@@ -670,9 +670,6 @@ function ActivityBody({
     <Box>
       <Group gap="6px" wrap="wrap" align="baseline">
         <Text size="sm" fw={600} c="dark.8">
-          {actor}
-        </Text>
-        <Text size="sm" c="dimmed">
           {action}
         </Text>
         <Text size="xs" c="gray.5" ml="auto">
@@ -687,13 +684,6 @@ function ActivityBody({
 // =====================================================
 // Helpers
 // =====================================================
-
-function invoiceLabel(s: InvoiceOrder['status']): string {
-  return s === 'pending' ? '請款中' : s === 'success' ? '請款成功' : '請款失敗'
-}
-function invoiceColor(s: InvoiceOrder['status']) {
-  return s === 'pending' ? 'yellow' : s === 'success' ? 'teal' : 'red'
-}
 
 function statusLabel(s: TicketStatus | 'service-activated'): string {
   if (s === 'service-activated') return '啟用服務'

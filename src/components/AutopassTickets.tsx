@@ -35,7 +35,6 @@ import {
   IconBuildingBank,
   IconClock,
   IconRefresh,
-  IconCircleDot,
   IconCopy,
   IconCheck,
   IconCircleCheck,
@@ -708,29 +707,34 @@ function TicketCard({
       }}
     >
       <Box style={{ flex: 1 }}>
-        <Text size="sm" fw={600} mb="md" truncate>
-          {serviceMeta.label}
-        </Text>
-
-        <Stack gap="sm">
-          <CardRow icon={<IconCircleDot size={14} />} label="狀態">
+        <Group justify="space-between" align="center" wrap="nowrap" mb="md" gap="sm">
+          <Text size="sm" fw={600} truncate style={{ flex: 1, minWidth: 0 }}>
+            {serviceMeta.label}
+          </Text>
           <Badge
             variant="light"
-            size="sm"
+            size="lg"
+            radius="md"
             styles={{
               root: {
                 backgroundColor: statusMeta.bg,
                 color: statusMeta.color,
                 border: 'none',
-                fontWeight: 500,
+                fontWeight: 600,
+                fontSize: 13,
+                paddingLeft: 12,
+                paddingRight: 12,
+                height: 28,
+                flexShrink: 0,
               },
             }}
           >
             {statusMeta.label}
           </Badge>
-        </CardRow>
+        </Group>
 
-        <CardRow icon={<IconMail size={14} />} label="Email">
+        <Stack gap="sm">
+          <CardRow icon={<IconMail size={14} />} label="Email">
           <Text size="sm" fw={500}>
             {ticket.userEmail}
           </Text>
@@ -1246,7 +1250,7 @@ function QueryResultModal({
                       />
                       <Radio
                         value="counter-required"
-                        label="需臨櫃繳費（整單）"
+                        label="需臨櫃繳費"
                         description="無法線上代繳，將寄信引導用戶臨櫃辦理"
                       />
                     </Stack>
@@ -1314,7 +1318,7 @@ function QueryResultModal({
                         />
                         <Radio
                           value="mixed"
-                          label="部分需臨櫃自繳"
+                          label="部分需臨櫃繳費"
                           description="僅就線上部分代繳，臨櫃部分由用戶自行處理"
                         />
                       </Stack>
@@ -1545,7 +1549,7 @@ function ConfirmPaidModal({
             </Box>
             {isMixed && (
               <Badge size="sm" color="blue" variant="light">
-                部分需臨櫃自繳
+                部分需臨櫃繳費
               </Badge>
             )}
           </Group>

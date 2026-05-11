@@ -86,7 +86,7 @@
 | 查到待繳 → 全額可線上代繳（請款成功） | `invoice-success` | outcome `online-full` | 同步請款成功 | 線下代繳 → 確認已代繳 |
 | 查到待繳 → 全額可線上代繳（請款失敗 + 重試）| `invoice-failed` | outcome `online-full` | 同步請款失敗、push 失敗 invoice | 終結；X 天後排程新 ticket |
 | 查到待繳 → 全額可線上代繳（請款失敗 + 不重試）| `invoice-failed` | outcome `online-full` | 同上 | 終結，不再追蹤 |
-| 查到待繳 → 部分需臨櫃自繳（同上三組）| `invoice-success` / `invoice-failed` | outcome `online-mixed` | 同步請款（僅線上部分）| 同上 |
+| 查到待繳 → 部分需臨櫃繳費（同上三組）| `invoice-success` / `invoice-failed` | outcome `online-mixed` | 同步請款（僅線上部分）| 同上 |
 
 兩種「查到待繳」資料層完全相同（`amount: X`），差別只在 `outcome` 與 toast 文案。
 
@@ -111,8 +111,11 @@
 
 | 區塊 | 欄位 |
 | --- | --- |
-| 上半（flex 主體） | 服務類型、狀態 Badge、Email、（依 `SERVICE_QUERY_FIELDS` 動態）車牌／身分證／出生／車種、查繳平台外連 |
+| 頂列（兩端對齊） | 左：服務類型 / 右：狀態 Badge（放大版，`size=lg`、`radius=md`、字級 13） |
+| 上半（flex 主體） | Email、（依 `SERVICE_QUERY_FIELDS` 動態）車牌／身分證／出生／車種、查繳平台外連 |
 | 下半（固定釘底） | 建立時間、最後更新、主 CTA + ⋮ 選單 |
+
+> 原本的「狀態」CardRow 已移除，Badge 改貼齊卡片右上角，視覺上更搶眼也省一列高度。
 
 #### 主 CTA + ⋮ 選單對照表
 
@@ -132,9 +135,9 @@
 - 票上摘要（Ticket ID、服務、Email、車牌）
 - 線下查繳平台連結（`platformUrl`，外連）
 - Radio 三層：
-  - 無需繳費 → 無應繳費用 / 整單需臨櫃辦理
+  - 無需繳費 → 無應繳費用 / 需臨櫃繳費（對應 outcome `counter-only`）
   - 查詢失敗 → **失敗原因**：資料錯誤 / eTag 已綁定（後者僅 `etc-toll`）
-  - 查到待繳費用 → 全額可線上代繳 / 部分需臨櫃自繳（NumberInput 填線上金額）
+  - 查到待繳費用 → 全額可線上代繳 / 部分需臨櫃繳費（NumberInput 填線上金額）
 - 非 `has-fee` 路徑：按「送出」直接 submit + 關閉 Modal。
 - `has-fee` 路徑：按「送出請款」進入 Step 2，**不**立即 submit。
 
@@ -154,7 +157,7 @@
 
 - 票上摘要（Ticket ID、服務、Email）
 - 強調代繳平台（`serviceMeta.platform`）
-- 線上代繳金額；混合單顯示「部分需臨櫃自繳」Badge + 補充說明
+- 線上代繳金額；混合單顯示「部分需臨櫃繳費」Badge + 補充說明
 - 確認後：
   - `status` 改為 `paid`
   - 寫入 `paid-v1` 的 EmailLog 到 `emailOverrides`（這裡才是寄信的時間點，請款成功時不寄）
@@ -201,27 +204,34 @@
    - Row 1：服務名（h3）＋狀態 Badge ＋ 右上角 `ticket.id`（mono 字體 + 外連 icon，將來導向 ticket 對應外部頁面）
    - Row 2：Email · 車牌 · 身分證／統編 · 出生年月日 · 車種（依 `SERVICE_QUERY_FIELDS` 動態，monospace 用於需要對齊的數字欄位；無 copy button）
 
-2. **Activity 區**：單一 Paper，頂部小標 `Activity` + 下方時間軸（不再使用 Tabs）
+2. **Activity 區**：單一 Paper（`radius=12 / padding=20`），內部依序為：section header → comment composer → divider → timeline。不再使用 Tabs，也不再保留早期 Tabs.List 風格的 mini 標題列。
 
 > 早期版本的「FlowStepper（查詢→請款→代繳→結案）」、「failReason banner（紅色 Alert）」、「繳費證明 Tab + lightbox」均已移除。金額不在 Hero 顯示，要看金額看 Activity 的 invoice 卡。
 
 #### Activity 區（ClickUp 風格時間軸）
 
-採用 Mantine `Timeline` 元件，由新到舊排列。事件種類：
+**版面結構**：
 
-| Kind | 來源 | actor | 顯示重點 |
+- **Section header**：`<IconActivity>` + 「Activity」標題，不附事件計數
+- **Comment composer**：包在淡灰底（`#f8f9fa`）+ 細邊框 + 圓角的容器內，內部 `Textarea` 用 `variant="unstyled"`、autosize（minRows=2，maxRows=6），送出按鈕浮在 textarea 內右下角。送出後寫進 `noteOverrides`，刷新後消失（demo 限定）
+- **Divider**（淡色）：composer 與 Timeline 之間
+- **Timeline**：採 Mantine `Timeline`，由新到舊排列
+
+每則事件的主要視覺只剩 **動作（粗體深色）+ 右側時間**；早期版本「actor／角色」（系統／客服／留言者）已移除，動作即標題。
+
+**事件類型**：
+
+| Kind | 來源 | 標題（動作） | 副標 / 內容 |
 | --- | --- | --- | --- |
-| `created` | `ticket.createdAt` | 系統 | 服務 · cycle |
-| `query-result` | **合成事件**（status !== `pending-query` 才產生） | 客服 | outcome label（或「查詢失敗」），含線上金額 |
-| `invoice` | `invoiceOrders[]` | 系統 | INV-id · 金額大字 · Badge（請款中／成功／失敗）；卡片樣式（厚） |
-| `note` | `notes[]` | 留言者 | 內容（灰底 block） |
-| `email` | `emailLogs[]` | 系統 | subject · 模板 · 觸發狀態 |
+| `created` | `ticket.createdAt` | `建立工單` | 服務 · cycle |
+| `query-result` | **合成事件**（status !== `pending-query` 才產生） | `回填查詢結果 - <選擇項>`（e.g. 全額線上代繳／部分需臨櫃繳費／無應繳費用／整單需臨櫃辦理／查詢失敗） | 查詢失敗顯示「原因：資料錯誤 / eTag 已綁定」；有金額顯示「線上金額 NT$ X,XXX」；無應繳費用無副標 |
+| `invoice` | `invoiceOrders[]` | `請款成功` / `請款失敗` / `發起請款` | 訂單 ID（mono 藍字 + 外連 icon，連到 `serviceMeta.platformUrl`） |
+| `note` | `notes[]` | `加備註` | 備註內容（灰底 block） |
+| `email` | `emailLogs[]` | `寄送通知信` / `通知信寄送失敗` | subject · 模板 · 觸發狀態 |
 
-**`query-result` 是合成事件**：mock 沒記錄回填的時戳，因此推導：取第一筆 invoice 或 email 的時戳，往前推 1 分鐘。讓「回填 → 寄信／請款」的時序合理。
+**`query-result` 是合成事件**：mock 沒記錄回填的時戳，因此推導：取第一筆 invoice 或 email 的時戳，往前推 1 分鐘，讓「回填 → 寄信／請款」的時序合理。對 `query-failed` 票會額外帶 `queryFailureReason` 進 event，副標顯示具體原因。
 
-**Comment input**：Activity 上方有 Textarea（minRows=2，autosize 上限 6 行，padding 較鬆），送出按鈕浮在 textarea 內右下角。送出後寫進 `noteOverrides`，刷新後消失（demo 限定）。
-
-**Invoice 事件樣式**：訂單歷程合併進 Activity；為保留訂單對帳的可讀性，invoice 事件採較厚的 card layout——左側 INV-id (mono blue) + 狀態 Badge，右側金額大字，下方接 note（如有）。失敗原因目前不在 Activity 卡內顯示。
+**`invoice` 事件樣式**：早期是厚 Card（INV-id + 狀態 Badge + 金額大字 + 失敗原因）；現在簡化為與其他事件齊高的標題列 + 訂單 ID 外連副標，狀態語意已在標題詞區分（請款成功／失敗）。金額不再顯示在這裡。`ActivityEvent` 透過 `invoiceUrl` 欄位帶上 `SERVICE_META[serviceType].platformUrl`，之後接真正的訂單頁再換目標。
 
 #### 動態顯示欄位（沿用 `SERVICE_QUERY_FIELDS`）
 
@@ -278,7 +288,7 @@ Ticket {
 | `no-fee` | 無應繳費用 | `no-fee` |
 | `counter-only` | 整單需臨櫃辦理 | `no-fee` |
 | `online-full` | 全額線上代繳 | `invoice-success` / `invoice-failed` / `paid` |
-| `online-mixed` | 部分需臨櫃自繳 | `invoice-success` / `invoice-failed` / `paid` |
+| `online-mixed` | 部分需臨櫃繳費 | `invoice-success` / `invoice-failed` / `paid` |
 
 > outcome 只在詳情 Activity 的 `query-result` 事件中標註，不影響列表 Badge。
 
