@@ -5,7 +5,7 @@ export const mockTickets: Ticket[] = [
   {
     id: 'T-2026050009',
     userId: 'U-10905',
-    userName: '楊雅婷',
+    userEmail: 'yating.yang@example.com',
     plateNumber: 'STU-1357',
     serviceType: 'etc-toll',
     cycle: '2026/05',
@@ -27,7 +27,7 @@ export const mockTickets: Ticket[] = [
   {
     id: 'T-2026050001',
     userId: 'U-10231',
-    userName: '王小明',
+    userEmail: 'xiaoming.wang@example.com',
     plateNumber: 'ABC-1234',
     serviceType: 'etc-toll',
     cycle: '2026/05',
@@ -75,7 +75,7 @@ export const mockTickets: Ticket[] = [
   {
     id: 'T-2026050013',
     userId: 'U-10101',
-    userName: '趙建國',
+    userEmail: 'jianguo.chao@example.com',
     plateNumber: 'EFG-5544',
     serviceType: 'etc-toll',
     cycle: '2026/05',
@@ -106,12 +106,13 @@ export const mockTickets: Ticket[] = [
   {
     id: 'T-2026050014',
     userId: 'U-10202',
-    userName: '孫麗華',
+    userEmail: 'lihua.sun@example.com',
     plateNumber: 'HIJ-9988',
     serviceType: 'etc-toll',
     cycle: '2026/05',
     amount: null,
     status: 'query-failed',
+    queryFailureReason: 'etag-bound',
     createdAt: '2026-05-04 10:00',
     updatedAt: '2026-05-04 11:35',
     driverInfo: {
@@ -146,7 +147,7 @@ export const mockTickets: Ticket[] = [
   {
     id: 'T-2026050027',
     userId: 'U-10150',
-    userName: '陳志遠',
+    userEmail: 'zhiyuan.chen@example.com',
     plateNumber: 'ABB-8800',
     serviceType: 'etc-toll',
     cycle: '2026/05',
@@ -178,7 +179,7 @@ export const mockTickets: Ticket[] = [
   {
     id: 'T-2026050015',
     userId: 'U-10303',
-    userName: '鄭雅文',
+    userEmail: 'yawen.cheng@example.com',
     plateNumber: 'KLM-3311',
     serviceType: 'fuel-fee-personal',
     cycle: '2026/07',
@@ -200,7 +201,7 @@ export const mockTickets: Ticket[] = [
   {
     id: 'T-2026050016',
     userId: 'U-10404',
-    userName: '曾志偉',
+    userEmail: 'zhiwei.tseng@example.com',
     plateNumber: 'NOP-7766',
     serviceType: 'fuel-fee-personal',
     cycle: '2026/07',
@@ -240,7 +241,7 @@ export const mockTickets: Ticket[] = [
   {
     id: 'T-2026050018',
     userId: 'U-10606',
-    userName: '魏俊宏',
+    userEmail: 'junhung.wei@example.com',
     plateNumber: 'TUV-4455',
     serviceType: 'fuel-fee-personal',
     cycle: '2026/07',
@@ -270,12 +271,13 @@ export const mockTickets: Ticket[] = [
   {
     id: 'T-2026050017',
     userId: 'U-10505',
-    userName: '羅美珍',
+    userEmail: 'meichen.lo@example.com',
     plateNumber: 'QRS-2200',
     serviceType: 'fuel-fee-personal',
     cycle: '2026/07',
     amount: null,
     status: 'query-failed',
+    queryFailureReason: 'data-error',
     createdAt: '2026-05-05 08:00',
     updatedAt: '2026-05-05 10:21',
     driverInfo: {
@@ -310,7 +312,7 @@ export const mockTickets: Ticket[] = [
   {
     id: 'T-2026050008',
     userId: 'U-10018',
-    userName: '吳承翰',
+    userEmail: 'chenghan.wu@example.com',
     plateNumber: 'PQR-5678',
     serviceType: 'fuel-fee-corporate',
     cycle: '2026/Q2',
@@ -341,7 +343,7 @@ export const mockTickets: Ticket[] = [
   {
     id: 'T-2026050019',
     userId: 'U-10707',
-    userName: '葉淑芳',
+    userEmail: 'shufang.yeh@example.com',
     plateNumber: 'WXY-6677',
     serviceType: 'fuel-fee-overdue',
     cycle: '2026/W18',
@@ -363,7 +365,7 @@ export const mockTickets: Ticket[] = [
   {
     id: 'T-2026050020',
     userId: 'U-10808',
-    userName: '韓德明',
+    userEmail: 'deming.han@example.com',
     plateNumber: 'ZAB-1100',
     serviceType: 'fuel-fee-overdue',
     cycle: '2026/W18',
@@ -403,7 +405,7 @@ export const mockTickets: Ticket[] = [
   {
     id: 'T-2026050021',
     userId: 'U-10909',
-    userName: '朱婉如',
+    userEmail: 'wanru.chu@example.com',
     plateNumber: 'CDE-4433',
     serviceType: 'fuel-fee-overdue',
     cycle: '2026/W18',
@@ -433,12 +435,13 @@ export const mockTickets: Ticket[] = [
   {
     id: 'T-2026050022',
     userId: 'U-11001',
-    userName: '洪家豪',
+    userEmail: 'jiahao.hung@example.com',
     plateNumber: 'FGH-8822',
     serviceType: 'fuel-fee-overdue',
     cycle: '2026/W18',
     amount: null,
     status: 'query-failed',
+    queryFailureReason: 'data-error',
     createdAt: '2026-05-06 06:00',
     updatedAt: '2026-05-06 08:47',
     driverInfo: {
@@ -473,7 +476,7 @@ export const mockTickets: Ticket[] = [
   {
     id: 'T-2026050002',
     userId: 'U-10412',
-    userName: '李大華',
+    userEmail: 'dahua.lee@example.com',
     plateNumber: 'XYZ-7890',
     serviceType: 'traffic-fine-personal',
     cycle: '2026/W18',
@@ -495,7 +498,7 @@ export const mockTickets: Ticket[] = [
   {
     id: 'T-2026050011',
     userId: 'U-09901',
-    userName: '周冠廷',
+    userEmail: 'kuanting.chou@example.com',
     plateNumber: 'YZA-9876',
     serviceType: 'traffic-fine-personal',
     cycle: '2026/W18',
@@ -535,7 +538,7 @@ export const mockTickets: Ticket[] = [
   {
     id: 'T-2026050023',
     userId: 'U-11101',
-    userName: '馬淑惠',
+    userEmail: 'shuhui.ma@example.com',
     plateNumber: 'IJK-5599',
     serviceType: 'traffic-fine-personal',
     cycle: '2026/W18',
@@ -565,12 +568,13 @@ export const mockTickets: Ticket[] = [
   {
     id: 'T-2026050012',
     userId: 'U-10330',
-    userName: '許志明',
+    userEmail: 'zhiming.hsu@example.com',
     plateNumber: 'BCD-1122',
     serviceType: 'traffic-fine-personal',
     cycle: '2026/W18',
     amount: null,
     status: 'query-failed',
+    queryFailureReason: 'data-error',
     createdAt: '2026-05-06 06:00',
     updatedAt: '2026-05-06 09:15',
     driverInfo: {
@@ -605,7 +609,7 @@ export const mockTickets: Ticket[] = [
   {
     id: 'T-2026050005',
     userId: 'U-10502',
-    userName: '林佳穎',
+    userEmail: 'jiaying.lin@example.com',
     plateNumber: 'GHI-6789',
     serviceType: 'traffic-fine-corporate',
     cycle: '2026/W18',
@@ -647,7 +651,7 @@ export const mockTickets: Ticket[] = [
   {
     id: 'T-2026050024',
     userId: 'U-11201',
-    userName: '龔志遠',
+    userEmail: 'zhiyuan.kung@example.com',
     plateNumber: 'LMN-7733',
     serviceType: 'compulsory-insurance-fine',
     cycle: '2026/W18',
@@ -669,7 +673,7 @@ export const mockTickets: Ticket[] = [
   {
     id: 'T-2026050025',
     userId: 'U-11301',
-    userName: '江雅婷',
+    userEmail: 'yating.chiang@example.com',
     plateNumber: 'OPQ-9944',
     serviceType: 'compulsory-insurance-fine',
     cycle: '2026/W18',
@@ -709,7 +713,7 @@ export const mockTickets: Ticket[] = [
   {
     id: 'T-2026050026',
     userId: 'U-11401',
-    userName: '謝宗翰',
+    userEmail: 'zonghan.hsieh@example.com',
     plateNumber: 'RST-1188',
     serviceType: 'compulsory-insurance-fine',
     cycle: '2026/W18',
@@ -739,12 +743,13 @@ export const mockTickets: Ticket[] = [
   {
     id: 'T-2026050004',
     userId: 'U-11003',
-    userName: '張志豪',
+    userEmail: 'zhihao.chang@example.com',
     plateNumber: 'DEF-2345',
     serviceType: 'compulsory-insurance-fine',
     cycle: '2026/W18',
     amount: null,
     status: 'query-failed',
+    queryFailureReason: 'data-error',
     createdAt: '2026-05-06 06:00',
     updatedAt: '2026-05-06 11:24',
     driverInfo: {
@@ -779,7 +784,7 @@ export const mockTickets: Ticket[] = [
   {
     id: 'T-2026050003',
     userId: 'U-09812',
-    userName: '陳美玲',
+    userEmail: 'meiling.chen@example.com',
     plateNumber: 'BBC-4567',
     serviceType: 'fuel-fee-personal',
     cycle: '2026/07',
@@ -818,7 +823,7 @@ export const mockTickets: Ticket[] = [
   {
     id: 'T-2026050006',
     userId: 'U-09105',
-    userName: '黃宇辰',
+    userEmail: 'yuchen.huang@example.com',
     plateNumber: 'JKL-3456',
     serviceType: 'etc-toll',
     cycle: '2026/05',
@@ -850,7 +855,7 @@ export const mockTickets: Ticket[] = [
   {
     id: 'T-2026050007',
     userId: 'U-10720',
-    userName: '蘇玉婷',
+    userEmail: 'yuting.su@example.com',
     plateNumber: 'MNO-9012',
     serviceType: 'fuel-fee-overdue',
     cycle: '2026/W18',
@@ -889,12 +894,12 @@ export const mockTickets: Ticket[] = [
   {
     id: 'T-2026050010',
     userId: 'U-11220',
-    userName: '蔡惠雯',
+    userEmail: 'huiwen.tsai@example.com',
     plateNumber: 'VWX-2468',
     serviceType: 'compulsory-insurance-fine',
     cycle: '2026/W18',
     amount: 1500,
-    status: 'unable-to-close',
+    status: 'invoice-failed',
     createdAt: '2026-05-06 06:00',
     updatedAt: '2026-05-06 17:00',
     driverInfo: {
@@ -917,7 +922,7 @@ export const mockTickets: Ticket[] = [
       {
         id: 'N-4',
         author: 'Lance',
-        content: '聯絡不上用戶，先標記為無法結單',
+        content: '信用卡額度不足，重試 3 次仍失敗，不再嘗試',
         createdAt: '2026-05-06 17:00',
       },
     ],

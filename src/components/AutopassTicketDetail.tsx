@@ -12,13 +12,8 @@ import {
   Textarea,
   Timeline,
   ActionIcon,
-  SimpleGrid,
   Tooltip,
-  Alert,
-  Tabs,
   Drawer,
-  Image,
-  Modal,
 } from '@mantine/core'
 import {
   IconMessageDots,
@@ -26,13 +21,10 @@ import {
   IconCircleCheck,
   IconCircleX,
   IconCircleDot,
-  IconCheck,
   IconExternalLink,
   IconX,
-  IconAlertTriangle,
   IconChevronLeft,
   IconChevronRight,
-  IconPhoto,
   IconActivity,
   IconCirclePlus,
   IconClipboardCheck,
@@ -143,9 +135,6 @@ function DetailContent({
   const statusMeta = STATUS_META[ticket.status]
   const serviceMeta = SERVICE_META[ticket.serviceType]
   const queryFields = SERVICE_QUERY_FIELDS[ticket.serviceType]
-  const failReason = getFailReason(ticket)
-  const proofs = ticket.paymentProofs ?? []
-  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null)
 
   return (
     <>
@@ -253,7 +242,7 @@ function DetailContent({
             {/* Row 2：identity（與列表卡片同步顯示的欄位） */}
             <Group gap="8px" mt="10px" wrap="wrap" align="center">
               <Text size="sm" fw={600} c="dark.8">
-                {ticket.userName}
+                {ticket.userEmail}
               </Text>
               {queryFields.includes('plateNumber') && (
                 <>
@@ -288,180 +277,36 @@ function DetailContent({
                 </>
               )}
             </Group>
-
-            {/* Row 3：Stepper */}
-            <Box mt="18px">
-              <FlowStepper status={ticket.status} />
-            </Box>
           </Paper>
 
-          {/* failReason banner */}
-          {failReason && (
-            <Alert
-              icon={<IconAlertTriangle size={18} />}
-              color="red"
-              radius="12px"
-              styles={{
-                root: { backgroundColor: '#fff5f5', border: '1px solid #ffc9c9', padding: '12px 16px' },
-                title: { fontWeight: 600, marginBottom: 4 },
-                message: { fontSize: 13, color: '#862e2e' },
-              }}
-              title={ticket.status === 'query-failed' ? '查詢失敗原因' : '請款失敗原因'}
-            >
-              {failReason}
-            </Alert>
-          )}
-
-          {/* Tabs：歷程 */}
+          {/* Activity 歷程 */}
           <Paper
             shadow={cardShadow}
             radius="12px"
             style={{ overflow: 'hidden' }}
           >
-            <Tabs
-              defaultValue="activity"
-              styles={{
-                list: { borderBottom: '1px solid #e9ecef', paddingLeft: 12, paddingRight: 12 },
-                tab: {
-                  fontSize: 14,
-                  fontWeight: 500,
-                  fontFamily: 'Noto Sans TC, sans-serif',
-                  padding: '12px 14px',
-                },
-              }}
+            <Group
+              gap="8px"
+              px="14px"
+              py="12px"
+              style={{ borderBottom: '1px solid #e9ecef' }}
             >
-              <Tabs.List>
-                <Tabs.Tab value="activity" leftSection={<IconActivity size={14} />}>
-                  Activity
-                </Tabs.Tab>
-                <Tabs.Tab value="proofs" leftSection={<IconPhoto size={14} />}>
-                  繳費證明
-                  {proofs.length > 0 && (
-                    <Text component="span" size="xs" c="dimmed" ml="6px">
-                      {proofs.length}
-                    </Text>
-                  )}
-                </Tabs.Tab>
-              </Tabs.List>
-
-              <Tabs.Panel value="activity" p="16px">
-                <ActivityPanel
-                  ticket={ticket}
-                  newNote={newNote}
-                  onNewNoteChange={onNewNoteChange}
-                  onAddNote={onAddNote}
-                />
-              </Tabs.Panel>
-
-              <Tabs.Panel value="proofs" p="16px">
-                {proofs.length === 0 ? (
-                  <Box
-                    py="32px"
-                    style={{
-                      textAlign: 'center',
-                      border: '1px dashed #dee2e6',
-                      borderRadius: 8,
-                      backgroundColor: '#fafbfc',
-                    }}
-                  >
-                    <IconPhoto size={28} color="#adb5bd" />
-                    <Text size="sm" c="dimmed" mt="6px">
-                      尚未上傳繳費證明
-                    </Text>
-                    <Text size="xs" c="dimmed" mt="4px">
-                      營運人員代繳完成後，請於「確認已代繳」彈窗上傳截圖
-                    </Text>
-                  </Box>
-                ) : (
-                  <SimpleGrid cols={{ base: 2, sm: 3 }} spacing="10px">
-                    {proofs.map((src, i) => (
-                      <Box
-                        key={`${src.slice(0, 32)}-${i}`}
-                        onClick={() => setLightboxSrc(src)}
-                        style={{
-                          position: 'relative',
-                          borderRadius: 8,
-                          overflow: 'hidden',
-                          border: '1px solid #e9ecef',
-                          aspectRatio: '4 / 3',
-                          cursor: 'zoom-in',
-                          transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-                        }}
-                        onMouseEnter={(e) => {
-                          ;(e.currentTarget as HTMLDivElement).style.transform = 'translateY(-1px)'
-                          ;(e.currentTarget as HTMLDivElement).style.boxShadow =
-                            '0 4px 12px rgba(0,0,0,0.08)'
-                        }}
-                        onMouseLeave={(e) => {
-                          ;(e.currentTarget as HTMLDivElement).style.transform = ''
-                          ;(e.currentTarget as HTMLDivElement).style.boxShadow = ''
-                        }}
-                      >
-                        <Image src={src} alt={`繳費證明 ${i + 1}`} h="100%" fit="cover" />
-                        <Text
-                          size="10px"
-                          c="white"
-                          fw={500}
-                          style={{
-                            position: 'absolute',
-                            left: 4,
-                            bottom: 4,
-                            padding: '2px 6px',
-                            borderRadius: 4,
-                            backgroundColor: 'rgba(0,0,0,0.6)',
-                          }}
-                        >
-                          {i + 1} / {proofs.length}
-                        </Text>
-                      </Box>
-                    ))}
-                  </SimpleGrid>
-                )}
-              </Tabs.Panel>
-            </Tabs>
+              <IconActivity size={14} />
+              <Text size="sm" fw={600}>
+                Activity
+              </Text>
+            </Group>
+            <Box p="16px">
+              <ActivityPanel
+                ticket={ticket}
+                newNote={newNote}
+                onNewNoteChange={onNewNoteChange}
+                onAddNote={onAddNote}
+              />
+            </Box>
           </Paper>
         </Stack>
       </Box>
-
-      {/* Lightbox */}
-      <Modal
-        opened={!!lightboxSrc}
-        onClose={() => setLightboxSrc(null)}
-        size="xl"
-        centered
-        padding={0}
-        withCloseButton={false}
-        styles={{
-          body: { padding: 0, backgroundColor: '#000' },
-          content: { backgroundColor: '#000' },
-        }}
-      >
-        {lightboxSrc && (
-          <Box style={{ position: 'relative' }}>
-            <Image
-              src={lightboxSrc}
-              alt="繳費證明"
-              fit="contain"
-              style={{ maxHeight: '85vh' }}
-            />
-            <ActionIcon
-              variant="filled"
-              color="dark"
-              size="lg"
-              onClick={() => setLightboxSrc(null)}
-              aria-label="關閉"
-              style={{
-                position: 'absolute',
-                top: 8,
-                right: 8,
-                backgroundColor: 'rgba(0,0,0,0.65)',
-              }}
-            >
-              <IconX size={18} />
-            </ActionIcon>
-          </Box>
-        )}
-      </Modal>
     </>
   )
 }
@@ -499,7 +344,6 @@ type ActivityEvent =
       invoiceId: string
       status: InvoiceOrder['status']
       amount: number
-      failReason?: string
       note?: string
     }
   | { id: string; kind: 'note'; at: string; author: string; content: string }
@@ -544,7 +388,6 @@ function buildActivities(ticket: Ticket): ActivityEvent[] {
       invoiceId: inv.id,
       status: inv.status,
       amount: inv.amount,
-      failReason: inv.failReason,
       note: inv.note,
     })
   })
@@ -760,18 +603,11 @@ function ActivityRow({ ev }: { ev: ActivityEvent }) {
                   NT$ {ev.amount.toLocaleString()}
                 </Text>
               </Group>
-              {(ev.note || ev.failReason) && (
+              {ev.note && (
                 <Box mt="6px">
-                  {ev.note && (
-                    <Text size="xs" c="dimmed">
-                      {ev.note}
-                    </Text>
-                  )}
-                  {ev.failReason && (
-                    <Text size="xs" c="red.6" mt="2px">
-                      失敗原因：{ev.failReason}
-                    </Text>
-                  )}
+                  <Text size="xs" c="dimmed">
+                    {ev.note}
+                  </Text>
                 </Box>
               )}
             </Card>
@@ -862,134 +698,5 @@ function invoiceColor(s: InvoiceOrder['status']) {
 function statusLabel(s: TicketStatus | 'service-activated'): string {
   if (s === 'service-activated') return '啟用服務'
   return STATUS_META[s].label
-}
-
-// =====================================================
-// 流程訊號
-// =====================================================
-
-type StepStatus = 'done' | 'current' | 'error' | 'pending' | 'skipped'
-
-const FLOW_STEPS: { key: string; label: string }[] = [
-  { key: 'query', label: '查詢' },
-  { key: 'invoice', label: '請款' },
-  { key: 'remit', label: '代繳' },
-  { key: 'closed', label: '結案' },
-]
-
-function getStepStatuses(status: TicketStatus): StepStatus[] {
-  switch (status) {
-    case 'pending-query':
-      return ['current', 'pending', 'pending', 'pending']
-    case 'query-failed':
-      return ['error', 'pending', 'pending', 'pending']
-    case 'no-fee':
-      return ['done', 'skipped', 'skipped', 'done']
-    case 'invoice-failed':
-      return ['done', 'error', 'pending', 'pending']
-    case 'invoice-success':
-      return ['done', 'done', 'current', 'pending']
-    case 'paid':
-      return ['done', 'done', 'done', 'done']
-    case 'unable-to-close':
-      return ['done', 'done', 'done', 'error']
-  }
-}
-
-function FlowStepper({ status }: { status: TicketStatus }) {
-  const statuses = getStepStatuses(status)
-
-  const nodes: React.ReactNode[] = []
-  FLOW_STEPS.forEach((step, i) => {
-    nodes.push(<StepNode key={`s-${step.key}`} status={statuses[i]} label={step.label} />)
-    if (i < FLOW_STEPS.length - 1) {
-      const prev = statuses[i]
-      const next = statuses[i + 1]
-      const active = prev === 'done' && (next === 'done' || next === 'current')
-      const dashed = prev === 'skipped' || next === 'skipped'
-      nodes.push(<StepConnector key={`c-${step.key}`} active={active} dashed={dashed} />)
-    }
-  })
-
-  return (
-    <Group gap={0} align="flex-start" wrap="nowrap" style={{ width: '100%' }}>
-      {nodes}
-    </Group>
-  )
-}
-
-function StepNode({ status, label }: { status: StepStatus; label: string }) {
-  const styleMap: Record<
-    StepStatus,
-    { bg: string; border: string; iconColor: string; labelColor: string; bold: boolean }
-  > = {
-    done: { bg: '#0b7c4d', border: '#0b7c4d', iconColor: '#fff', labelColor: '#0b7c4d', bold: false },
-    current: { bg: '#1971c2', border: '#1971c2', iconColor: '#fff', labelColor: '#1971c2', bold: true },
-    error: { bg: '#c92a2a', border: '#c92a2a', iconColor: '#fff', labelColor: '#c92a2a', bold: true },
-    pending: { bg: '#fff', border: '#dee2e6', iconColor: '#adb5bd', labelColor: '#868e96', bold: false },
-    skipped: { bg: '#fff', border: '#dee2e6', iconColor: '#adb5bd', labelColor: '#adb5bd', bold: false },
-  }
-  const s = styleMap[status]
-
-  return (
-    <Stack gap={6} align="center" style={{ width: 80, flexShrink: 0 }}>
-      <Box
-        style={{
-          width: 26,
-          height: 26,
-          borderRadius: '50%',
-          backgroundColor: s.bg,
-          border: `2px solid ${s.border}`,
-          color: s.iconColor,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        {status === 'done' && <IconCheck size={14} stroke={3} />}
-        {status === 'current' && (
-          <Box style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#fff' }} />
-        )}
-        {status === 'error' && <IconX size={14} stroke={3} />}
-        {status === 'pending' && (
-          <Box style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#adb5bd' }} />
-        )}
-        {status === 'skipped' && (
-          <Text size="xs" fw={600} c="gray.5" style={{ lineHeight: 1 }}>
-            —
-          </Text>
-        )}
-      </Box>
-      <Text size="xs" fw={s.bold ? 600 : 400} style={{ color: s.labelColor }}>
-        {label}
-      </Text>
-    </Stack>
-  )
-}
-
-function StepConnector({ active, dashed }: { active: boolean; dashed: boolean }) {
-  return (
-    <Box
-      style={{
-        flex: 1,
-        height: dashed ? 0 : 2,
-        borderTop: dashed ? '2px dashed #dee2e6' : 'none',
-        backgroundColor: dashed ? 'transparent' : active ? '#0b7c4d' : '#dee2e6',
-        marginTop: 12,
-        minWidth: 24,
-      }}
-    />
-  )
-}
-
-function getFailReason(ticket: Ticket): string | null {
-  if (ticket.status === 'invoice-failed') {
-    const failed = [...ticket.invoiceOrders].reverse().find((i) => i.status === 'failed')
-    return failed?.failReason ?? '系統未回傳具體失敗原因，請查訂單歷程'
-  }
-  if (ticket.status === 'query-failed') {
-    return ticket.notes[0]?.content ?? '需人工排查車籍／資料比對'
-  }
-  return null
 }
 

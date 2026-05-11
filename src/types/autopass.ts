@@ -98,7 +98,6 @@ export type TicketStatus =
   | 'invoice-success'    // 請款成功
   | 'invoice-failed'     // 請款失敗
   | 'paid'               // 繳款成功
-  | 'unable-to-close'    // 無法結單
 
 export const STATUS_META: Record<
   TicketStatus,
@@ -110,7 +109,6 @@ export const STATUS_META: Record<
   'invoice-success':     { label: '請款成功',   group: '請款', color: '#0b7c4d', bg: 'rgba(18,184,134,0.15)' },
   'invoice-failed':      { label: '請款失敗',   group: '例外', color: '#c92a2a', bg: 'rgba(250,82,82,0.12)' },
   'paid':                { label: '繳款成功',   group: '繳款', color: '#0b7c4d', bg: 'rgba(18,184,134,0.18)' },
-  'unable-to-close':     { label: '無法結單',   group: '例外', color: '#5f3dc4', bg: 'rgba(173,58,204,0.12)' },
 }
 
 // 查詢結果回填後的細部 outcome（不影響主 status，只在詳情中標註）
@@ -125,6 +123,25 @@ export const OUTCOME_META: Record<TicketOutcomeKind, { label: string }> = {
   'counter-only': { label: '整單需臨櫃辦理' },
   'online-full':  { label: '全額線上代繳' },
   'online-mixed': { label: '部分需臨櫃自繳' },
+}
+
+// 查詢失敗的細部原因
+export type QueryFailureReason =
+  | 'data-error'   // 資料錯誤（共用）
+  | 'etag-bound'   // eTag 已綁定（僅 ETC 通行費）
+
+export const QUERY_FAILURE_REASON_META: Record<
+  QueryFailureReason,
+  { label: string; description: string }
+> = {
+  'data-error': {
+    label: '資料錯誤',
+    description: '車籍／個資比對失敗，需用戶更新資料後下一週期重產 ticket',
+  },
+  'etag-bound': {
+    label: 'eTag 已綁定',
+    description: '該車已綁定其他 eTag 帳戶，無法代繳，僅出現在 ETC 通行費',
+  },
 }
 
 export interface InvoiceOrder {
@@ -166,20 +183,20 @@ export interface UserDriverInfo {
 export interface Ticket {
   id: string                   // T-xxx
   userId: string
-  userName: string
+  userEmail: string
   plateNumber: string
   serviceType: ServiceType
   cycle: string                // e.g. "2026/05"
   amount: number | null        // 線上可請款金額
   status: TicketStatus
   outcome?: TicketOutcomeKind  // 查詢結果回填後的細部 outcome
+  queryFailureReason?: QueryFailureReason  // 查詢失敗時的具體原因
   createdAt: string
   updatedAt: string
   driverInfo: UserDriverInfo
   invoiceOrders: InvoiceOrder[]
   notes: TicketNote[]
   emailLogs: EmailLog[]
-  paymentProofs?: string[]     // 繳費證明截圖（demo 用 data URI；正式為雲儲存 URL）
 }
 
 export interface UpcomingSchedule {
