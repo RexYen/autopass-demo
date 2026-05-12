@@ -454,7 +454,7 @@ function ActivityPanel({
       <Group gap="8px" align="center">
         <IconActivity size={16} color="#495057" />
         <Text size="sm" fw={600} c="dark.8">
-          Activity
+          任務歷程
         </Text>
       </Group>
 

@@ -116,6 +116,8 @@ type HistorySearchFields = {
   idNumber: string
   birthDate: string
   vehicleType: string
+  createdMonthStart: string // 'YYYY-MM' or '' (建立月份起)
+  createdMonthEnd: string // 'YYYY-MM' or '' (建立月份迄)
 }
 
 const HISTORY_VEHICLE_OPTIONS = ['汽車', '機車', '大型重型機車', '拖車']
@@ -133,6 +135,8 @@ export function AutopassTickets({
     idNumber: '',
     birthDate: '',
     vehicleType: '',
+    createdMonthStart: '',
+    createdMonthEnd: '',
   })
   const [statusFilter, setStatusFilter] = useState<string | null>(
     initialStatusFilter ?? null,
@@ -206,20 +210,22 @@ export function AutopassTickets({
     result: Partial<Pick<Ticket, 'status' | 'amount' | 'outcome' | 'queryFailureReason'>>,
     opts?: {
       failedInvoice?: { amount: number; failReason: string }
+      openConfirmPaidAfter?: boolean
     },
   ) => {
     if (!queryModalTicketId) return
+    const ticketId = queryModalTicketId
     setStatusOverrides((prev) => ({
       ...prev,
-      [queryModalTicketId]: result,
+      [ticketId]: result,
     }))
     if (opts?.failedInvoice) {
       const now = new Date()
       const stamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
       setInvoiceOverrides((prev) => ({
         ...prev,
-        [queryModalTicketId]: [
-          ...(prev[queryModalTicketId] ?? []),
+        [ticketId]: [
+          ...(prev[ticketId] ?? []),
           {
             id: `INV-${Date.now()}`,
             amount: opts.failedInvoice!.amount,
@@ -231,6 +237,9 @@ export function AutopassTickets({
       }))
     }
     setQueryModalTicketId(null)
+    if (opts?.openConfirmPaidAfter) {
+      setConfirmPaidTicketId(ticketId)
+    }
   }
 
   const handleOpenConfirmPaidModal = (ticketId: string) => setConfirmPaidTicketId(ticketId)
@@ -356,6 +365,17 @@ export function AutopassTickets({
     return s
   }, [activeTab])
 
+  const availableMonths = useMemo(() => {
+    const set = new Set<string>()
+    tabFiltered.forEach((t) => {
+      const m = t.createdAt.slice(0, 7) // 'YYYY-MM'
+      if (/^\d{4}-\d{2}$/.test(m)) set.add(m)
+    })
+    return Array.from(set)
+      .sort((a, b) => (a < b ? 1 : -1)) // 最新月份在前
+      .map((m) => ({ value: m, label: `${m.slice(0, 4)}/${m.slice(5, 7)}` }))
+  }, [tabFiltered])
+
   const filtered = useMemo(() => {
     return tabFiltered.filter((t) => {
       if (statusFilter && t.status !== statusFilter) return false
@@ -377,6 +397,13 @@ export function AutopassTickets({
         if (activeFieldSet.has('vehicleType')) {
           const vt = historySearch.vehicleType.trim()
           if (vt && t.driverInfo.vehicleType !== vt) return false
+        }
+        const ms = historySearch.createdMonthStart.trim()
+        const me = historySearch.createdMonthEnd.trim()
+        if (ms || me) {
+          const m = t.createdAt.slice(0, 7)
+          if (ms && m < ms) return false
+          if (me && m > me) return false
         }
         return true
       }
@@ -429,6 +456,8 @@ export function AutopassTickets({
       idNumber: '',
       birthDate: '',
       vehicleType: '',
+      createdMonthStart: '',
+      createdMonthEnd: '',
     })
     setStatusFilter(null)
     setPage(1)
@@ -464,11 +493,6 @@ export function AutopassTickets({
           >
             {isHistory ? '歷史任務' : '查繳任務'}
           </Title>
-          {isHistory && (
-            <Text size="sm" c="dimmed" mt="4px">
-              已結案 {filtered.length} 筆
-            </Text>
-          )}
         </Box>
       </Group>
 
@@ -510,6 +534,7 @@ export function AutopassTickets({
               activeTab={activeTab}
               value={historySearch}
               onChange={updateHistorySearch}
+              monthOptions={availableMonths}
             />
           ) : (
             <TextInput
@@ -630,10 +655,12 @@ function HistorySearchInputs({
   activeTab,
   value,
   onChange,
+  monthOptions,
 }: {
   activeTab: TabValue
   value: HistorySearchFields
   onChange: (key: keyof HistorySearchFields, v: string) => void
+  monthOptions: { value: string; label: string }[]
 }) {
   const fieldSet = new Set<string>()
   TAB_TYPES[activeTab].forEach((type) => {
@@ -658,7 +685,7 @@ function HistorySearchInputs({
           placeholder="車牌"
           value={value.plateNumber}
           onChange={(e) => onChange('plateNumber', e.currentTarget.value)}
-          style={baseStyle}
+          style={{ width: 140 }}
           styles={inputStyles}
         />
       )}
@@ -667,7 +694,7 @@ function HistorySearchInputs({
           placeholder="證件號碼／統編"
           value={value.idNumber}
           onChange={(e) => onChange('idNumber', e.currentTarget.value)}
-          style={baseStyle}
+          style={{ width: 160 }}
           styles={inputStyles}
         />
       )}
@@ -691,6 +718,29 @@ function HistorySearchInputs({
           styles={inputStyles}
         />
       )}
+      <Group gap="6px" wrap="nowrap" align="center">
+        <Select
+          placeholder="起始月份"
+          data={monthOptions}
+          value={value.createdMonthStart || null}
+          onChange={(v) => onChange('createdMonthStart', v ?? '')}
+          clearable
+          style={{ width: 140 }}
+          styles={inputStyles}
+        />
+        <Text size="sm" c="dimmed">
+          ~
+        </Text>
+        <Select
+          placeholder="結束月份"
+          data={monthOptions}
+          value={value.createdMonthEnd || null}
+          onChange={(v) => onChange('createdMonthEnd', v ?? '')}
+          clearable
+          style={{ width: 140 }}
+          styles={inputStyles}
+        />
+      </Group>
     </>
   )
 }
@@ -1077,7 +1127,10 @@ function QueryResultModal({
   onClose: () => void
   onSubmit: (
     result: Partial<Pick<Ticket, 'status' | 'amount' | 'outcome' | 'queryFailureReason'>>,
-    opts?: { failedInvoice?: { amount: number; failReason: string } },
+    opts?: {
+      failedInvoice?: { amount: number; failReason: string }
+      openConfirmPaidAfter?: boolean
+    },
   ) => void
 }) {
   const [choice, setChoice] = useState<QueryResultChoice>('has-fee')
@@ -1168,13 +1221,16 @@ function QueryResultModal({
     const a = numericAmount
     const outcome = hasFeeMode === 'mixed' ? 'online-mixed' : 'online-full'
     if (simulatedResult === 'success') {
-      onSubmit({ status: 'invoice-success', amount: a, outcome })
+      onSubmit(
+        { status: 'invoice-success', amount: a, outcome },
+        { openConfirmPaidAfter: true },
+      )
       notifications.show({
         title: '請款成功',
         message:
           hasFeeMode === 'mixed'
             ? `已向用戶請款 NT$ ${a.toLocaleString()}，並通知臨櫃部分自繳`
-            : `已向用戶請款 NT$ ${a.toLocaleString()}，待代繳`,
+            : `已向用戶請款 NT$ ${a.toLocaleString()}，待確認代繳`,
         color: 'teal',
       })
       return
@@ -1502,22 +1558,17 @@ function QueryResultModal({
             </Stack>
           )}
 
-          <Group justify="space-between" mt="md">
-            <Button variant="subtle" onClick={() => setModalStep('input')}>
-              返回修改
+          <Group justify="flex-end" mt="md">
+            <Button variant="default" onClick={onClose}>
+              關閉
             </Button>
-            <Group gap="xs">
-              <Button variant="default" onClick={onClose}>
-                取消
-              </Button>
-              <Button
-                color={simulatedResult === 'success' ? 'teal' : 'red'}
-                onClick={handleResultConfirm}
-                disabled={!canCloseResult}
-              >
-                確認結案
-              </Button>
-            </Group>
+            <Button
+              color={simulatedResult === 'success' ? 'teal' : 'red'}
+              onClick={handleResultConfirm}
+              disabled={!canCloseResult}
+            >
+              {simulatedResult === 'success' ? '下一步' : '確認結案'}
+            </Button>
           </Group>
         </Stack>
       )}
