@@ -1108,6 +1108,10 @@ function QueryResultModal({
 
   const serviceMeta = SERVICE_META[ticket.serviceType]
   const isEtcToll = ticket.serviceType === 'etc-toll'
+  const supportsCounter =
+    ticket.serviceType === 'traffic-fine-personal' ||
+    ticket.serviceType === 'traffic-fine-corporate' ||
+    ticket.serviceType === 'compulsory-insurance-fine'
   const numericAmount = Number(amount)
   const numericRetryDays = Number(retryDays)
 
@@ -1265,25 +1269,27 @@ function QueryResultModal({
                   }}
                 >
                   <Stack gap="sm" mt="xs">
-                    <Radio.Group
-                      value={hasFeeMode}
-                      onChange={(v) => setHasFeeMode(v as HasFeeMode)}
-                      label="繳費範圍"
-                      size="sm"
-                    >
-                      <Stack gap="xs" mt="xs">
-                        <Radio
-                          value="has-amount"
-                          label="全額可線上代繳"
-                          description="查到的金額全數透過系統代繳"
-                        />
-                        <Radio
-                          value="mixed"
-                          label="部分需臨櫃繳費"
-                          description="僅就線上部分代繳，臨櫃部分由用戶自行處理"
-                        />
-                      </Stack>
-                    </Radio.Group>
+                    {supportsCounter && (
+                      <Radio.Group
+                        value={hasFeeMode}
+                        onChange={(v) => setHasFeeMode(v as HasFeeMode)}
+                        label="繳費範圍"
+                        size="sm"
+                      >
+                        <Stack gap="xs" mt="xs">
+                          <Radio
+                            value="has-amount"
+                            label="全額可線上代繳"
+                            description="查到的金額全數透過系統代繳"
+                          />
+                          <Radio
+                            value="mixed"
+                            label="部分需臨櫃繳費"
+                            description="僅就線上部分代繳，臨櫃部分由用戶自行處理"
+                          />
+                        </Stack>
+                      </Radio.Group>
+                    )}
                     <NumberInput
                       label="線上可繳金額 (NT$)"
                       placeholder="輸入金額"
@@ -1295,13 +1301,13 @@ function QueryResultModal({
                     />
                     <Text size="xs" c="dimmed">
                       送出後系統會即時向用戶發起請款，下一步顯示請款結果。
-                      {hasFeeMode === 'mixed' && '臨櫃部分由用戶自繳，後台不再追蹤金額。'}
+                      {hasFeeMode === 'mixed' && '同時，系統將發送臨櫃繳費通知信。'}
                     </Text>
                   </Stack>
                 </Box>
               )}
               <Radio value="no-online-fee" label="無需繳費" />
-              {choice === 'no-online-fee' && (
+              {choice === 'no-online-fee' && supportsCounter && (
                 <Box
                   pl="28px"
                   style={{

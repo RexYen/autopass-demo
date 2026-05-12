@@ -411,7 +411,7 @@ export const mockTickets: Ticket[] = [
     cycle: '2026/W18',
     amount: 600,
     status: 'invoice-success',
-    outcome: 'online-mixed',
+    outcome: 'online-full',
     createdAt: '2026-05-06 06:00',
     updatedAt: '2026-05-06 11:55',
     driverInfo: {
@@ -857,7 +857,7 @@ export const mockTickets: Ticket[] = [
     userId: 'U-10720',
     userEmail: 'yuting.su@example.com',
     plateNumber: 'MNO-9012',
-    serviceType: 'fuel-fee-overdue',
+    serviceType: 'traffic-fine-personal',
     cycle: '2026/W18',
     amount: 600,
     status: 'no-fee',
@@ -876,7 +876,7 @@ export const mockTickets: Ticket[] = [
       {
         id: 'N-3',
         author: 'Zoe',
-        content: '為超過繳費期限的單，需請用戶臨櫃辦理',
+        content: '罰單已逾自動繳期限，需請用戶臨櫃辦理',
         createdAt: '2026-05-06 09:42',
       },
     ],
