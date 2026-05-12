@@ -142,11 +142,15 @@ export function AutopassTickets({
   const isHistory = mode === 'history'
   const [activeTab, setActiveTab] = useState<TabValue>('etc-toll')
   const [search, setSearch] = useState('')
+  const [pendingSearch, setPendingSearch] = useState('')
   const [historySearch, setHistorySearch] = useState<HistorySearchFields>(EMPTY_HISTORY_SEARCH)
   const [pendingHistorySearch, setPendingHistorySearch] =
     useState<HistorySearchFields>(EMPTY_HISTORY_SEARCH)
-  const [statusFilter, setStatusFilter] = useState<string | null>(
-    initialStatusFilter ?? null,
+  const [statusFilter, setStatusFilter] = useState<string[]>(
+    initialStatusFilter ? [initialStatusFilter] : [],
+  )
+  const [pendingStatusFilter, setPendingStatusFilter] = useState<string[]>(
+    initialStatusFilter ? [initialStatusFilter] : [],
   )
   const [historyStatusFilters, setHistoryStatusFilters] = useState<string[]>([])
   const [pendingHistoryStatusFilters, setPendingHistoryStatusFilters] = useState<string[]>([])
@@ -167,7 +171,8 @@ export function AutopassTickets({
   // 當外部傳入新的 initialStatusFilter（例：從 Dashboard 跳過來），同步進來
   useEffect(() => {
     if (initialStatusFilter) {
-      setStatusFilter(initialStatusFilter)
+      setStatusFilter([initialStatusFilter])
+      setPendingStatusFilter([initialStatusFilter])
       setPage(1)
     }
   }, [initialStatusFilter])
@@ -391,7 +396,7 @@ export function AutopassTickets({
         if (historyStatusFilters.length > 0 && !historyStatusFilters.includes(t.status)) {
           return false
         }
-      } else if (statusFilter && t.status !== statusFilter) {
+      } else if (statusFilter.length > 0 && !statusFilter.includes(t.status)) {
         return false
       }
       if (isHistory) {
@@ -478,12 +483,13 @@ export function AutopassTickets({
   const handleDetailPrev = hasPrev ? () => goToTicket(detailIndex - 1) : undefined
   const handleDetailNext = hasNext ? () => goToTicket(detailIndex + 1) : undefined
 
-  const hasHistorySearch = Object.values(historySearch).some((v) => v.trim().length > 0)
   const handleResetFilters = () => {
     setSearch('')
+    setPendingSearch('')
     setHistorySearch(EMPTY_HISTORY_SEARCH)
     setPendingHistorySearch(EMPTY_HISTORY_SEARCH)
-    setStatusFilter(null)
+    setStatusFilter([])
+    setPendingStatusFilter([])
     setHistoryStatusFilters([])
     setPendingHistoryStatusFilters([])
     setPage(1)
@@ -491,6 +497,11 @@ export function AutopassTickets({
   const handleHistorySearchSubmit = () => {
     setHistorySearch(pendingHistorySearch)
     setHistoryStatusFilters(pendingHistoryStatusFilters)
+    setPage(1)
+  }
+  const handleCurrentSearchSubmit = () => {
+    setSearch(pendingSearch)
+    setStatusFilter(pendingStatusFilter)
     setPage(1)
   }
 
@@ -568,48 +579,52 @@ export function AutopassTickets({
             monthOptions={availableMonths}
           />
         ) : (
-          <Group gap="12px" align="flex-end" wrap="wrap">
-            <TextInput
-              placeholder={searchPlaceholder}
-              leftSection={<IconSearch size={16} />}
-              value={search}
-              onChange={(e) => {
-                setSearch(e.currentTarget.value)
-                setPage(1)
-              }}
-              style={{ flex: 1, minWidth: 240 }}
-              styles={{
-                input: {
-                  borderRadius: 4,
-                  height: 40,
-                  fontSize: 14,
-                },
-              }}
-            />
-            <Select
-              placeholder="所有狀態"
-              data={statusOptions}
-              value={statusFilter}
-              onChange={(v) => {
-                setStatusFilter(v)
-                setPage(1)
-              }}
-              clearable
-              leftSection={<IconFilter size={14} />}
-              style={{ width: 160 }}
-              styles={{ input: { height: 40 } }}
-            />
-            {(statusFilter || search || hasHistorySearch) && (
-              <Text
-                size="sm"
-                c="blue"
-                style={{ cursor: 'pointer', height: 40, display: 'flex', alignItems: 'center' }}
-                onClick={handleResetFilters}
-              >
-                清除全部
-              </Text>
-            )}
-          </Group>
+          <Box
+            component="form"
+            onSubmit={(e: React.FormEvent) => {
+              e.preventDefault()
+              handleCurrentSearchSubmit()
+            }}
+          >
+            <Group gap="12px" align="flex-end" wrap="wrap">
+              <TextInput
+                placeholder={searchPlaceholder}
+                leftSection={<IconSearch size={16} />}
+                value={pendingSearch}
+                onChange={(e) => setPendingSearch(e.currentTarget.value)}
+                style={{ flex: '1 1 auto', minWidth: 240 }}
+                styles={{
+                  input: {
+                    borderRadius: 4,
+                    height: 40,
+                    fontSize: 14,
+                  },
+                }}
+              />
+              <MultiSelect
+                placeholder={pendingStatusFilter.length === 0 ? '所有狀態' : undefined}
+                data={statusOptions}
+                value={pendingStatusFilter}
+                onChange={setPendingStatusFilter}
+                clearable
+                leftSection={<IconFilter size={14} />}
+                style={{ flex: '0 1 400px', minWidth: 220 }}
+                styles={{
+                  input: {
+                    minHeight: 40,
+                    display: 'flex',
+                    alignItems: 'center',
+                  },
+                }}
+              />
+              <Button type="button" variant="default" onClick={handleResetFilters} h={40}>
+                重設
+              </Button>
+              <Button type="submit" leftSection={<IconSearch size={14} />} h={40}>
+                搜尋
+              </Button>
+            </Group>
+          </Box>
         )}
       </Box>
 
@@ -1342,7 +1357,7 @@ function QueryResultModal({
       const days = Math.max(1, Math.floor(numericRetryDays || 0))
       notifications.show({
         title: `請款失敗，已排程 ${days} 天後重新查詢`,
-        message: `原 ticket 以「請款失敗」進入歷史；系統將於 ${formatRetryDate(days)} 自動產生新的待查詢 ticket`,
+        message: `本任務以「請款失敗」進入歷史；系統將於 ${formatRetryDate(days)} 自動產生新的待查詢任務`,
         color: 'orange',
       })
     } else {
@@ -1597,10 +1612,10 @@ function QueryResultModal({
                       請款失敗
                     </Text>
                     <Text size="sm" c="dark.7">
-                      金額 NT$ {numericAmount.toLocaleString()} · {DEMO_FAIL_REASON}
+                      金額 NT$ {numericAmount.toLocaleString()}
                     </Text>
                     <Text size="xs" c="dimmed" mt={2}>
-                      原 ticket 將以「請款失敗」狀態進入歷史任務
+                      本任務將以「請款失敗」狀態進入歷史任務，系統將寄信引導用戶更新付款方式
                     </Text>
                   </Stack>
                 </Group>
@@ -1616,7 +1631,7 @@ function QueryResultModal({
                   <Radio
                     value="retry"
                     label="幾天後重新查詢"
-                    description="系統將在指定天數後重新產生一張待查詢 ticket"
+                    description="系統將在指定天數後重新產生待查詢任務"
                   />
                   {retryChoice === 'retry' && (
                     <Box
@@ -1628,7 +1643,7 @@ function QueryResultModal({
                     >
                       <Stack gap={4} mt="xs">
                         <NumberInput
-                          label="X 天後重新產生待查詢 ticket"
+                          label="X 天後重新產生待查詢任務"
                           value={retryDays}
                           onChange={setRetryDays}
                           min={1}
@@ -1637,7 +1652,7 @@ function QueryResultModal({
                         />
                         {numericRetryDays >= 1 && (
                           <Text size="xs" c="dimmed">
-                            預計於 {formatRetryDate(Math.floor(numericRetryDays))} 自動產生新 ticket
+                            預計於 {formatRetryDate(Math.floor(numericRetryDays))} 自動產生新任務
                           </Text>
                         )}
                       </Stack>
@@ -1646,7 +1661,7 @@ function QueryResultModal({
                   <Radio
                     value="no-retry"
                     label="不重新嘗試"
-                    description="原 ticket 直接結案，不再追蹤"
+                    description="本任務直接結案，不再追蹤"
                   />
                 </Stack>
               </Radio.Group>
