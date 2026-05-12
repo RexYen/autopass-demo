@@ -7,6 +7,7 @@ import {
   Box,
   TextInput,
   Select,
+  MultiSelect,
   Badge,
   ActionIcon,
   Pagination,
@@ -113,11 +114,23 @@ const TAB_TYPES: Record<TabValue, ServiceType[]> = TABS.reduce(
 type HistorySearchFields = {
   email: string
   plateNumber: string
-  idNumber: string
+  personalId: string
+  corporateId: string
   birthDate: string
   vehicleType: string
   createdMonthStart: string // 'YYYY-MM' or '' (建立月份起)
   createdMonthEnd: string // 'YYYY-MM' or '' (建立月份迄)
+}
+
+const EMPTY_HISTORY_SEARCH: HistorySearchFields = {
+  email: '',
+  plateNumber: '',
+  personalId: '',
+  corporateId: '',
+  birthDate: '',
+  vehicleType: '',
+  createdMonthStart: '',
+  createdMonthEnd: '',
 }
 
 const HISTORY_VEHICLE_OPTIONS = ['汽車', '機車', '大型重型機車', '拖車']
@@ -129,18 +142,14 @@ export function AutopassTickets({
   const isHistory = mode === 'history'
   const [activeTab, setActiveTab] = useState<TabValue>('etc-toll')
   const [search, setSearch] = useState('')
-  const [historySearch, setHistorySearch] = useState<HistorySearchFields>({
-    email: '',
-    plateNumber: '',
-    idNumber: '',
-    birthDate: '',
-    vehicleType: '',
-    createdMonthStart: '',
-    createdMonthEnd: '',
-  })
+  const [historySearch, setHistorySearch] = useState<HistorySearchFields>(EMPTY_HISTORY_SEARCH)
+  const [pendingHistorySearch, setPendingHistorySearch] =
+    useState<HistorySearchFields>(EMPTY_HISTORY_SEARCH)
   const [statusFilter, setStatusFilter] = useState<string | null>(
     initialStatusFilter ?? null,
   )
+  const [historyStatusFilters, setHistoryStatusFilters] = useState<string[]>([])
+  const [pendingHistoryStatusFilters, setPendingHistoryStatusFilters] = useState<string[]>([])
   const [page, setPage] = useState(1)
 
   // demo 用 — 點 Modal 送出後本地端覆寫對應欄位，讓卡片狀態跟著流程走
@@ -378,7 +387,13 @@ export function AutopassTickets({
 
   const filtered = useMemo(() => {
     return tabFiltered.filter((t) => {
-      if (statusFilter && t.status !== statusFilter) return false
+      if (isHistory) {
+        if (historyStatusFilters.length > 0 && !historyStatusFilters.includes(t.status)) {
+          return false
+        }
+      } else if (statusFilter && t.status !== statusFilter) {
+        return false
+      }
       if (isHistory) {
         const e = historySearch.email.trim().toLowerCase()
         if (e && !t.userEmail.toLowerCase().includes(e)) return false
@@ -387,8 +402,16 @@ export function AutopassTickets({
           if (p && !t.plateNumber.toLowerCase().includes(p)) return false
         }
         if (activeFieldSet.has('idNumber')) {
-          const idKw = historySearch.idNumber.trim().toLowerCase()
-          if (idKw && !t.driverInfo.idNumber.toLowerCase().includes(idKw)) return false
+          const personal = historySearch.personalId.trim().toLowerCase()
+          if (personal) {
+            if (t.driverInfo.ownerType !== '個人') return false
+            if (!t.driverInfo.idNumber.toLowerCase().includes(personal)) return false
+          }
+          const corporate = historySearch.corporateId.trim().toLowerCase()
+          if (corporate) {
+            if (t.driverInfo.ownerType !== '法人') return false
+            if (!t.driverInfo.idNumber.toLowerCase().includes(corporate)) return false
+          }
         }
         if (activeFieldSet.has('birthDate')) {
           const bd = historySearch.birthDate.trim()
@@ -411,7 +434,15 @@ export function AutopassTickets({
       if (!kw) return true
       return ticketSearchValues(t).some((v) => v.toLowerCase().includes(kw))
     })
-  }, [tabFiltered, search, historySearch, statusFilter, isHistory, activeFieldSet])
+  }, [
+    tabFiltered,
+    search,
+    historySearch,
+    statusFilter,
+    historyStatusFilters,
+    isHistory,
+    activeFieldSet,
+  ])
 
   // Placeholder 依 active tab 顯示欄位（聯集，因 tab 可能合併個人 / 法人）
   const searchPlaceholder = useMemo(() => {
@@ -450,20 +481,16 @@ export function AutopassTickets({
   const hasHistorySearch = Object.values(historySearch).some((v) => v.trim().length > 0)
   const handleResetFilters = () => {
     setSearch('')
-    setHistorySearch({
-      email: '',
-      plateNumber: '',
-      idNumber: '',
-      birthDate: '',
-      vehicleType: '',
-      createdMonthStart: '',
-      createdMonthEnd: '',
-    })
+    setHistorySearch(EMPTY_HISTORY_SEARCH)
+    setPendingHistorySearch(EMPTY_HISTORY_SEARCH)
     setStatusFilter(null)
+    setHistoryStatusFilters([])
+    setPendingHistoryStatusFilters([])
     setPage(1)
   }
-  const updateHistorySearch = (key: keyof HistorySearchFields, value: string) => {
-    setHistorySearch((prev) => ({ ...prev, [key]: value }))
+  const handleHistorySearchSubmit = () => {
+    setHistorySearch(pendingHistorySearch)
+    setHistoryStatusFilters(pendingHistoryStatusFilters)
     setPage(1)
   }
 
@@ -528,15 +555,20 @@ export function AutopassTickets({
 
       {/* Filters */}
       <Box px="24px" pt="16px" pb="16px">
-        <Group gap="12px" align="flex-end" wrap="wrap">
-          {isHistory ? (
-            <HistorySearchInputs
-              activeTab={activeTab}
-              value={historySearch}
-              onChange={updateHistorySearch}
-              monthOptions={availableMonths}
-            />
-          ) : (
+        {isHistory ? (
+          <HistorySearchInputs
+            activeTab={activeTab}
+            pending={pendingHistorySearch}
+            onChangePending={setPendingHistorySearch}
+            onSubmit={handleHistorySearchSubmit}
+            onReset={handleResetFilters}
+            pendingStatusFilters={pendingHistoryStatusFilters}
+            onPendingStatusFiltersChange={setPendingHistoryStatusFilters}
+            statusOptions={statusOptions}
+            monthOptions={availableMonths}
+          />
+        ) : (
+          <Group gap="12px" align="flex-end" wrap="wrap">
             <TextInput
               placeholder={searchPlaceholder}
               leftSection={<IconSearch size={16} />}
@@ -554,31 +586,31 @@ export function AutopassTickets({
                 },
               }}
             />
-          )}
-          <Select
-            placeholder="所有狀態"
-            data={statusOptions}
-            value={statusFilter}
-            onChange={(v) => {
-              setStatusFilter(v)
-              setPage(1)
-            }}
-            clearable
-            leftSection={<IconFilter size={14} />}
-            style={{ width: 160 }}
-            styles={{ input: { height: 40 } }}
-          />
-          {(statusFilter || search || hasHistorySearch) && (
-            <Text
-              size="sm"
-              c="blue"
-              style={{ cursor: 'pointer', height: 40, display: 'flex', alignItems: 'center' }}
-              onClick={handleResetFilters}
-            >
-              清除全部
-            </Text>
-          )}
-        </Group>
+            <Select
+              placeholder="所有狀態"
+              data={statusOptions}
+              value={statusFilter}
+              onChange={(v) => {
+                setStatusFilter(v)
+                setPage(1)
+              }}
+              clearable
+              leftSection={<IconFilter size={14} />}
+              style={{ width: 160 }}
+              styles={{ input: { height: 40 } }}
+            />
+            {(statusFilter || search || hasHistorySearch) && (
+              <Text
+                size="sm"
+                c="blue"
+                style={{ cursor: 'pointer', height: 40, display: 'flex', alignItems: 'center' }}
+                onClick={handleResetFilters}
+              >
+                清除全部
+              </Text>
+            )}
+          </Group>
+        )}
       </Box>
 
       {/* Cards */}
@@ -653,13 +685,23 @@ export function AutopassTickets({
 
 function HistorySearchInputs({
   activeTab,
-  value,
-  onChange,
+  pending,
+  onChangePending,
+  onSubmit,
+  onReset,
+  pendingStatusFilters,
+  onPendingStatusFiltersChange,
+  statusOptions,
   monthOptions,
 }: {
   activeTab: TabValue
-  value: HistorySearchFields
-  onChange: (key: keyof HistorySearchFields, v: string) => void
+  pending: HistorySearchFields
+  onChangePending: (next: HistorySearchFields) => void
+  onSubmit: () => void
+  onReset: () => void
+  pendingStatusFilters: string[]
+  onPendingStatusFiltersChange: (v: string[]) => void
+  statusOptions: { value: string; label: string }[]
   monthOptions: { value: string; label: string }[]
 }) {
   const fieldSet = new Set<string>()
@@ -668,80 +710,136 @@ function HistorySearchInputs({
   })
 
   const inputStyles = { input: { height: 40, borderRadius: 4, fontSize: 14 } }
-  const baseStyle = { flex: '1 1 180px', minWidth: 160 }
+  const fieldStyle = { flex: '1 1 0', minWidth: 140 }
+  const setField = (key: keyof HistorySearchFields, v: string) =>
+    onChangePending({ ...pending, [key]: v })
 
   return (
-    <>
-      <TextInput
-        placeholder="Email"
-        leftSection={<IconSearch size={14} />}
-        value={value.email}
-        onChange={(e) => onChange('email', e.currentTarget.value)}
-        style={baseStyle}
-        styles={inputStyles}
-      />
-      {fieldSet.has('plateNumber') && (
-        <TextInput
-          placeholder="車牌"
-          value={value.plateNumber}
-          onChange={(e) => onChange('plateNumber', e.currentTarget.value)}
-          style={{ width: 140 }}
-          styles={inputStyles}
-        />
-      )}
-      {fieldSet.has('idNumber') && (
-        <TextInput
-          placeholder="證件號碼／統編"
-          value={value.idNumber}
-          onChange={(e) => onChange('idNumber', e.currentTarget.value)}
-          style={{ width: 160 }}
-          styles={inputStyles}
-        />
-      )}
-      {fieldSet.has('birthDate') && (
-        <TextInput
-          placeholder="出生年月日"
-          value={value.birthDate}
-          onChange={(e) => onChange('birthDate', e.currentTarget.value)}
-          style={baseStyle}
-          styles={inputStyles}
-        />
-      )}
-      {fieldSet.has('vehicleType') && (
-        <Select
-          placeholder="車種"
-          data={HISTORY_VEHICLE_OPTIONS}
-          value={value.vehicleType || null}
-          onChange={(v) => onChange('vehicleType', v ?? '')}
-          clearable
-          style={{ width: 140 }}
-          styles={inputStyles}
-        />
-      )}
-      <Group gap="6px" wrap="nowrap" align="center">
-        <Select
-          placeholder="起始月份"
-          data={monthOptions}
-          value={value.createdMonthStart || null}
-          onChange={(v) => onChange('createdMonthStart', v ?? '')}
-          clearable
-          style={{ width: 140 }}
-          styles={inputStyles}
-        />
-        <Text size="sm" c="dimmed">
-          ~
-        </Text>
-        <Select
-          placeholder="結束月份"
-          data={monthOptions}
-          value={value.createdMonthEnd || null}
-          onChange={(v) => onChange('createdMonthEnd', v ?? '')}
-          clearable
-          style={{ width: 140 }}
-          styles={inputStyles}
-        />
-      </Group>
-    </>
+    <Box
+      component="form"
+      onSubmit={(e: React.FormEvent) => {
+        e.preventDefault()
+        onSubmit()
+      }}
+      p="12px 16px"
+      style={{
+        backgroundColor: '#f8f9fa',
+        borderRadius: 10,
+        border: '1px solid #e9ecef',
+      }}
+    >
+      <Stack gap="10px">
+        {/* Row 1: 人/車基本資料 */}
+        <Group gap="10px" wrap="wrap" align="flex-end">
+          <TextInput
+            placeholder="Email"
+            leftSection={<IconSearch size={14} />}
+            value={pending.email}
+            onChange={(e) => setField('email', e.currentTarget.value)}
+            style={fieldStyle}
+            styles={inputStyles}
+          />
+          {fieldSet.has('plateNumber') && (
+            <TextInput
+              placeholder="車牌"
+              value={pending.plateNumber}
+              onChange={(e) => setField('plateNumber', e.currentTarget.value)}
+              style={fieldStyle}
+              styles={inputStyles}
+            />
+          )}
+          {fieldSet.has('idNumber') && (
+            <>
+              <TextInput
+                placeholder="證件號碼"
+                value={pending.personalId}
+                onChange={(e) => setField('personalId', e.currentTarget.value)}
+                style={fieldStyle}
+                styles={inputStyles}
+              />
+              <TextInput
+                placeholder="統一編號"
+                value={pending.corporateId}
+                onChange={(e) => setField('corporateId', e.currentTarget.value)}
+                style={fieldStyle}
+                styles={inputStyles}
+              />
+            </>
+          )}
+          <Group gap="6px" wrap="nowrap" align="center">
+            <Select
+              placeholder="起始月份"
+              data={monthOptions}
+              value={pending.createdMonthStart || null}
+              onChange={(v) => setField('createdMonthStart', v ?? '')}
+              clearable
+              style={{ width: 130 }}
+              styles={inputStyles}
+            />
+            <Text size="sm" c="dimmed">
+              ~
+            </Text>
+            <Select
+              placeholder="結束月份"
+              data={monthOptions}
+              value={pending.createdMonthEnd || null}
+              onChange={(v) => setField('createdMonthEnd', v ?? '')}
+              clearable
+              style={{ width: 130 }}
+              styles={inputStyles}
+            />
+          </Group>
+        </Group>
+
+        {/* Row 2: 補充欄位 + 狀態 + 動作 */}
+        <Group gap="10px" wrap="wrap" align="flex-end">
+          {fieldSet.has('birthDate') && (
+            <TextInput
+              placeholder="出生年月日"
+              value={pending.birthDate}
+              onChange={(e) => setField('birthDate', e.currentTarget.value)}
+              style={fieldStyle}
+              styles={inputStyles}
+            />
+          )}
+          {fieldSet.has('vehicleType') && (
+            <Select
+              placeholder="車種"
+              data={HISTORY_VEHICLE_OPTIONS}
+              value={pending.vehicleType || null}
+              onChange={(v) => setField('vehicleType', v ?? '')}
+              clearable
+              style={{ flex: '0 1 140px', minWidth: 120 }}
+              styles={inputStyles}
+            />
+          )}
+          <MultiSelect
+            placeholder={pendingStatusFilters.length === 0 ? '所有狀態' : undefined}
+            data={statusOptions}
+            value={pendingStatusFilters}
+            onChange={onPendingStatusFiltersChange}
+            clearable
+            leftSection={<IconFilter size={14} />}
+            style={{ flex: '0 1 400px', minWidth: 220 }}
+            styles={{
+              input: {
+                minHeight: 40,
+                display: 'flex',
+                alignItems: 'center',
+              },
+            }}
+          />
+          <Group gap="8px" ml="auto" wrap="nowrap">
+            <Button type="button" variant="default" onClick={onReset} h={40}>
+              重設
+            </Button>
+            <Button type="submit" leftSection={<IconSearch size={14} />} h={40}>
+              搜尋
+            </Button>
+          </Group>
+        </Group>
+      </Stack>
+    </Box>
   )
 }
 
@@ -761,7 +859,7 @@ function TicketCard({
   const statusMeta = STATUS_META[ticket.status]
   const serviceMeta = SERVICE_META[ticket.serviceType]
   const queryFields = SERVICE_QUERY_FIELDS[ticket.serviceType]
-  const idLabel = ticket.driverInfo.ownerType === '法人' ? '法人統一編號' : '證件號碼'
+  const idLabel = ticket.driverInfo.ownerType === '法人' ? '統一編號' : '證件號碼'
 
   return (
     <Paper
@@ -1212,6 +1310,14 @@ function QueryResultModal({
       case 'has-fee':
         // 進入 result 步驟，等操作員確認模擬結果（成功/失敗 + 失敗 retry 安排）
         setModalStep('result')
+        notifications.show({
+          title: '請款成功',
+          message:
+            hasFeeMode === 'mixed'
+              ? `已向用戶請款 NT$ ${numericAmount.toLocaleString()}，並通知臨櫃部分自繳`
+              : `已向用戶請款 NT$ ${numericAmount.toLocaleString()}，待確認代繳`,
+          color: 'teal',
+        })
         return
     }
   }
@@ -1225,14 +1331,6 @@ function QueryResultModal({
         { status: 'invoice-success', amount: a, outcome },
         { openConfirmPaidAfter: true },
       )
-      notifications.show({
-        title: '請款成功',
-        message:
-          hasFeeMode === 'mixed'
-            ? `已向用戶請款 NT$ ${a.toLocaleString()}，並通知臨櫃部分自繳`
-            : `已向用戶請款 NT$ ${a.toLocaleString()}，待確認代繳`,
-        color: 'teal',
-      })
       return
     }
     // failure path
@@ -1441,10 +1539,7 @@ function QueryResultModal({
         </Stack>
       ) : (
         <Stack gap="md">
-          <Group justify="space-between" align="center">
-            <Text size="xs" c="dimmed">
-              demo 模擬請款回傳結果
-            </Text>
+          <Group justify="flex-end" align="center">
             <SegmentedControl
               size="xs"
               value={simulatedResult}
@@ -1563,7 +1658,7 @@ function QueryResultModal({
               關閉
             </Button>
             <Button
-              color={simulatedResult === 'success' ? 'teal' : 'red'}
+              color={simulatedResult === 'success' ? undefined : 'red'}
               onClick={handleResultConfirm}
               disabled={!canCloseResult}
             >
@@ -1611,7 +1706,7 @@ function ConfirmPaidModal({
     >
       <Stack gap="md">
         <Text size="sm" c="dark.7">
-          請確認已透過 <Text component="span" fw={600}>{serviceMeta.platform}</Text> 完成線下代繳，提交後此票將標記為「繳款成功」並結案。
+          請確認已透過 <Text component="span" fw={600}>{serviceMeta.platform}</Text> 完成線下代繳，提交後此票將標記為「繳款成功」並結案，系統將寄送繳款成功通知。
         </Text>
 
         <Box

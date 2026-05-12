@@ -16,18 +16,12 @@ import {
   Divider,
 } from '@mantine/core'
 import {
-  IconMessageDots,
-  IconMail,
-  IconCircleCheck,
-  IconCircleX,
-  IconCircleDot,
   IconExternalLink,
   IconX,
   IconChevronLeft,
   IconChevronRight,
   IconActivity,
-  IconCirclePlus,
-  IconClipboardCheck,
+  IconCircleFilled,
 } from '@tabler/icons-react'
 import {
   STATUS_META,
@@ -505,13 +499,9 @@ function ActivityPanel({
 
       <Divider color="#f1f3f5" />
 
-      <Timeline bulletSize={26} lineWidth={2}>
+      <Timeline bulletSize={16} lineWidth={2} color="gray">
         {events.map((ev) => (
-          <Timeline.Item
-            key={ev.id}
-            bullet={renderActivityBullet(ev)}
-            color={activityColor(ev)}
-          >
+          <Timeline.Item key={ev.id} bullet={<IconCircleFilled size={10} />}>
             <ActivityRow ev={ev} />
           </Timeline.Item>
         ))}
@@ -520,70 +510,33 @@ function ActivityPanel({
   )
 }
 
-function renderActivityBullet(ev: ActivityEvent): React.ReactNode {
-  switch (ev.kind) {
-    case 'created':
-      return <IconCirclePlus size={14} />
-    case 'query-result':
-      return <IconClipboardCheck size={14} />
-    case 'invoice':
-      if (ev.status === 'success') return <IconCircleCheck size={14} />
-      if (ev.status === 'failed') return <IconCircleX size={14} />
-      return <IconCircleDot size={14} />
-    case 'note':
-      return <IconMessageDots size={14} />
-    case 'email':
-      return <IconMail size={14} />
-  }
-}
-
-function activityColor(ev: ActivityEvent): string {
-  switch (ev.kind) {
-    case 'created':
-      return 'gray'
-    case 'query-result':
-      return ev.finalStatus === 'query-failed' ? 'red' : 'blue'
-    case 'invoice':
-      return ev.status === 'success' ? 'teal' : ev.status === 'failed' ? 'red' : 'yellow'
-    case 'note':
-      return 'gray'
-    case 'email':
-      return ev.status === 'sent' ? 'blue' : 'red'
-  }
-}
-
 function ActivityRow({ ev }: { ev: ActivityEvent }) {
   switch (ev.kind) {
     case 'created':
       return (
         <ActivityBody
-          action="建立工單"
-          detail={`${ev.serviceLabel} · ${ev.cycle}`}
+          actor="系統"
           at={ev.at}
+          subtitle={`建立工單 · ${ev.serviceLabel} · ${ev.cycle}`}
         />
       )
     case 'query-result': {
       const choice = queryResultChoiceLabel(ev)
-      const title = choice ? `回填查詢結果 - ${choice}` : '回填查詢結果'
+      const verb = choice ? `回填查詢結果 - ${choice}` : '回填查詢結果'
       const reasonMeta = ev.queryFailureReason
         ? QUERY_FAILURE_REASON_META[ev.queryFailureReason]
         : null
       const hasAmount = ev.amount !== null && ev.amount > 0
+      const tail = reasonMeta
+        ? `原因：${reasonMeta.label}`
+        : hasAmount
+          ? `線上金額 NT$ ${ev.amount!.toLocaleString()}`
+          : ''
       return (
         <ActivityBody
-          action={title}
-          detail={
-            reasonMeta ? (
-              <Text size="xs" c="dimmed">
-                原因：{reasonMeta.label}
-              </Text>
-            ) : hasAmount ? (
-              <Text size="xs" c="dimmed">
-                線上金額 NT$ {ev.amount!.toLocaleString()}
-              </Text>
-            ) : undefined
-          }
+          actor="Lance"
           at={ev.at}
+          subtitle={tail ? `${verb} · ${tail}` : verb}
         />
       )
     }
@@ -596,10 +549,11 @@ function ActivityRow({ ev }: { ev: ActivityEvent }) {
             : '發起請款'
       return (
         <ActivityBody
-          action={verb}
+          actor="Lance"
           at={ev.at}
-          detail={
-            <Group gap="4px" wrap="nowrap">
+          subtitle={
+            <>
+              {verb} ·{' '}
               <Text
                 component="a"
                 href={ev.invoiceUrl}
@@ -612,8 +566,12 @@ function ActivityRow({ ev }: { ev: ActivityEvent }) {
               >
                 {ev.invoiceId}
               </Text>
-              <IconExternalLink size={11} color="#228be6" />
-            </Group>
+              <IconExternalLink
+                size={11}
+                color="#228be6"
+                style={{ marginLeft: 4, verticalAlign: '-2px' }}
+              />
+            </>
           }
         />
       )
@@ -621,61 +579,49 @@ function ActivityRow({ ev }: { ev: ActivityEvent }) {
     case 'note':
       return (
         <ActivityBody
-          action="備註"
+          actor={ev.author}
           at={ev.at}
-          detail={
-            <Box
-              mt="6px"
-              p="10px 12px"
-              style={{ backgroundColor: '#f8f9fa', borderRadius: 8 }}
-            >
-              <Text size="sm" c="dark.7" style={{ whiteSpace: 'pre-wrap' }}>
-                {ev.content}
-              </Text>
-            </Box>
+          subtitle={
+            <span style={{ whiteSpace: 'pre-wrap' }}>新增備註：{ev.content}</span>
           }
         />
       )
     case 'email':
       return (
         <ActivityBody
-          action={ev.status === 'sent' ? '寄送通知信' : '通知信寄送失敗'}
+          actor="系統"
           at={ev.at}
-          detail={
-            <Stack gap={2}>
-              <Text size="sm" fw={600} c="dark.8">
-                {ev.subject}
-              </Text>
-              <Text size="xs" c="dimmed">
-                模板 {ev.template} · 觸發於〈{statusLabel(ev.triggerStatus)}〉
-              </Text>
-            </Stack>
-          }
+          subtitle={`${ev.status === 'sent' ? '寄送通知信' : '通知信寄送失敗'} · ${ev.subject} · 模板 ${ev.template} · 觸發於〈${statusLabel(ev.triggerStatus)}〉`}
         />
       )
   }
 }
 
 function ActivityBody({
-  action,
-  detail,
+  actor,
+  subtitle,
+  extra,
   at,
 }: {
-  action: string
-  detail?: React.ReactNode
+  actor: string
+  subtitle: React.ReactNode
+  extra?: React.ReactNode
   at: string
 }) {
   return (
     <Box>
-      <Group gap="6px" wrap="wrap" align="baseline">
-        <Text size="sm" fw={600} c="dark.8">
-          {action}
+      <Group gap="6px" wrap="nowrap" align="baseline">
+        <Text size="sm" fw={600} c="dark.8" style={{ flex: 1, minWidth: 0 }}>
+          {actor}
         </Text>
-        <Text size="xs" c="gray.5" ml="auto">
+        <Text size="xs" c="gray.5">
           {at}
         </Text>
       </Group>
-      {detail && <Box mt="2px">{typeof detail === 'string' ? <Text size="sm" c="dark.7">{detail}</Text> : detail}</Box>}
+      <Text size="xs" c="dimmed" mt={2}>
+        {subtitle}
+      </Text>
+      {extra && <Box>{extra}</Box>}
     </Box>
   )
 }
