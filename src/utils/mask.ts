@@ -10,10 +10,3 @@ export function maskId(value: string): string {
   return `${head}${'*'.repeat(value.length - head.length - tail.length)}${tail}`
 }
 
-export function maskDate(value: string): string {
-  // 1990/05/12 → 1990/**/**
-  if (!value) return ''
-  const m = value.match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})$/)
-  if (!m) return value
-  return `${m[1]}/**/**`
-}

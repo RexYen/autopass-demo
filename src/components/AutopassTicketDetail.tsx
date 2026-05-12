@@ -41,7 +41,6 @@ import {
   type InvoiceOrder,
   type QueryFailureReason,
 } from '../types/autopass'
-import { maskDate } from '../utils/mask'
 
 const cardShadow =
   '0px 7px 7px -5px rgba(0,0,0,0.04), 0px 10px 15px -5px rgba(0,0,0,0.1), 0px 1px 3px 0px rgba(0,0,0,0.05)'
@@ -266,7 +265,7 @@ function DetailContent({
                 <>
                   <IdentityDot />
                   <Text size="sm" fw={600} c="dark.8" style={monoStyle}>
-                    {maskDate(ticket.driverInfo.birthDate)}
+                    {ticket.driverInfo.birthDate}
                   </Text>
                 </>
               )}
@@ -622,7 +621,7 @@ function ActivityRow({ ev }: { ev: ActivityEvent }) {
     case 'note':
       return (
         <ActivityBody
-          action="加備註"
+          action="備註"
           at={ev.at}
           detail={
             <Box

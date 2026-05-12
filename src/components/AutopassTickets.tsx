@@ -23,6 +23,7 @@ import {
   NumberInput,
   SegmentedControl,
   ThemeIcon,
+  Textarea,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import {
@@ -61,7 +62,6 @@ import {
   type InvoiceOrder,
   type QueryFailureReason,
 } from '../types/autopass'
-import { maskDate } from '../utils/mask'
 import { AutopassTicketDetail } from './AutopassTicketDetail'
 
 interface AutopassTicketsProps {
@@ -145,6 +145,7 @@ export function AutopassTickets({
   >({})
   const [queryModalTicketId, setQueryModalTicketId] = useState<string | null>(null)
   const [confirmPaidTicketId, setConfirmPaidTicketId] = useState<string | null>(null)
+  const [noteModalTicketId, setNoteModalTicketId] = useState<string | null>(null)
   const [detailTicketId, setDetailTicketId] = useState<string | null>(null)
   const [noteOverrides, setNoteOverrides] = useState<Record<string, TicketNote[]>>({})
   const [emailOverrides, setEmailOverrides] = useState<Record<string, EmailLog[]>>({})
@@ -192,6 +193,11 @@ export function AutopassTickets({
   const confirmPaidTicket = useMemo(
     () => (confirmPaidTicketId ? tickets.find((t) => t.id === confirmPaidTicketId) ?? null : null),
     [confirmPaidTicketId, tickets],
+  )
+
+  const noteModalTicket = useMemo(
+    () => (noteModalTicketId ? tickets.find((t) => t.id === noteModalTicketId) ?? null : null),
+    [noteModalTicketId, tickets],
   )
 
   const handleQueryModalOpen = (ticketId: string) => setQueryModalTicketId(ticketId)
@@ -261,6 +267,9 @@ export function AutopassTickets({
 
   const handleOpenDetail = (ticketId: string) => setDetailTicketId(ticketId)
   const handleCloseDetail = () => setDetailTicketId(null)
+
+  const handleOpenNoteModal = (ticketId: string) => setNoteModalTicketId(ticketId)
+  const handleCloseNoteModal = () => setNoteModalTicketId(null)
 
   const handleAddNote = (ticketId: string, content: string) => {
     const now = new Date()
@@ -385,7 +394,7 @@ export function AutopassTickets({
     })
     const labels: string[] = ['Email']
     if (fieldSet.has('plateNumber')) labels.push('車牌')
-    if (fieldSet.has('idNumber')) labels.push('身分證／統編')
+    if (fieldSet.has('idNumber')) labels.push('證件號碼／統編')
     if (fieldSet.has('birthDate')) labels.push('出生年月日')
     if (fieldSet.has('vehicleType')) labels.push('車種')
     return `搜尋 ${labels.join('、')}`
@@ -562,6 +571,7 @@ export function AutopassTickets({
                 onViewDetail={handleOpenDetail}
                 onOpenQueryModal={handleQueryModalOpen}
                 onConfirmPaid={handleOpenConfirmPaidModal}
+                onAddNote={handleOpenNoteModal}
               />
             ))}
           </SimpleGrid>
@@ -590,6 +600,13 @@ export function AutopassTickets({
         opened={!!confirmPaidTicket}
         onClose={handleConfirmPaidClose}
         onConfirm={handleConfirmPaidSubmit}
+      />
+
+      <AddNoteModal
+        ticket={noteModalTicket}
+        opened={!!noteModalTicket}
+        onClose={handleCloseNoteModal}
+        onSubmit={handleAddNote}
       />
 
       <AutopassTicketDetail
@@ -647,7 +664,7 @@ function HistorySearchInputs({
       )}
       {fieldSet.has('idNumber') && (
         <TextInput
-          placeholder="身分證／統編"
+          placeholder="證件號碼／統編"
           value={value.idNumber}
           onChange={(e) => onChange('idNumber', e.currentTarget.value)}
           style={baseStyle}
@@ -683,16 +700,18 @@ function TicketCard({
   onViewDetail,
   onOpenQueryModal,
   onConfirmPaid,
+  onAddNote,
 }: {
   ticket: Ticket
   onViewDetail: (id: string) => void
   onOpenQueryModal: (id: string) => void
   onConfirmPaid: (id: string) => void
+  onAddNote: (id: string) => void
 }) {
   const statusMeta = STATUS_META[ticket.status]
   const serviceMeta = SERVICE_META[ticket.serviceType]
   const queryFields = SERVICE_QUERY_FIELDS[ticket.serviceType]
-  const idLabel = ticket.driverInfo.ownerType === '法人' ? '法人統一編號' : '身分證字號'
+  const idLabel = ticket.driverInfo.ownerType === '法人' ? '法人統一編號' : '證件號碼'
 
   return (
     <Paper
@@ -759,7 +778,7 @@ function TicketCard({
           <CardRow icon={<IconCalendar size={14} />} label="出生年月日">
             <CardCopyValue
               raw={ticket.driverInfo.birthDate}
-              display={maskDate(ticket.driverInfo.birthDate)}
+              display={ticket.driverInfo.birthDate}
             />
           </CardRow>
         )}
@@ -773,22 +792,28 @@ function TicketCard({
         )}
 
         <CardRow icon={<IconBuildingBank size={14} />} label="查繳平台">
-          <Group gap="4px" wrap="nowrap" justify="flex-end">
-            <Text
-              component="a"
-              href={serviceMeta.platformUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              size="sm"
-              fw={500}
-              c="blue"
-              style={{ textDecoration: 'none' }}
-              onClick={(e) => e.stopPropagation()}
-            >
+          {serviceMeta.platform === '街口支付' ? (
+            <Text size="sm" fw={500}>
               {serviceMeta.platform}
             </Text>
-            <IconExternalLink size={12} color="#228be6" />
-          </Group>
+          ) : (
+            <Group gap="4px" wrap="nowrap" justify="flex-end">
+              <Text
+                component="a"
+                href={serviceMeta.platformUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                size="sm"
+                fw={500}
+                c="blue"
+                style={{ textDecoration: 'none' }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {serviceMeta.platform}
+              </Text>
+              <IconExternalLink size={12} color="#228be6" />
+            </Group>
+          )}
         </CardRow>
       </Stack>
 
@@ -814,6 +839,7 @@ function TicketCard({
         onViewDetail={onViewDetail}
         onOpenQueryModal={onOpenQueryModal}
         onConfirmPaid={onConfirmPaid}
+        onAddNote={onAddNote}
       />
     </Paper>
   )
@@ -836,24 +862,17 @@ type ActionCallbacks = {
   onViewDetail: (id: string) => void
   onOpenQueryModal: (id: string) => void
   onConfirmPaid: (id: string) => void
+  onAddNote: (id: string) => void
 }
 
 function buildCardActionConfig(
   ticket: Ticket,
   cb: ActionCallbacks,
 ): CardActionConfig {
-  const showToast = (action: string, color: string = 'blue') => {
-    notifications.show({
-      title: action,
-      message: `Demo：已對 ${ticket.id} 觸發「${action}」`,
-      color,
-    })
-  }
-
   const addNote: MenuItemDef = {
-    label: '加備註',
+    label: '備註',
     icon: <IconNote size={14} />,
-    onClick: () => showToast('加備註'),
+    onClick: () => cb.onAddNote(ticket.id),
   }
 
   if (TERMINAL_STATUSES.includes(ticket.status)) {
@@ -910,16 +929,19 @@ function CardActions({
   onViewDetail,
   onOpenQueryModal,
   onConfirmPaid,
+  onAddNote,
 }: {
   ticket: Ticket
   onViewDetail: (id: string) => void
   onOpenQueryModal: (id: string) => void
   onConfirmPaid: (id: string) => void
+  onAddNote: (id: string) => void
 }) {
   const { primary, actionItems, commonItems } = buildCardActionConfig(ticket, {
     onViewDetail,
     onOpenQueryModal,
     onConfirmPaid,
+    onAddNote,
   })
 
   // 終結態的主 CTA 已是「查看詳情」，不再外掛獨立 icon button 避免重複
@@ -1204,19 +1226,25 @@ function QueryResultModal({
               <Text size="sm" c="dimmed">
                 線下查繳平台
               </Text>
-              <Text
-                component="a"
-                href={serviceMeta.platformUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                size="sm"
-                fw={500}
-                c="blue"
-                style={{ textDecoration: 'none' }}
-              >
-                {serviceMeta.platform}
-                <IconExternalLink size={12} style={{ marginLeft: 4, verticalAlign: 'middle' }} />
-              </Text>
+              {serviceMeta.platform === '街口支付' ? (
+                <Text size="sm" fw={500}>
+                  {serviceMeta.platform}
+                </Text>
+              ) : (
+                <Text
+                  component="a"
+                  href={serviceMeta.platformUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  size="sm"
+                  fw={500}
+                  c="blue"
+                  style={{ textDecoration: 'none' }}
+                >
+                  {serviceMeta.platform}
+                  <IconExternalLink size={12} style={{ marginLeft: 4, verticalAlign: 'middle' }} />
+                </Text>
+              )}
             </Group>
           </Box>
 
@@ -1227,74 +1255,7 @@ function QueryResultModal({
             required
           >
             <Stack gap="xs" mt="xs">
-              <Radio value="no-online-fee" label="無需繳費" />
-              {choice === 'no-online-fee' && (
-                <Box
-                  pl="28px"
-                  style={{
-                    borderLeft: '2px solid #e9ecef',
-                    marginLeft: 8,
-                  }}
-                >
-                  <Radio.Group
-                    value={noOnlineFeeReason}
-                    onChange={(v) => setNoOnlineFeeReason(v as NoOnlineFeeReason)}
-                    label="原因"
-                    size="sm"
-                  >
-                    <Stack gap="xs" mt="xs">
-                      <Radio
-                        value="no-fee"
-                        label="無應繳費用"
-                        description="平台查詢結果為零，直接結案"
-                      />
-                      <Radio
-                        value="counter-required"
-                        label="需臨櫃繳費"
-                        description="無法線上代繳，將寄信引導用戶臨櫃辦理"
-                      />
-                    </Stack>
-                  </Radio.Group>
-                </Box>
-              )}
-              <Radio
-                value="query-failed"
-                label="查詢失敗"
-                description="本票直接結案至歷史任務，若用戶更新資料下一週期會自動產生新 ticket"
-              />
-              {choice === 'query-failed' && (
-                <Box
-                  pl="28px"
-                  style={{
-                    borderLeft: '2px solid #e9ecef',
-                    marginLeft: 8,
-                  }}
-                >
-                  <Radio.Group
-                    value={queryFailureReason}
-                    onChange={(v) => setQueryFailureReason(v as QueryFailureReason)}
-                    label="失敗原因"
-                    size="sm"
-                    required
-                  >
-                    <Stack gap="xs" mt="xs">
-                      <Radio
-                        value="data-error"
-                        label={QUERY_FAILURE_REASON_META['data-error'].label}
-                        description={QUERY_FAILURE_REASON_META['data-error'].description}
-                      />
-                      {isEtcToll && (
-                        <Radio
-                          value="etag-bound"
-                          label={QUERY_FAILURE_REASON_META['etag-bound'].label}
-                          description={QUERY_FAILURE_REASON_META['etag-bound'].description}
-                        />
-                      )}
-                    </Stack>
-                  </Radio.Group>
-                </Box>
-              )}
-              <Radio value="has-fee" label="查到待繳費用" />
+              <Radio value="has-fee" label="需繳費" />
               {choice === 'has-fee' && (
                 <Box
                   pl="28px"
@@ -1337,6 +1298,71 @@ function QueryResultModal({
                       {hasFeeMode === 'mixed' && '臨櫃部分由用戶自繳，後台不再追蹤金額。'}
                     </Text>
                   </Stack>
+                </Box>
+              )}
+              <Radio value="no-online-fee" label="無需繳費" />
+              {choice === 'no-online-fee' && (
+                <Box
+                  pl="28px"
+                  style={{
+                    borderLeft: '2px solid #e9ecef',
+                    marginLeft: 8,
+                  }}
+                >
+                  <Radio.Group
+                    value={noOnlineFeeReason}
+                    onChange={(v) => setNoOnlineFeeReason(v as NoOnlineFeeReason)}
+                    label="原因"
+                    size="sm"
+                  >
+                    <Stack gap="xs" mt="xs">
+                      <Radio
+                        value="no-fee"
+                        label="無應繳費用"
+                        description="平台查詢結果為零，直接結案"
+                      />
+                      <Radio
+                        value="counter-required"
+                        label="需臨櫃繳費"
+                        description="無法線上代繳，系統將寄信引導用戶臨櫃辦理"
+                      />
+                    </Stack>
+                  </Radio.Group>
+                </Box>
+              )}
+              <Radio
+                value="query-failed"
+                label="查詢失敗"
+                description="本票直接結案，系統將寄信引導用戶更新資料"
+              />
+              {choice === 'query-failed' && (
+                <Box
+                  pl="28px"
+                  style={{
+                    borderLeft: '2px solid #e9ecef',
+                    marginLeft: 8,
+                  }}
+                >
+                  <Radio.Group
+                    value={queryFailureReason}
+                    onChange={(v) => setQueryFailureReason(v as QueryFailureReason)}
+                    label="原因"
+                    size="sm"
+                    required
+                  >
+                    <Stack gap="xs" mt="xs">
+                      <Radio
+                        value="data-error"
+                        label={QUERY_FAILURE_REASON_META['data-error'].label}
+                      />
+                      {isEtcToll && (
+                        <Radio
+                          value="etag-bound"
+                          label={QUERY_FAILURE_REASON_META['etag-bound'].label}
+                        />
+                      )}
+                    </Stack>
+                  </Radio.Group>
                 </Box>
               )}
             </Stack>
@@ -1568,6 +1594,86 @@ function ConfirmPaidModal({
           <Button color="teal" onClick={onConfirm}>
             確認已代繳
           </Button>
+        </Group>
+      </Stack>
+    </Modal>
+  )
+}
+
+function AddNoteModal({
+  ticket,
+  opened,
+  onClose,
+  onSubmit,
+}: {
+  ticket: Ticket | null
+  opened: boolean
+  onClose: () => void
+  onSubmit: (ticketId: string, content: string) => void
+}) {
+  const [content, setContent] = useState('')
+
+  useEffect(() => {
+    if (opened) setContent('')
+  }, [opened])
+
+  if (!ticket) return null
+
+  const serviceMeta = SERVICE_META[ticket.serviceType]
+  const trimmed = content.trim()
+  const disabled = trimmed.length === 0
+
+  const handleSubmit = () => {
+    if (disabled) return
+    onSubmit(ticket.id, trimmed)
+    onClose()
+  }
+
+  return (
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      size="md"
+      centered
+      title={
+        <Box>
+          <Text size="md" fw={600}>
+            新增備註
+          </Text>
+          <Text size="xs" c="dimmed" mt={2}>
+            {ticket.id} · {serviceMeta.label} · {ticket.userEmail}
+          </Text>
+        </Box>
+      }
+    >
+      <Stack gap="md">
+        <Textarea
+          placeholder="填寫備註內容..."
+          value={content}
+          onChange={(e) => setContent(e.currentTarget.value)}
+          autosize
+          minRows={4}
+          maxRows={10}
+          data-autofocus
+          onKeyDown={(e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+              e.preventDefault()
+              handleSubmit()
+            }
+          }}
+        />
+        <Group justify="space-between" align="center">
+          <Text size="xs" c="dimmed">
+            ⌘ / Ctrl + Enter 送出
+          </Text>
+          <Group gap="xs">
+            <Button variant="default" onClick={onClose}>
+              取消
+            </Button>
+            <Button onClick={handleSubmit} disabled={disabled}>
+              新增備註
+            </Button>
+          </Group>
         </Group>
       </Stack>
     </Modal>

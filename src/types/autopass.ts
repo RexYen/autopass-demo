@@ -72,10 +72,10 @@ export const SERVICE_META: Record<
 
 export type QueryField = 'idNumber' | 'plateNumber' | 'birthDate' | 'vehicleType' | 'fullName'
 
-export const QUERY_FIELD_META: Record<QueryField, { label: string; mask: 'id' | 'date' | 'none' }> = {
-  idNumber: { label: '身分證／統編', mask: 'id' },
+export const QUERY_FIELD_META: Record<QueryField, { label: string; mask: 'id' | 'none' }> = {
+  idNumber: { label: '證件號碼／統編', mask: 'id' },
   plateNumber: { label: '車牌號碼', mask: 'none' },
-  birthDate: { label: '出生年月日', mask: 'date' },
+  birthDate: { label: '出生年月日', mask: 'none' },
   vehicleType: { label: '車種', mask: 'none' },
   fullName: { label: '車主名稱', mask: 'none' },
 }
@@ -174,7 +174,7 @@ export type OwnerType = '個人' | '法人'
 
 export interface UserDriverInfo {
   fullName: string
-  idNumber: string             // 身分證 (個人) 或統一編號 (法人)
+  idNumber: string             // 證件號碼 (個人，身分證或居留證) 或統一編號 (法人)
   birthDate?: string           // YYYY/MM/DD（法人不需要）
   vehicleType: VehicleType
   ownerType: OwnerType
