@@ -8,6 +8,7 @@ import { StoreManagement } from './components/StoreManagement'
 import { TaskManagement } from './components/TaskManagement'
 import { Navigation } from './components/Navigation'
 import { AutopassTickets } from './components/AutopassTickets'
+import { TicketPreview } from './components/TicketPreview'
 import { NotificationProvider } from './hooks/useNotification'
 
 function StoreManagementPage() {
@@ -117,6 +118,7 @@ function AppContent() {
           <Route path="/autopass/tickets" element={<AutopassTickets />} />
           <Route path="/autopass/tickets/:id" element={<Navigate to="/autopass/tickets" replace />} />
           <Route path="/autopass/history" element={<AutopassTickets mode="history" />} />
+          <Route path="/preview" element={<TicketPreview />} />
           <Route path="*" element={<Navigate to="/autopass/tickets" replace />} />
         </Routes>
       </AppShell.Main>

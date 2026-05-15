@@ -99,6 +99,14 @@ export type TicketStatus =
   | 'invoice-failed'     // 請款失敗
   | 'paid'               // 繳款成功
 
+// 已結案狀態（歷史任務頁顯示這些；查繳任務頁排除）
+export const TERMINAL_STATUSES: TicketStatus[] = [
+  'paid',
+  'no-fee',
+  'query-failed',
+  'invoice-failed',
+]
+
 export const STATUS_META: Record<
   TicketStatus,
   { label: string; group: '待查' | '查詢' | '請款' | '繳款' | '例外'; color: string; bg: string }
