@@ -25,7 +25,8 @@
 ├── 🎫 查繳任務        /autopass/tickets      ← 預設入口（非終結態）
 │       └─（任務詳情：右側 Drawer，無獨立 URL）
 ├── 📋 歷史任務        /autopass/history       ← 終結態（paid / no-fee / query-failed / invoice-failed）
-└── 📤 對帳匯出       /autopass/export
+├── 📤 對帳匯出       /autopass/export
+└── 🧪 狀態 Preview   /preview                ← 前端參考用，**不掛 nav**，靠 URL 進入
 ```
 
 實際以 `currentView` state 切換。任務詳情為 Drawer，無深度連結。
@@ -249,6 +250,93 @@
 ### 4.3 對帳匯出（`AutopassExport.tsx`）
 
 空殼頁，文案「對帳匯出功能規劃中」+ disabled 的 `匯出 CSV` 按鈕。
+
+### 4.4 狀態 Preview（`TicketPreview.tsx`）
+
+**定位**：給前端人員的設計參考頁。把 6 種 `TicketStatus` 各擺一張卡，CTA 點下去能打開對應的 Modal / Drawer，方便直接對照「哪種狀態卡片，點擊進去後會出現什麼對應內容」。**不掛在側邊導航，靠 URL 進入。**
+
+#### 進入方式
+
+| 環境 | URL |
+| --- | --- |
+| 本地 | `http://localhost:5173/preview`（或 Vite 顯示的實際 port） |
+| Production | `https://autopass-demo.vercel.app/preview` |
+
+路由定義在 `src/App.tsx`：
+
+```tsx
+<Route path="/preview" element={<TicketPreview />} />
+```
+
+#### 6 種 status × CTA 對應
+
+每張卡片底部由左至右為 **主 CTA ｜ 👁 view-detail（非終結態才出現）｜ ⋮ menu**。
+
+| Status | 卡片主 CTA | 點擊後 | 👁 icon | ⋮ → 備註 |
+| --- | --- | --- | :---: | :---: |
+| `pending-query` | 回填查詢結果 | 開兩步驟 `QueryResultModal`（4 選 1 → has-fee 進結果步驟） | 開 `AutopassTicketDetail` Drawer | 開 `AddNoteModal` |
+| `no-fee` | 查看詳情（終結態） | 開 Drawer | — | 開 `AddNoteModal` |
+| `query-failed` | 查看詳情（終結態） | 開 Drawer | — | 開 `AddNoteModal` |
+| `invoice-success` | 確認已代繳 | 開 `ConfirmPaidModal` | 開 Drawer | 開 `AddNoteModal` |
+| `invoice-failed` | 查看詳情（終結態） | 開 Drawer | — | 開 `AddNoteModal` |
+| `paid` | 查看詳情（終結態） | 開 Drawer | — | 開 `AddNoteModal` |
+
+> Modal / Drawer 的視覺與真實 `AutopassTickets` 完全一致，因為 import 的是同一個元件（`TicketCard`、`QueryResultModal`、`ConfirmPaidModal`、`AddNoteModal`、`AutopassTicketDetail`）。
+
+#### 哪些互動是 Preview 專用
+
+Preview 頁刻意不接 `statusOverrides` / `noteOverrides` 等本地狀態機，所以 **任何 submit 都不會真的改卡片**：
+
+| 互動 | Preview 行為 | 真實頁面行為 |
+| --- | --- | --- |
+| `QueryResultModal` Submit（任一分支） | Modal 自帶的 step 流程照走（含 step 2 模擬成功/失敗），結束後關閉 Modal、不動卡片 | 寫入 `statusOverrides`、`invoiceOverrides`、`emailOverrides`，卡片狀態流轉 |
+| `ConfirmPaidModal` 「確認已代繳」 | toast「Preview，未實際改動 ticket 狀態」+ 關閉 Modal | `status → paid` + 寫 paid-v1 EmailLog + toast |
+| `AddNoteModal` 「新增備註」 | toast「已新增備註（Preview）」+ 關閉 Modal | 寫進 `noteOverrides`，Activity Timeline 多一筆 |
+| Drawer 內 Activity 留言 | 同 `AddNoteModal`（共用 handler） | 同 `AddNoteModal` |
+
+> 對「請款結果」step 2 的成功 / 失敗模擬：Modal 內部 state 會跑完整流程（顯示綠/紅面板、retry 選項），最後送出時 Preview 也只是 noop close。看 UI 走分支用的，不要期待結果回寫卡片。
+
+#### Fixture 結構
+
+所有 demo 卡的資料在 `src/components/TicketPreview.tsx` 內的 `SECTIONS: PreviewSection[]`，每個 entry 是 `{ status, ticket }`。`ticket` 透過 `makeTicket(overrides)` 產生，預設用同一組 `T-PREVIEW`／`preview@example.com`／`ABC-1234`／`A123456789`，再依需要 override。
+
+#### 如何新增 / 調整 case
+
+**新增一個 status fixture**（或新狀態 enum 上線後補卡片）：
+
+1. 確認 `src/types/autopass.ts` 的 `TicketStatus` 有新的字串、`STATUS_META` 有對應 label / 配色，必要時更新 `TERMINAL_STATUSES`。
+2. 在 `TicketPreview.tsx` 的 `SECTIONS` 加一筆：
+
+```tsx
+{
+  status: '新狀態' as TicketStatus,
+  ticket: makeTicket({
+    id: 'T-PREVIEW-07',
+    serviceType: 'etc-toll',
+    status: '新狀態' as TicketStatus,
+    // 視需要設 amount / outcome / queryFailureReason 等
+  }),
+},
+```
+
+3. 若該狀態的卡片需要新的主 CTA，更新 `TicketCard.tsx` 的 `buildCardActionConfig`（switch 加一個 case）。
+
+**新增一個 Modal**（流程上多一個操作員介入點）：
+
+1. 在 `src/components/TicketModals.tsx` 新增並 `export` 一個 `XxxModal` 元件，介面遵循 `{ ticket, opened, onClose, onSubmit }` 模式。
+2. `TicketCard.tsx`：
+   - `TicketCardCallbacks` 新增對應 callback，例如 `onOpenXxxModal: (id: string) => void`。
+   - `buildCardActionConfig` 對應的 `case` 把主 CTA 指過去。
+3. `AutopassTickets.tsx`：
+   - 加 state（如 `xxxModalTicketId`）、open / close / submit handler，handler 寫進對應 override map。
+   - render `<XxxModal ... />`。
+4. `TicketPreview.tsx`：
+   - 加 state（如 `xxxModalId`）、open callback、close + noop submit handler（toast 提示「Preview，未實際改動」即可）。
+   - render `<XxxModal ... />`。
+
+**只想換 demo 資料**（換 email / 車牌 / 法人 etc.）：直接改 `makeTicket(overrides)` 的 overrides 即可。
+
+> 設計原則：Preview 頁不維護自己的卡片狀態機，所有元件都從 `AutopassTickets` 共用。維護的時候只要把新元件加到 `TicketCard` / `TicketModals` / `TicketPreview` 三處對應位置，視覺與真實頁面就會自動同步，不會漂移。
 
 ## 5. 資料模型（mock）
 
