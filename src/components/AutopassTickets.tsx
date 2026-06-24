@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useState } from 'react'
 import {
   Paper,
   Title,
@@ -33,7 +33,6 @@ import { TicketCard } from './TicketCard'
 import { QueryResultModal, ConfirmPaidModal, AddNoteModal } from './TicketModals'
 
 interface AutopassTicketsProps {
-  initialStatusFilter?: TicketStatus
   mode?: 'current' | 'history'
 }
 
@@ -95,7 +94,6 @@ const EMPTY_HISTORY_SEARCH: HistorySearchFields = {
 const HISTORY_VEHICLE_OPTIONS = ['汽車', '機車', '大型重型機車', '拖車']
 
 export function AutopassTickets({
-  initialStatusFilter,
   mode = 'current',
 }: AutopassTicketsProps) {
   const isHistory = mode === 'history'
@@ -105,12 +103,8 @@ export function AutopassTickets({
   const [historySearch, setHistorySearch] = useState<HistorySearchFields>(EMPTY_HISTORY_SEARCH)
   const [pendingHistorySearch, setPendingHistorySearch] =
     useState<HistorySearchFields>(EMPTY_HISTORY_SEARCH)
-  const [statusFilter, setStatusFilter] = useState<string[]>(
-    initialStatusFilter ? [initialStatusFilter] : [],
-  )
-  const [pendingStatusFilter, setPendingStatusFilter] = useState<string[]>(
-    initialStatusFilter ? [initialStatusFilter] : [],
-  )
+  const [statusFilter, setStatusFilter] = useState<string[]>([])
+  const [pendingStatusFilter, setPendingStatusFilter] = useState<string[]>([])
   const [historyStatusFilters, setHistoryStatusFilters] = useState<string[]>([])
   const [pendingHistoryStatusFilters, setPendingHistoryStatusFilters] = useState<string[]>([])
   const [page, setPage] = useState(1)
@@ -126,15 +120,6 @@ export function AutopassTickets({
   const [noteOverrides, setNoteOverrides] = useState<Record<string, TicketNote[]>>({})
   const [emailOverrides, setEmailOverrides] = useState<Record<string, EmailLog[]>>({})
   const [invoiceOverrides, setInvoiceOverrides] = useState<Record<string, InvoiceOrder[]>>({})
-
-  // 當外部傳入新的 initialStatusFilter（例：從 Dashboard 跳過來），同步進來
-  useEffect(() => {
-    if (initialStatusFilter) {
-      setStatusFilter([initialStatusFilter])
-      setPendingStatusFilter([initialStatusFilter])
-      setPage(1)
-    }
-  }, [initialStatusFilter])
 
   // 套用 demo 覆寫（狀態 + 加備註 + 自動發信 + 新請款訂單）
   const tickets = useMemo(

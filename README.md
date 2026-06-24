@@ -1,69 +1,43 @@
-# React + TypeScript + Vite
+# Autopass Demo
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Internal admin-console **prototype** for Autopass. Frontend-only: all data is mock data and every interaction is simulated in the browser — there is no backend, API, auth, or persistence, so a refresh resets all state.
 
-Currently, two official plugins are available:
+Built with React 19 + TypeScript + Vite, Mantine UI, and React Router. Deployed on Vercel: https://autopass-demo.vercel.app
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Features
 
-## Expanding the ESLint configuration
+- **通行費自動繳 / 查繳任務** — the main feature: a 代查代繳 ticket workflow (card list, detail Drawer, query-result / confirm-paid / note Modals, and a history view). Full spec: [`drivingexpense-ticket.md`](./drivingexpense-ticket.md).
+- **業者管理 / 任務管理 / 圖資管理 / 商店管理** — earlier prototype pages.
+- `/preview` — a reference page showing every ticket-card state and its Modals (not linked in the nav; open by URL).
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Getting started
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev      # http://localhost:5173
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Scripts
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+| Command | What it does |
+| --- | --- |
+| `npm run dev` | Start the Vite dev server |
+| `npm run build` | Type-check and build for production (`tsc -b && vite build`) |
+| `npm run lint` | Run ESLint |
+| `npm run preview` | Preview the production build locally |
 
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## Project layout
+
+- `src/components/` — pages & UI components
+- `src/types/autopass.ts` — 查繳 domain types & metadata (single source of truth)
+- `src/data/autopassMock.ts` — mock data
+- `src/App.tsx` — routes & app shell
+
+## Contributing
+
+Changes go through a **Pull Request** — branch off `main`, push, and open a PR. Don't push directly to `main`.
+
+## Docs
+
+- [`drivingexpense-ticket.md`](./drivingexpense-ticket.md) — 查繳 (通行費自動繳) feature spec & implementation notes
+- [`CLAUDE.md`](./CLAUDE.md) — guidance for AI coding agents working in this repo

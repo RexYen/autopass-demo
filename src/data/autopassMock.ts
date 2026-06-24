@@ -1,4 +1,4 @@
-import type { Ticket, UpcomingSchedule } from '../types/autopass'
+import type { Ticket } from '../types/autopass'
 
 export const mockTickets: Ticket[] = [
   // ─── ETC 通行費 ────────────────────────────────────────────
@@ -936,32 +936,5 @@ export const mockTickets: Ticket[] = [
         status: 'sent',
       },
     ],
-  },
-]
-
-export const mockUpcomingSchedules: UpcomingSchedule[] = [
-  {
-    date: '2026-05-06',
-    weekday: '週三',
-    serviceLabel: '罰單批次（交通／強制險／汽燃費逾期）',
-    category: '罰單',
-    estimatedCount: 287,
-    produced: true,
-  },
-  {
-    date: '2026-05-10',
-    weekday: '週日',
-    serviceLabel: 'ETC 國道通行費',
-    category: '通行費',
-    estimatedCount: 412,
-    produced: false,
-  },
-  {
-    date: '2026-05-13',
-    weekday: '週三',
-    serviceLabel: '罰單批次（下一週期）',
-    category: '罰單',
-    estimatedCount: 290,
-    produced: false,
   },
 ]

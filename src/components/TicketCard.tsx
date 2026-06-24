@@ -197,7 +197,6 @@ type MenuItemDef = {
 
 type CardActionConfig = {
   primary: { label: string; icon: React.ReactNode; onClick: () => void }
-  actionItems: MenuItemDef[]
   commonItems: MenuItemDef[]
 }
 
@@ -218,7 +217,6 @@ function buildCardActionConfig(
         icon: <IconArrowRight size={16} />,
         onClick: () => cb.onViewDetail(ticket.id),
       },
-      actionItems: [],
       commonItems: [addNote],
     }
   }
@@ -233,7 +231,6 @@ function buildCardActionConfig(
           icon: <IconClipboardCheck size={16} />,
           onClick: () => cb.onOpenQueryModal(ticket.id),
         },
-        actionItems: [],
         commonItems,
       }
     case 'invoice-success':
@@ -243,7 +240,6 @@ function buildCardActionConfig(
           icon: <IconCash size={16} />,
           onClick: () => cb.onConfirmPaid(ticket.id),
         },
-        actionItems: [],
         commonItems,
       }
     default:
@@ -253,7 +249,6 @@ function buildCardActionConfig(
           icon: <IconArrowRight size={16} />,
           onClick: () => cb.onViewDetail(ticket.id),
         },
-        actionItems: [],
         commonItems,
       }
   }
@@ -266,7 +261,7 @@ function CardActions({
   onConfirmPaid,
   onAddNote,
 }: { ticket: Ticket } & TicketCardCallbacks) {
-  const { primary, actionItems, commonItems } = buildCardActionConfig(ticket, {
+  const { primary, commonItems } = buildCardActionConfig(ticket, {
     onViewDetail,
     onOpenQueryModal,
     onConfirmPaid,
@@ -304,17 +299,6 @@ function CardActions({
           </ActionIcon>
         </Menu.Target>
         <Menu.Dropdown>
-          {actionItems.map((item) => (
-            <Menu.Item
-              key={item.label}
-              leftSection={item.icon}
-              onClick={item.onClick}
-              color={item.color}
-            >
-              {item.label}
-            </Menu.Item>
-          ))}
-          {actionItems.length > 0 && <Menu.Divider />}
           {commonItems.map((item) => (
             <Menu.Item
               key={item.label}

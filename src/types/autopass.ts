@@ -206,12 +206,3 @@ export interface Ticket {
   notes: TicketNote[]
   emailLogs: EmailLog[]
 }
-
-export interface UpcomingSchedule {
-  date: string                 // YYYY-MM-DD
-  weekday: string
-  serviceLabel: string
-  category: ServiceCategory
-  estimatedCount: number
-  produced: boolean
-}
