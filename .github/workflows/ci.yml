@@ -12,8 +12,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  lint-and-build:
-    name: Lint & Build
+  audit-lint-build:
+    name: Audit, Lint & Build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -27,6 +27,10 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      # 守 production 依賴的高風險漏洞（dev/build 工具的漏洞交給 Dependabot 處理，不擋 CI）
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
 
       - name: Lint
         run: npm run lint
