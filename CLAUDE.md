@@ -2,48 +2,56 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Repository Status
+## Repository overview
 
-This repository contains an Autopass Demo project - a prototype for vendor management system.
+**Autopass Demo** — an internal admin-console **prototype** for Autopass. It is **frontend-only**: all data is hard-coded mock data and every state change is in-memory (a page refresh resets everything). There is no backend, API, auth, or persistence.
 
-### Project Structure
+- **Stack**: React 19 + TypeScript + Vite, Mantine UI v8, React Router v7, Leaflet (map page).
+- **Source** lives at the repo root (`package.json`, `src/`, `vite.config.ts`).
+- **Deploy**: Vercel — https://autopass-demo.vercel.app. `vercel.json` has a SPA catch-all rewrite, required because the app uses `BrowserRouter` (real paths like `/autopass/tickets` would 404 on refresh otherwise).
 
-React + TypeScript + Mantine UI prototype project. Source lives at the repo root (`package.json`, `src/`, `vite.config.ts`).
+## Workflow rules
 
-### Commands
+- **Use a Pull Request for every change — never commit or push directly to `main`.** Branch off `main`, commit, push, and open a PR with `gh`.
+- Only push / open PRs when the user explicitly asks.
+
+## Commands
 
 Run from the repo root:
 
-- Build: `npm run build`
-- Development server: `npm run dev`
-- Linting: `npm run lint`
+- Dev server: `npm run dev` (Vite, default http://localhost:5173)
+- Build: `npm run build` (`tsc -b && vite build`)
+- Lint: `npm run lint` (ESLint — note: there are pre-existing lint errors in the older vendor-management code, unrelated to the 查繳 feature)
 
 ## Architecture
 
-### Autopass Demo
-- **Framework**: React + TypeScript + Vite
-- **UI Library**: Mantine UI
-- **Structure**: 
-  - `/src/components/Navigation.tsx` - Side navigation component
-  - `/src/components/VendorManagement.tsx` - Main vendor management page
-  - `/src/App.tsx` - Main app layout with AppShell
+`src/App.tsx` is an `AppShell` + `BrowserRouter`; `src/components/Navigation.tsx` is the side nav. Routes:
 
-### Features Implemented
+| Route | Component | Page |
+| --- | --- | --- |
+| `/` → `/autopass/tickets` | — | default landing |
+| `/autopass/tickets` | `AutopassTickets` | 查繳任務 (**main feature**) |
+| `/autopass/history` | `AutopassTickets mode="history"` | 歷史任務 |
+| `/preview` | `TicketPreview` | 查繳卡片/Modal 狀態參考頁（不掛 nav） |
+| `/vendors`, `/vendors/:name`, `/vendors/new` | `VendorManagement` / `VendorDetail` | 業者管理 |
+| `/tasks` | `TaskManagement` | 任務管理 |
+| `/map` | `MapManagement` | 圖資管理 |
+| `/stores` | `StoreManagement` | 商店管理 |
 
-#### ✅ 第一階段完成 - 業者管理頁面
-- **業者管理界面** - 完整的CRUD界面設計
-- **側邊導航選單** - 包含Logo和四個主要功能選項
-- **搜尋功能** - 業者名稱搜尋框（UI完成）
-- **資料表格** - 顯示業者名稱、合約類型、操作按鈕
-- **分頁控制** - 完整分頁功能含active狀態
-- **響應式布局** - 支援2160px寬螢幕和各種尺寸
+### Primary feature — 通行費自動繳 / 查繳 (Autopass tickets)
 
-#### 🚧 待完成頁面
-- 任務管理頁面
-- 圖資管理頁面  
-- 商店管理頁面
+Operators manage 代查代繳 task tickets (代查 + 代繳 a user's tolls/fees per cycle). **Full spec & design notes live in [`drivingexpense-ticket.md`](./drivingexpense-ticket.md).** Key files:
 
-### 如何繼續開發
-1. 啟動開發服務器：`npm run dev`（在 repo 根目錄執行）
-2. 在瀏覽器打開 Vite 顯示的 Local URL（預設 http://localhost:5173，被佔用時會自動往後找）
-3. 修改代碼後會自動更新頁面
+- `src/types/autopass.ts` — domain types + metadata tables (`STATUS_META`, `SERVICE_META`, `SERVICE_QUERY_FIELDS`, `TERMINAL_STATUSES`, …). Single source of truth for status/service mappings; new service types or statuses start here.
+- `src/data/autopassMock.ts` — hard-coded mock tickets.
+- `src/components/AutopassTickets.tsx` — list container; serves both 查繳任務 and 歷史任務 via the `mode` prop. Holds all the in-memory override state.
+- `src/components/TicketCard.tsx` — shared ticket card (pure render + callbacks).
+- `src/components/TicketModals.tsx` — `QueryResultModal` / `ConfirmPaidModal` / `AddNoteModal`.
+- `src/components/AutopassTicketDetail.tsx` — detail Drawer with the Activity timeline.
+- `src/components/TicketPreview.tsx` — `/preview` reference page, reuses the above components.
+
+**Demo convention**: form submits write to override maps (`statusOverrides` / `noteOverrides` / `emailOverrides` / `invoiceOverrides`) inside `AutopassTickets`, merged onto the mock data with `useMemo`. Status flow, 請款, 發信, and排程 are all simulated with toasts; nothing persists.
+
+### Other pages
+
+業者管理 (`VendorManagement` / `VendorDetail`), 任務管理 (`TaskManagement`), 圖資管理 (`MapManagement` / `PlaceDetail`, Leaflet-based), 商店管理 (`StoreManagement`). Shared infra: `Navigation`, `Notification` + `hooks/useNotification`, `utils/mask`.

@@ -14,7 +14,7 @@
 | 4.4 一鍵向用戶請款 | ✅ | 嵌在「回填查詢結果」Modal 的第二步，操作員可即時模擬成功 / 失敗 |
 | 4.5 訂單歷程紀錄 | ✅ | 收進詳情頁 Activity 時間軸 |
 | 4.6 自動發信 | ✅ | 收進詳情頁 Activity 時間軸 |
-| 4.7 對帳匯出 | 🟡 預留殼 | 空頁面、disabled 匯出按鈕 |
+| 4.7 對帳匯出 | ❌ 未實作 | 尚無頁面與路由，規格確定後再做 |
 
 > Demo 中所有狀態切換都會以 `notifications` toast 模擬發信／請款結果，不接真後端。
 
@@ -25,7 +25,7 @@
 ├── 🎫 查繳任務        /autopass/tickets      ← 預設入口（非終結態）
 │       └─（任務詳情：右側 Drawer，無獨立 URL）
 ├── 📋 歷史任務        /autopass/history       ← 終結態（paid / no-fee / query-failed / invoice-failed）
-├── 📤 對帳匯出       /autopass/export
+├── 📤 對帳匯出       /autopass/export        ← ⚠️ 規劃中，尚未實作（無頁面、無路由）
 └── 🧪 狀態 Preview   /preview                ← 前端參考用，**不掛 nav**，靠 URL 進入
 ```
 
@@ -247,9 +247,9 @@
 
 身分證號 label 個人顯示「身分證字號」、法人顯示「法人統一編號」；出生日期 mask 顯示。
 
-### 4.3 對帳匯出（`AutopassExport.tsx`）
+### 4.3 對帳匯出（規劃中，尚未實作）
 
-空殼頁，文案「對帳匯出功能規劃中」+ disabled 的 `匯出 CSV` 按鈕。
+PRD 4.7 的對帳匯出**目前尚未建立任何頁面或路由**：repo 中沒有 `AutopassExport.tsx`、`App.tsx` 沒有 `/autopass/export`、側邊導航也沒有入口。規格確定後再實作，屆時預計掛在 `/autopass/export`。
 
 ### 4.4 狀態 Preview（`TicketPreview.tsx`）
 
@@ -405,8 +405,7 @@ Ticket {
 
 ## 7. 後續可改點 / TODO
 
-- [ ] 「修改車籍資料」做成真表單而非 toast
-- [ ] 4.7 對帳匯出規格確定後接上
+- [ ] 4.7 對帳匯出規格確定後實作（目前完全沒有頁面/路由）
 - [ ] 用戶端 UI（PRD 第二章）
 - [ ] Hero 右上 ticket.id 外連的對應頁面
 - [ ] `invoice-failed` 重新查詢的排程資訊是否要記在 ticket 上（目前僅 toast）
