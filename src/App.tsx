@@ -9,7 +9,7 @@ import { TaskManagement } from './components/TaskManagement'
 import { Navigation } from './components/Navigation'
 import { AutopassTickets } from './components/AutopassTickets'
 import { TicketPreview } from './components/TicketPreview'
-import { NotificationProvider } from './hooks/useNotification'
+import { NotificationProvider } from './hooks/NotificationProvider'
 
 function StoreManagementPage() {
   const navigate = useNavigate()
