@@ -32,11 +32,13 @@ Run from the repo root:
 | `/` → `/autopass/tickets` | — | default landing |
 | `/autopass/tickets` | `AutopassTickets` | 查繳任務 (**main feature**) |
 | `/autopass/history` | `AutopassTickets mode="history"` | 歷史任務 |
+| `/autopass/tickets/:id` | — | redirect → `/autopass/tickets`（詳情走 Drawer，無深連結） |
 | `/preview` | `TicketPreview` | 查繳卡片/Modal 狀態參考頁（不掛 nav） |
 | `/vendors`, `/vendors/:name`, `/vendors/new` | `VendorManagement` / `VendorDetail` | 業者管理 |
 | `/tasks` | `TaskManagement` | 任務管理 |
 | `/map` | `MapManagement` | 圖資管理 |
 | `/stores` | `StoreManagement` | 商店管理 |
+| `*`（其他） | — | redirect → `/autopass/tickets` |
 
 ### Primary feature — 通行費自動繳 / 查繳 (Autopass tickets)
 
