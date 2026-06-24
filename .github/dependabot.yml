@@ -15,6 +15,12 @@ updates:
         update-types:
           - minor
           - patch
+    ignore:
+      # 忽略 major 版本更新：破壞性升級多需 migration、常打破 build，
+      # 改由人工評估後再手動升（minor/patch 與安全修補仍照常）。
+      - dependency-name: "*"
+        update-types:
+          - version-update:semver-major
 
   # GitHub Actions 版本更新（keep actions/checkout、setup-node 等最新）
   - package-ecosystem: github-actions
