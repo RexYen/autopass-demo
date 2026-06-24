@@ -152,19 +152,9 @@ interface FilteredMapResource extends MapResource {
 }
 
 // 新增地點時建立、傳給 PlaceDetail 的物件形狀
-interface NewPlace {
-  id: number
-  placeName: string
-  address: string
+// 新增地點的表單結果：與 MapResource 同形，再加上街景網址
+interface NewPlace extends MapResource {
   streetViewUrl: string
-  latitude: number
-  longitude: number
-  coordinates: string
-  serviceTypes: string[]
-  vendor: string
-  status: string
-  remarks: string
-  createdAt: string
 }
 
 // Fix for default markers in Leaflet

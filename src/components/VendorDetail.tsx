@@ -317,7 +317,7 @@ export function VendorDetail({ vendorName, onBack, isNewVendor = false }: Vendor
                   color: '#adb5bd',
                   cursor: 'default',
                 },
-              } as MantineCSSProperties}
+              } as Record<string, MantineCSSProperties>}
             >
               <Tabs defaultValue="active" variant="default">
                 <Tabs.List
@@ -894,7 +894,7 @@ function ContactInfoSection({ isEmpty = false }: ContactInfoSectionProps) {
               color: '#adb5bd',
               cursor: 'default',
             },
-          } as MantineCSSProperties}
+          } as Record<string, MantineCSSProperties>}
         >
           <Tabs defaultValue="accountant" variant="default">
             <Tabs.List
