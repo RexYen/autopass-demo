@@ -21,7 +21,7 @@ Run from the repo root:
 
 - Dev server: `npm run dev` (Vite, default http://localhost:5173)
 - Build: `npm run build` (`tsc -b && vite build`)
-- Lint: `npm run lint` (ESLint — note: there are pre-existing lint errors in the older vendor-management code, unrelated to the 查繳 feature)
+- Lint: `npm run lint` (ESLint — should be clean; CI gates lint + build on every PR)
 
 ## Architecture
 
