@@ -101,8 +101,64 @@ if (typeof document !== 'undefined') {
   document.head.appendChild(styleSheet);
 }
 
+// 服務、停車場與充電站詳細資訊的最小精確型別（依 mockMapResources 形狀推導）
+interface MapService {
+  type: string
+  name: string
+  status: string
+}
+
+interface ParkingInfo {
+  totalSpaces: number
+  availableSpaces: number
+  hourlyRate: number
+  maxDailyRate: number
+  operatingHours: string
+  vehicleTypes: string[]
+  features?: string[]
+}
+
+interface ChargingInfo {
+  totalChargers: number
+  availableChargers: number
+  chargerTypes: string[]
+  pricing: string
+  networkProvider: string
+  paymentMethods: string[]
+}
+
+// 圖資資源（mock 資料中的每一筆）
+interface MapResource {
+  id: number
+  placeName: string
+  address: string
+  coordinates: string
+  latitude: number
+  longitude: number
+  serviceTypes: string[]
+  vendor: string
+  status: string
+  remarks: string
+  createdAt: string
+  services?: MapService[]
+  parkingInfo?: ParkingInfo
+  chargingInfo?: ChargingInfo
+}
+
+// useMemo 篩選後在資源上附加的搜尋欄位
+interface FilteredMapResource extends MapResource {
+  searchDistance?: number
+  matches: boolean
+}
+
+// 新增地點時建立、傳給 PlaceDetail 的物件形狀
+// 新增地點的表單結果：與 MapResource 同形，再加上街景網址
+interface NewPlace extends MapResource {
+  streetViewUrl: string
+}
+
 // Fix for default markers in Leaflet
-delete (L.Icon.Default.prototype as any)._getIconUrl;
+delete (L.Icon.Default.prototype as { _getIconUrl?: unknown })._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
@@ -136,7 +192,7 @@ const createCustomIcon = (serviceTypes: string[], status: string) => {
 };
 
 // Mock data for map resources - based on ERD architecture
-const mockMapResources = [
+const mockMapResources: MapResource[] = [
   {
     id: 1,
     placeName: '台北101停車場',
@@ -371,7 +427,7 @@ export function MapManagement({ onViewDetail }: MapManagementProps) {
   const [isBatchEditOpen, setIsBatchEditOpen] = useState(false);
   const [batchRemarks, setBatchRemarks] = useState('');
   const [isServiceDetailOpen, setIsServiceDetailOpen] = useState(false);
-  const [selectedResource, setSelectedResource] = useState<any>(null);
+  const [selectedResource, setSelectedResource] = useState<MapResource | null>(null);
   const [isAddPlaceModalOpen, setIsAddPlaceModalOpen] = useState(false);
   const [newPlaceForm, setNewPlaceForm] = useState({
     placeName: '',
@@ -379,12 +435,12 @@ export function MapManagement({ onViewDetail }: MapManagementProps) {
     streetViewUrl: ''
   });
   const [showPlaceDetail, setShowPlaceDetail] = useState(false);
-  const [selectedPlace, setSelectedPlace] = useState<any>(null);
-  
+  const [selectedPlace, setSelectedPlace] = useState<NewPlace | null>(null);
+
   // Map related state
-  const [selectedMarker, setSelectedMarker] = useState<any>(null);
+  const [selectedMarker, setSelectedMarker] = useState<FilteredMapResource | null>(null);
   const [activeMarkerId, setActiveMarkerId] = useState<number | null>(null);
-  const markersRef = useRef<Map<number, any>>(new Map());
+  const markersRef = useRef<Map<number, L.Marker>>(new Map());
   
   const { showSuccess } = useNotification();
 
@@ -415,9 +471,9 @@ export function MapManagement({ onViewDetail }: MapManagementProps) {
         const searchLower = searchTerm.toLowerCase();
         matchesSearch = resource.placeName.toLowerCase().includes(searchLower) ||
                        resource.address.toLowerCase().includes(searchLower) ||
-                       (resource.services && resource.services.some((service: any) => 
+                       (resource.services?.some((service) =>
                          service.name.toLowerCase().includes(searchLower)
-                       ));
+                       ) ?? false);
       }
       
       const matchesServiceType = !filterServiceType || resource.serviceTypes.includes(filterServiceType);
@@ -470,7 +526,7 @@ export function MapManagement({ onViewDetail }: MapManagementProps) {
     }
   };
 
-  const handleServiceDetailClick = (resource: any) => {
+  const handleServiceDetailClick = (resource: MapResource) => {
     setSelectedResource(resource);
     setIsServiceDetailOpen(true);
   };
@@ -540,13 +596,13 @@ export function MapManagement({ onViewDetail }: MapManagementProps) {
     }
   };
 
-  const onMarkerClick = useCallback((resource: any) => {
+  const onMarkerClick = useCallback((resource: FilteredMapResource) => {
     setSelectedMarker(resource);
     setActiveMarkerId(resource.id);
   }, []);
 
 
-  const onListItemClick = useCallback((resource: any) => {
+  const onListItemClick = useCallback((resource: FilteredMapResource) => {
     setSelectedMarker(resource);
     setActiveMarkerId(resource.id);
   }, []);
@@ -570,7 +626,7 @@ export function MapManagement({ onViewDetail }: MapManagementProps) {
   }, [activeMarkerId]);
 
   // Map Controller Component
-  function MapController({ targetResource }: { targetResource: any }) {
+  function MapController({ targetResource }: { targetResource: FilteredMapResource | null }) {
     const map = useMap();
     
     React.useEffect(() => {
@@ -1110,7 +1166,7 @@ export function MapManagement({ onViewDetail }: MapManagementProps) {
                       {/* 服務名稱列表 */}
                       {resource.services && resource.services.length > 0 && (
                         <div style={{ marginBottom: '6px' }}>
-                          {resource.services.map((service: any, index: number) => (
+                          {resource.services.map((service, index: number) => (
                             <div key={index} style={{ 
                               display: 'flex', 
                               alignItems: 'center', 

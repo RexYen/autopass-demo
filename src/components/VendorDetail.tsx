@@ -16,6 +16,7 @@ import {
   Menu,
   Checkbox,
 } from '@mantine/core'
+import type { CSSProperties as MantineCSSProperties } from '@mantine/core'
 import {
   IconChevronLeft,
   IconPlus,
@@ -105,6 +106,32 @@ interface VendorDetailProps {
   onBack: () => void;
   isNewVendor?: boolean; // 是否為新增業者（顯示空狀態）
 }
+
+// 人員（會計人員／廠商後台管理員）資料形狀
+interface Contact {
+  name: string;
+  role: string;          // e.g. '管理員' | '檢視者' | '會計人員'
+  isAccountant: string;  // '是' | '否'
+  phone: string;
+  email: string;
+}
+
+// 編輯／刪除時被選中的人員，附帶其在列表中的索引
+type SelectedContact = Contact & { index: number };
+
+// 匯款資訊（銀行帳戶）資料形狀
+interface BankAccount {
+  type: string;        // '預設' | '指定場站'
+  bankCode: string;
+  bankBranch: string;  // '銀行/分行' 組合字串
+  account: string;
+  accountName: string;
+  feeMode: string;     // '內扣' | '不內扣'
+  highlight: boolean;
+}
+
+// 編輯／刪除時被選中的匯款資訊，附帶其在列表中的索引
+type SelectedBank = BankAccount & { index: number };
 
 export function VendorDetail({ vendorName, onBack, isNewVendor = false }: VendorDetailProps) {
   const [isEditingName, setIsEditingName] = useState(false);
@@ -290,7 +317,7 @@ export function VendorDetail({ vendorName, onBack, isNewVendor = false }: Vendor
                   color: '#adb5bd',
                   cursor: 'default',
                 },
-              } as any}
+              } as Record<string, MantineCSSProperties>}
             >
               <Tabs defaultValue="active" variant="default">
                 <Tabs.List
@@ -717,15 +744,15 @@ function ContactInfoSection({ isEmpty = false }: ContactInfoSectionProps) {
   const [isAddPersonModalOpen, setIsAddPersonModalOpen] = useState(false);
   const [isEditPersonModalOpen, setIsEditPersonModalOpen] = useState(false);
   const [isDeletePersonModalOpen, setIsDeletePersonModalOpen] = useState(false);
-  const [selectedPerson, setSelectedPerson] = useState<any>(null);
+  const [selectedPerson, setSelectedPerson] = useState<SelectedContact | null>(null);
   const [personnelType, setPersonnelType] = useState<'accountant' | 'admin'>('accountant');
   const [newPerson, setNewPerson] = useState({
     name: '',
     email: '',
   });
-  const [contactList, setContactList] = useState(
-    isEmpty 
-      ? [] 
+  const [contactList, setContactList] = useState<Contact[]>(
+    isEmpty
+      ? []
       : [
           { name: 'Walter Chang', role: '管理員', isAccountant: '是', phone: '0911111111', email: 'walter51004@pklotcorp.com' },
           { name: 'Rex Yen', role: '檢視者', isAccountant: '否', phone: '02-12345678 #123', email: 'rexyen@pklotcorp.com' },
@@ -751,13 +778,14 @@ function ContactInfoSection({ isEmpty = false }: ContactInfoSectionProps) {
     setIsAddPersonModalOpen(true);
   };
 
-  const handleEditPerson = (person: any, index: number) => {
+  const handleEditPerson = (person: Contact, index: number) => {
     setSelectedPerson({ ...person, index });
     setNewPerson({ name: person.name, email: person.email });
     setIsEditPersonModalOpen(true);
   };
 
   const handleSaveEditPerson = () => {
+    if (!selectedPerson) return;
     const updatedList = [...contactList];
     updatedList[selectedPerson.index] = { ...updatedList[selectedPerson.index], ...newPerson };
     setContactList(updatedList);
@@ -766,12 +794,13 @@ function ContactInfoSection({ isEmpty = false }: ContactInfoSectionProps) {
     setIsEditPersonModalOpen(false);
   };
 
-  const handleDeletePerson = (person: any, index: number) => {
+  const handleDeletePerson = (person: Contact, index: number) => {
     setSelectedPerson({ ...person, index });
     setIsDeletePersonModalOpen(true);
   };
 
   const handleConfirmDeletePerson = () => {
+    if (!selectedPerson) return;
     const updatedList = contactList.filter((_, index) => index !== selectedPerson.index);
     setContactList(updatedList);
     
@@ -865,7 +894,7 @@ function ContactInfoSection({ isEmpty = false }: ContactInfoSectionProps) {
               color: '#adb5bd',
               cursor: 'default',
             },
-          } as any}
+          } as Record<string, MantineCSSProperties>}
         >
           <Tabs defaultValue="accountant" variant="default">
             <Tabs.List
@@ -1250,7 +1279,7 @@ function BankInfoSection({ isEmpty = false }: BankInfoSectionProps) {
   const [isAddBankModalOpen, setIsAddBankModalOpen] = useState(false);
   const [isEditBankModalOpen, setIsEditBankModalOpen] = useState(false);
   const [isDeleteBankModalOpen, setIsDeleteBankModalOpen] = useState(false);
-  const [selectedBank, setSelectedBank] = useState<any>(null);
+  const [selectedBank, setSelectedBank] = useState<SelectedBank | null>(null);
   const [newBankInfo, setNewBankInfo] = useState({
     type: '',
     bankCode: '',
@@ -1260,12 +1289,12 @@ function BankInfoSection({ isEmpty = false }: BankInfoSectionProps) {
     accountName: '',
     feeMode: '',
   });
-  const [bankList, setBankList] = useState(
+  const [bankList, setBankList] = useState<BankAccount[]>(
     isEmpty
       ? []
       : [
-          { 
-            type: '預設', 
+          {
+            type: '預設',
             bankCode: '000', 
             bankBranch: '廣吉銀行/和平分行', 
             account: '000000000000', 
@@ -1301,7 +1330,7 @@ function BankInfoSection({ isEmpty = false }: BankInfoSectionProps) {
     setIsAddBankModalOpen(false);
   };
 
-  const handleEditBank = (bank: any, index: number) => {
+  const handleEditBank = (bank: BankAccount, index: number) => {
     const [bankName, branchName] = bank.bankBranch.split('/');
     setSelectedBank({ ...bank, index });
     setNewBankInfo({
@@ -1317,6 +1346,7 @@ function BankInfoSection({ isEmpty = false }: BankInfoSectionProps) {
   };
 
   const handleSaveEditBank = () => {
+    if (!selectedBank) return;
     const updatedList = [...bankList];
     updatedList[selectedBank.index] = {
       ...updatedList[selectedBank.index],
@@ -1333,12 +1363,13 @@ function BankInfoSection({ isEmpty = false }: BankInfoSectionProps) {
     setIsEditBankModalOpen(false);
   };
 
-  const handleDeleteBank = (bank: any, index: number) => {
+  const handleDeleteBank = (bank: BankAccount, index: number) => {
     setSelectedBank({ ...bank, index });
     setIsDeleteBankModalOpen(true);
   };
 
   const handleConfirmDeleteBank = () => {
+    if (!selectedBank) return;
     const updatedList = bankList.filter((_, index) => index !== selectedBank.index);
     setBankList(updatedList);
     
@@ -2227,9 +2258,9 @@ function BankInfoSection({ isEmpty = false }: BankInfoSectionProps) {
 
 // Personnel table component for tabs
 interface PersonnelTableProps {
-  contactList: any[];
-  onEdit: (contact: any, index: number) => void;
-  onDelete: (contact: any, index: number) => void;
+  contactList: Contact[];
+  onEdit: (contact: Contact, index: number) => void;
+  onDelete: (contact: Contact, index: number) => void;
 }
 
 function PersonnelTable({ contactList, onEdit, onDelete }: PersonnelTableProps) {
