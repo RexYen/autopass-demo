@@ -8,6 +8,13 @@
 
 **Tech Stack:** React 19 + TypeScript + Vite、Mantine UI v8、React Router v7、`@tabler/icons-react`。
 
+> **⚠️ 實作後調整（本計畫為當時的逐步建置紀錄，下列差異未回寫到內文程式碼區塊；最新設計以 spec `2026-06-26-autopass-applications-design.md` §12 與實際程式碼為準）：**
+> 1. 頁面 / 側欄命名「自動繳申請」→「**通行費申請單**」。
+> 2. 第一欄「駕駛中心帳號」→「**Email**」。
+> 3. 欄位順序：「查繳週期」移到「申請服務」之後（Email / 申請服務 / 查繳週期 / 申請資料 / 申請時間 / 操作）。
+> 4. 操作的「編輯」文字連結 → **pencil ActionIcon**（`IconPencil` + `<ActionIcon variant="transparent" size={20}>`，沿用業者管理列表）。
+> 5. **移除交通罰緩服務**（已下架）：`ServiceType` 7→**5 種**，本頁 mock 申請 10→**8 筆**（移除 AP-007 / AP-008）。
+
 ## Global Constraints
 
 > 每個 task 的要求都隱含包含本節。
