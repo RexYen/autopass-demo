@@ -416,9 +416,6 @@ export function TaskManagement() {
               height: '40px',
               fontSize: '14px',
               lineHeight: '20px',
-              '&::placeholder': {
-                color: '#adb5bd',
-              },
             },
           }}
         />
@@ -462,10 +459,6 @@ export function TaskManagement() {
                 }}
                 styles={{
                   root: {
-                    '&:hover': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0px 4px 12px rgba(0,0,0,0.15)',
-                    },
                   }
                 }}
                 onClick={() => handleViewTaskDetail(task)}
@@ -818,13 +811,6 @@ export function TaskManagement() {
                       fontFamily: 'Noto Sans TC',
                       fontWeight: 400,
                       lineHeight: '20px',
-                      '&:hover': {
-                        backgroundColor: '#1c7ed6',
-                      },
-                      '&:disabled': {
-                        backgroundColor: '#e9ecef',
-                        color: '#868e96',
-                      },
                     },
                   }}
                 >
@@ -895,9 +881,6 @@ export function TaskManagement() {
                           fontFamily: 'Noto Sans TC',
                           fontWeight: 400,
                           lineHeight: '20px',
-                          '&::placeholder': {
-                            color: '#adb5bd',
-                          },
                         },
                       }}
                     />
@@ -943,9 +926,6 @@ export function TaskManagement() {
                           fontFamily: 'Noto Sans TC',
                           fontWeight: 400,
                           lineHeight: '20px',
-                          '&::placeholder': {
-                            color: '#adb5bd',
-                          },
                         },
                       }}
                     />
@@ -991,9 +971,6 @@ export function TaskManagement() {
                           fontFamily: 'Noto Sans TC',
                           fontWeight: 400,
                           lineHeight: '20px',
-                          '&::placeholder': {
-                            color: '#adb5bd',
-                          },
                         },
                       }}
                     />
@@ -1041,9 +1018,6 @@ export function TaskManagement() {
                               fontFamily: 'Noto Sans TC',
                               fontWeight: 400,
                               lineHeight: '20px',
-                              '&::placeholder': {
-                                color: '#adb5bd',
-                              },
                             },
                           }}
                         />
@@ -1089,9 +1063,6 @@ export function TaskManagement() {
                               fontFamily: 'Noto Sans TC',
                               fontWeight: 400,
                               lineHeight: '20px',
-                              '&::placeholder': {
-                                color: '#adb5bd',
-                              },
                             },
                           }}
                         />
@@ -1126,9 +1097,6 @@ export function TaskManagement() {
                           fontFamily: 'Noto Sans TC',
                           fontWeight: 400,
                           lineHeight: '20px',
-                          '&::placeholder': {
-                            color: '#adb5bd',
-                          },
                         },
                       }}
                     />
@@ -1162,9 +1130,6 @@ export function TaskManagement() {
                           fontFamily: 'Noto Sans TC',
                           fontWeight: 400,
                           lineHeight: '20px',
-                          '&::placeholder': {
-                            color: '#adb5bd',
-                          },
                         },
                       }}
                     />
@@ -1252,9 +1217,6 @@ export function TaskManagement() {
                       fontFamily: 'Noto Sans TC',
                       fontWeight: 400,
                       lineHeight: '20px',
-                      '&:hover': {
-                        backgroundColor: '#f8f9fa',
-                      },
                     },
                   }}
                 >
@@ -1276,13 +1238,6 @@ export function TaskManagement() {
                       fontFamily: 'Noto Sans TC',
                       fontWeight: 400,
                       lineHeight: '20px',
-                      '&:hover': {
-                        backgroundColor: '#1c7ed6',
-                      },
-                      '&:disabled': {
-                        backgroundColor: '#e9ecef',
-                        color: '#868e96',
-                      },
                     },
                   }}
                 >

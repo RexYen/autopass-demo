@@ -102,12 +102,7 @@ export function VendorManagement({ onViewVendor }: VendorManagementProps) {
   const handleAddVendor = () => {
     if (newVendorName.trim() && selectedStationTypes.length > 0) {
       // 這裡之後會連接到後端 API
-      console.log('新增業者:', {
-        name: newVendorName,
-        displayName: newDisplayName || '-',
-        contractTypes: selectedStationTypes
-      });
-      
+
       // 顯示新增成功通知
       showSuccess(`已新增業者「${newVendorName}」`, '新增業者成功');
       
@@ -212,9 +207,6 @@ export function VendorManagement({ onViewVendor }: VendorManagementProps) {
               height: '40px',
               fontSize: '14px',
               lineHeight: '20px',
-              '&::placeholder': {
-                color: '#adb5bd',
-              },
             },
           }}
         />
@@ -261,9 +253,6 @@ export function VendorManagement({ onViewVendor }: VendorManagementProps) {
             },
             tr: {
               backgroundColor: '#ffffff',
-              '&:hover': {
-                backgroundColor: '#ffffff',
-              },
             },
           }}
         >
@@ -474,9 +463,6 @@ export function VendorManagement({ onViewVendor }: VendorManagementProps) {
                     fontFamily: 'Noto Sans TC',
                     fontWeight: 400,
                     lineHeight: '20px',
-                    '&::placeholder': {
-                      color: '#adb5bd',
-                    },
                   },
                 }}
               />
@@ -509,9 +495,6 @@ export function VendorManagement({ onViewVendor }: VendorManagementProps) {
                     fontFamily: 'Noto Sans TC',
                     fontWeight: 400,
                     lineHeight: '20px',
-                    '&::placeholder': {
-                      color: '#adb5bd',
-                    },
                   },
                 }}
               />
@@ -615,9 +598,6 @@ export function VendorManagement({ onViewVendor }: VendorManagementProps) {
                   fontFamily: 'Noto Sans TC',
                   fontWeight: 400,
                   lineHeight: '20px',
-                  '&:hover': {
-                    backgroundColor: '#f8f9fa',
-                  },
                 },
               }}
             >
@@ -637,13 +617,6 @@ export function VendorManagement({ onViewVendor }: VendorManagementProps) {
                   fontFamily: 'Noto Sans TC',
                   fontWeight: 400,
                   lineHeight: '20px',
-                  '&:hover': {
-                    backgroundColor: '#1c7ed6',
-                  },
-                  '&:disabled': {
-                    backgroundColor: '#e9ecef',
-                    color: '#868e96',
-                  },
                 },
               }}
             >

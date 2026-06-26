@@ -165,13 +165,6 @@ export function StoreManagement({ onViewStore }: StoreManagementProps) {
 
   const handleAddStore = () => {
     if (newStoreName.trim() && newVendorId && newPlaceId && newStatus) {
-      console.log('新增商店:', {
-        storeName: newStoreName,
-        vendorId: newVendorId,
-        placeId: newPlaceId,
-        status: newStatus
-      });
-      
       showSuccess(`已新增商店「${newStoreName}」`, '新增商店成功');
       
       setNewStoreName('');
@@ -264,9 +257,6 @@ export function StoreManagement({ onViewStore }: StoreManagementProps) {
                 height: '40px',
                 fontSize: '14px',
                 lineHeight: '20px',
-                '&::placeholder': {
-                  color: '#adb5bd',
-                },
               },
             }}
           />
@@ -374,9 +364,6 @@ export function StoreManagement({ onViewStore }: StoreManagementProps) {
             },
             tr: {
               backgroundColor: '#ffffff',
-              '&:hover': {
-                backgroundColor: '#ffffff',
-              },
             },
           }}
         >
@@ -601,9 +588,6 @@ export function StoreManagement({ onViewStore }: StoreManagementProps) {
                     fontFamily: 'Noto Sans TC',
                     fontWeight: 400,
                     lineHeight: '20px',
-                    '&::placeholder': {
-                      color: '#adb5bd',
-                    },
                   },
                 }}
               />
@@ -752,9 +736,6 @@ export function StoreManagement({ onViewStore }: StoreManagementProps) {
                   fontFamily: 'Noto Sans TC',
                   fontWeight: 400,
                   lineHeight: '20px',
-                  '&:hover': {
-                    backgroundColor: '#f8f9fa',
-                  },
                 },
               }}
             >
@@ -774,13 +755,6 @@ export function StoreManagement({ onViewStore }: StoreManagementProps) {
                   fontFamily: 'Noto Sans TC',
                   fontWeight: 400,
                   lineHeight: '20px',
-                  '&:hover': {
-                    backgroundColor: '#1c7ed6',
-                  },
-                  '&:disabled': {
-                    backgroundColor: '#e9ecef',
-                    color: '#868e96',
-                  },
                 },
               }}
             >

@@ -193,7 +193,6 @@ export function AutopassApplications() {
                 height: '40px',
                 fontSize: '14px',
                 lineHeight: '20px',
-                '&::placeholder': { color: '#adb5bd' },
               },
             }}
           />
@@ -257,7 +256,6 @@ export function AutopassApplications() {
             },
             tr: {
               backgroundColor: '#ffffff',
-              '&:hover': { backgroundColor: '#ffffff' },
             },
           }}
         >
@@ -443,7 +441,6 @@ export function AutopassApplications() {
                   fontFamily: 'Noto Sans TC',
                   fontWeight: 400,
                   lineHeight: '20px',
-                  '&:hover': { backgroundColor: '#f8f9fa' },
                 },
               }}
             >
@@ -463,8 +460,6 @@ export function AutopassApplications() {
                   fontFamily: 'Noto Sans TC',
                   fontWeight: 400,
                   lineHeight: '20px',
-                  '&:hover': { backgroundColor: '#1c7ed6' },
-                  '&:disabled': { backgroundColor: '#e9ecef', color: '#868e96' },
                 },
               }}
             >

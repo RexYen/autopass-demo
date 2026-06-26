@@ -32,9 +32,6 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
           border: 'none',
           padding: 0,
           boxShadow: 'none',
-          '&::before': {
-            display: 'none',
-          },
         },
         description: {
           margin: 0,

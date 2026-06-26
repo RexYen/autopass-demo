@@ -513,11 +513,6 @@ export function MapManagement({ onViewDetail }: MapManagementProps) {
 
   const handleBatchEdit = () => {
     if (selectedResources.length > 0 && batchRemarks.trim()) {
-      console.log('批次編輯備註:', {
-        resourceIds: selectedResources,
-        remarks: batchRemarks
-      });
-      
       showSuccess(`已更新 ${selectedResources.length} 筆資源的備註`, '批次編輯成功');
       
       setSelectedResources([]);
@@ -579,7 +574,6 @@ export function MapManagement({ onViewDetail }: MapManagementProps) {
         createdAt: new Date().toLocaleDateString(),
       };
 
-      console.log('新增地點:', newPlace);
       showSuccess('地點基本資訊已建立，請繼續設定服務內容', '新增成功');
       
       // 清空表單並關閉Modal
@@ -587,7 +581,6 @@ export function MapManagement({ onViewDetail }: MapManagementProps) {
       setIsAddPlaceModalOpen(false);
       
       // 跳轉到地點詳情頁面
-      console.log('跳轉到詳情頁面，地點:', newPlace);
       setSelectedPlace(newPlace);
       setShowPlaceDetail(true);
     } catch (error) {
@@ -746,9 +739,6 @@ export function MapManagement({ onViewDetail }: MapManagementProps) {
                 height: '40px',
                 fontSize: '14px',
                 lineHeight: '20px',
-                '&::placeholder': {
-                  color: '#adb5bd',
-                },
               },
             }}
           />
@@ -859,9 +849,6 @@ export function MapManagement({ onViewDetail }: MapManagementProps) {
                 },
                 tr: {
                   backgroundColor: '#ffffff',
-                  '&:hover': {
-                    backgroundColor: '#ffffff',
-                  },
                 },
               }}
             >
@@ -1527,9 +1514,6 @@ export function MapManagement({ onViewDetail }: MapManagementProps) {
                   fontFamily: 'Noto Sans TC',
                   fontWeight: 400,
                   lineHeight: '20px',
-                  '&::placeholder': {
-                    color: '#adb5bd',
-                  },
                 },
               }}
             />
@@ -1550,9 +1534,6 @@ export function MapManagement({ onViewDetail }: MapManagementProps) {
                   fontFamily: 'Noto Sans TC',
                   fontWeight: 400,
                   lineHeight: '20px',
-                  '&:hover': {
-                    backgroundColor: '#f8f9fa',
-                  },
                 },
               }}
             >
@@ -1572,13 +1553,6 @@ export function MapManagement({ onViewDetail }: MapManagementProps) {
                   fontFamily: 'Noto Sans TC',
                   fontWeight: 400,
                   lineHeight: '20px',
-                  '&:hover': {
-                    backgroundColor: '#1c7ed6',
-                  },
-                  '&:disabled': {
-                    backgroundColor: '#e9ecef',
-                    color: '#868e96',
-                  },
                 },
               }}
             >
@@ -1894,9 +1868,6 @@ export function MapManagement({ onViewDetail }: MapManagementProps) {
                     fontFamily: 'Noto Sans TC',
                     fontWeight: 400,
                     lineHeight: '20px',
-                    '&::placeholder': {
-                      color: '#adb5bd',
-                    },
                   },
                 }}
               />
@@ -1931,9 +1902,6 @@ export function MapManagement({ onViewDetail }: MapManagementProps) {
                     fontFamily: 'Noto Sans TC',
                     fontWeight: 400,
                     lineHeight: '20px',
-                    '&::placeholder': {
-                      color: '#adb5bd',
-                    },
                   },
                 }}
               />
@@ -1968,9 +1936,6 @@ export function MapManagement({ onViewDetail }: MapManagementProps) {
                     fontFamily: 'Noto Sans TC',
                     fontWeight: 400,
                     lineHeight: '20px',
-                    '&::placeholder': {
-                      color: '#adb5bd',
-                    },
                   },
                 }}
               />
@@ -1998,9 +1963,6 @@ export function MapManagement({ onViewDetail }: MapManagementProps) {
                   fontFamily: 'Noto Sans TC',
                   fontWeight: 400,
                   lineHeight: '20px',
-                  '&:hover': {
-                    backgroundColor: '#f8f9fa',
-                  },
                 },
               }}
             >
@@ -2020,13 +1982,6 @@ export function MapManagement({ onViewDetail }: MapManagementProps) {
                   fontFamily: 'Noto Sans TC',
                   fontWeight: 400,
                   lineHeight: '20px',
-                  '&:hover': {
-                    backgroundColor: '#1c7ed6',
-                  },
-                  '&:disabled': {
-                    backgroundColor: '#e9ecef',
-                    color: '#868e96',
-                  },
                 },
               }}
             >

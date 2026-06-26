@@ -32,6 +32,7 @@ Run from the repo root:
 | `/` → `/autopass/tickets` | — | default landing |
 | `/autopass/tickets` | `AutopassTickets` | 查繳任務 (**main feature**) |
 | `/autopass/history` | `AutopassTickets mode="history"` | 歷史任務 |
+| `/autopass/drivingexpense-applications` | `AutopassApplications` | 通行費申請單（側欄在「通行費自動繳」群組） |
 | `/autopass/tickets/:id` | — | redirect → `/autopass/tickets`（詳情走 Drawer，無深連結） |
 | `/preview` | `TicketPreview` | 查繳卡片/Modal 狀態參考頁（不掛 nav） |
 | `/vendors`, `/vendors/:name`, `/vendors/new` | `VendorManagement` / `VendorDetail` | 業者管理 |
@@ -44,13 +45,14 @@ Run from the repo root:
 
 Operators manage 代查代繳 task tickets (代查 + 代繳 a user's tolls/fees per cycle). **Full spec & design notes live in [`drivingexpense-ticket.md`](./drivingexpense-ticket.md).** Key files:
 
-- `src/types/autopass.ts` — domain types + metadata tables (`STATUS_META`, `SERVICE_META`, `SERVICE_QUERY_FIELDS`, `TERMINAL_STATUSES`, …). Single source of truth for status/service mappings; new service types or statuses start here.
+- `src/types/autopass.ts` — domain types + metadata tables (`STATUS_META`, `SERVICE_META`, `SERVICE_QUERY_FIELDS`, `QUERY_FIELD_META`, `TERMINAL_STATUSES`, `AutopassApplication` / `BillingCycle`, …). Single source of truth for status/service mappings; new service types or statuses start here.
 - `src/data/autopassMock.ts` — hard-coded mock tickets.
 - `src/components/AutopassTickets.tsx` — list container; serves both 查繳任務 and 歷史任務 via the `mode` prop. Holds all the in-memory override state.
 - `src/components/TicketCard.tsx` — shared ticket card (pure render + callbacks).
 - `src/components/TicketModals.tsx` — `QueryResultModal` / `ConfirmPaidModal` / `AddNoteModal`.
 - `src/components/AutopassTicketDetail.tsx` — detail Drawer with the Activity timeline.
 - `src/components/TicketPreview.tsx` — `/preview` reference page, reuses the above components.
+- `src/components/AutopassApplications.tsx` — 通行費申請單頁（`/autopass/drivingexpense-applications`），展示 `AutopassApplication` 申請清單與可編輯的查繳週期（`BillingCycle`）。
 
 **Demo convention**: form submits write to override maps (`statusOverrides` / `noteOverrides` / `emailOverrides` / `invoiceOverrides`) inside `AutopassTickets`, merged onto the mock data with `useMemo`. Status flow, 請款, 發信, and排程 are all simulated with toasts; nothing persists.
 
