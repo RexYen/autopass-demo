@@ -206,3 +206,19 @@ export interface Ticket {
   notes: TicketNote[]
   emailLogs: EmailLog[]
 }
+
+// ── 自動繳申請（營運後台）──────────────────────────────
+// 查繳「頻率」設定，與 Ticket.cycle（週期實例字串，如 "2026/W18"）是不同概念，不可混用。
+export type BillingCycle = '週繳' | '雙週繳' | '月繳' | '年繳'
+
+export const BILLING_CYCLES: BillingCycle[] = ['週繳', '雙週繳', '月繳', '年繳']
+
+// 一筆自動繳「申請」：用戶替某服務開通自動繳，後端再依 billingCycle 週期性產生查繳 ticket。
+export interface AutopassApplication {
+  id: string                                       // AP-xxx
+  userEmail: string                                // 駕駛中心帳號
+  serviceType: ServiceType                         // 申請服務 → SERVICE_META[serviceType].label
+  queryData: Partial<Record<QueryField, string>>   // 申請資料；key 取自 SERVICE_QUERY_FIELDS[serviceType]
+  appliedAt: string                                // 申請時間（ISO 字串）
+  billingCycle: BillingCycle                       // 查繳週期（可編輯）
+}
