@@ -513,17 +513,6 @@ export function StoreManagement({ onViewStore }: StoreManagementProps) {
               border: '1px solid #dee2e6',
               backgroundColor: '#ffffff',
               color: '#000000',
-              
-              '&[data-active]': {
-                backgroundColor: '#228be6',
-                color: '#ffffff',
-                borderColor: '#228be6',
-              },
-              
-              '&[data-active]:hover': {
-                backgroundColor: '#228be6',
-                color: '#ffffff',
-              },
             },
           }}
         />
