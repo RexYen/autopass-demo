@@ -25,6 +25,7 @@
 ├── 🎫 查繳任務        /autopass/tickets      ← 預設入口（非終結態）
 │       └─（任務詳情：右側 Drawer，無獨立 URL）
 ├── 📋 歷史任務        /autopass/history       ← 終結態（paid / no-fee / query-failed / invoice-failed）
+├── 📝 通行費申請單     /autopass/drivingexpense-applications   ← 自動繳申請清單 + 可編輯查繳週期
 ├── 📤 對帳匯出       /autopass/export        ← ⚠️ 規劃中，尚未實作（無頁面、無路由）
 └── 🧪 狀態 Preview   /preview                ← 前端參考用，**不掛 nav**，靠 URL 進入
 ```
@@ -101,7 +102,7 @@
 
 > 卡片底部 CTA 區由左至右為：**主 CTA（依狀態）｜ 查看詳情 icon button（👁，非終結態才顯示）｜ ⋮ 選單**。終結態的主 CTA 本來就是「查看詳情」，不再重複顯示獨立 icon。
 
-- **服務 Tabs（5 個）**：ETC 通行費 / 汽燃費 / 汽燃費逾期罰緩 / 交通罰緩 / 違反強制險罰緩。每個 tab 計數即時顯示。
+- **服務 Tabs（4 個）**：ETC 通行費 / 汽燃費 / 汽燃費逾期罰緩 / 違反強制險罰緩。每個 tab 計數即時顯示。
 - **搜尋**：
   - 查繳任務頁（current）：單一搜尋框，命中 Email + 該 tab 對應的查詢欄位（車牌、身分證／統編、出生年月日、車種）；Ticket ID 仍可搜尋但不寫在 placeholder 提示中。
   - 歷史任務頁（history）：搜尋欄拆成獨立輸入：**Email**（永遠顯示）+ 依當前 tab 動態出現 **車牌 / 身分證／統編 / 出生年月日**（TextInput）與 **車種**（Select，含汽車／機車／大型重型機車／拖車）。各欄位之間是 AND；切 tab 時隱藏欄位的值會被忽略但保留在 state 中。
@@ -240,8 +241,6 @@
 | --- | :---: | :---: | :---: | :---: |
 | 汽燃費（個人 / 法人） | ✓ | | ✓ | |
 | 汽燃費逾期罰緩 | ✓ | | ✓ | |
-| 交通罰緩（個人） | ✓ | ✓ | | |
-| 交通罰緩（法人） | ✓ | | ✓ | ✓ |
 | 違反強制險罰緩 | | | ✓ | ✓ |
 | ETC 通行費 | ✓ | | ✓ | |
 
@@ -391,7 +390,7 @@ Ticket {
 
 ### 5.4 Mock 涵蓋
 
-每個服務 tab 都備有四個非終結狀態示意（待查詢 / 請款成功 / 請款失敗 / 查詢失敗）；汽燃費、交通罰緩、ETC 三個 tab 額外有「法人」票各一張。混合 outcome（`online-mixed`）目前在汽燃費逾期罰緩、交通罰緩 tab 各有一張。歷史任務涵蓋 `paid` / `no-fee`（`no-fee`）/ `no-fee`（`counter-only`）/ `query-failed`（其中一張 ETC 用 `etag-bound`）/ `invoice-failed` 等示意。
+每個服務 tab 都備有四個非終結狀態示意（待查詢 / 請款成功 / 請款失敗 / 查詢失敗）；汽燃費、ETC 兩個 tab 額外有「法人」票各一張（分別是 `fuel-fee-corporate` 與 `etc-toll`）。混合 outcome（`online-mixed`）目前 mock 無示意資料。歷史任務涵蓋 `paid` / `no-fee`（`no-fee`）/ `no-fee`（`counter-only`）/ `query-failed`（其中一張 ETC 用 `etag-bound`）/ `invoice-failed` 等示意。
 
 ## 6. 不在本次範圍
 
