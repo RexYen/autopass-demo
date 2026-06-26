@@ -809,10 +809,6 @@ export function MapManagement({ onViewDetail }: MapManagementProps) {
               control: {
                 border: 'none',
                 borderRadius: '4px',
-                '&[data-active]': {
-                  backgroundColor: '#228be6',
-                  color: '#ffffff',
-                },
               },
             }}
           />
@@ -1084,17 +1080,6 @@ export function MapManagement({ onViewDetail }: MapManagementProps) {
                   border: '1px solid #dee2e6',
                   backgroundColor: '#ffffff',
                   color: '#000000',
-                  
-                  '&[data-active]': {
-                    backgroundColor: '#228be6',
-                    color: '#ffffff',
-                    borderColor: '#228be6',
-                  },
-                  
-                  '&[data-active]:hover': {
-                    backgroundColor: '#228be6',
-                    color: '#ffffff',
-                  },
                 },
               }}
             />
