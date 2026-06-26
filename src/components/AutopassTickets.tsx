@@ -44,7 +44,6 @@ const PAGE_SIZE = 6
 type TabValue =
   | 'fuel-fee'
   | 'fuel-fee-overdue'
-  | 'traffic-fine'
   | 'compulsory-insurance-fine'
   | 'etc-toll'
 
@@ -52,11 +51,6 @@ const TABS: { value: TabValue; label: string; types: ServiceType[] }[] = [
   { value: 'etc-toll', label: 'ETC 通行費', types: ['etc-toll'] },
   { value: 'fuel-fee', label: '汽燃費', types: ['fuel-fee-personal', 'fuel-fee-corporate'] },
   { value: 'fuel-fee-overdue', label: '汽燃費逾期罰緩', types: ['fuel-fee-overdue'] },
-  {
-    value: 'traffic-fine',
-    label: '交通罰緩',
-    types: ['traffic-fine-personal', 'traffic-fine-corporate'],
-  },
   {
     value: 'compulsory-insurance-fine',
     label: '違反強制險罰緩',

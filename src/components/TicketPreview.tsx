@@ -100,7 +100,7 @@ const SECTIONS: PreviewSection[] = [
     status: 'invoice-success',
     ticket: makeTicket({
       id: 'T-PREVIEW-04',
-      serviceType: 'traffic-fine-corporate',
+      serviceType: 'fuel-fee-corporate',
       status: 'invoice-success',
       outcome: 'online-full',
       amount: 3600,

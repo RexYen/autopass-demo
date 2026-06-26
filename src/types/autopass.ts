@@ -2,8 +2,6 @@ export type ServiceType =
   | 'fuel-fee-personal'
   | 'fuel-fee-corporate'
   | 'fuel-fee-overdue'
-  | 'traffic-fine-personal'
-  | 'traffic-fine-corporate'
   | 'compulsory-insurance-fine'
   | 'etc-toll'
 
@@ -40,20 +38,6 @@ export const SERVICE_META: Record<
     platform: '街口支付',
     platformUrl: 'https://www.jkopay.com/',
   },
-  'traffic-fine-personal': {
-    label: '交通罰緩',
-    category: '罰單',
-    cycleHint: '每週三',
-    platform: '街口支付',
-    platformUrl: 'https://www.jkopay.com/',
-  },
-  'traffic-fine-corporate': {
-    label: '交通罰緩',
-    category: '罰單',
-    cycleHint: '每週三',
-    platform: '街口支付',
-    platformUrl: 'https://www.jkopay.com/',
-  },
   'compulsory-insurance-fine': {
     label: '違反強制險罰緩',
     category: '罰單',
@@ -85,8 +69,6 @@ export const SERVICE_QUERY_FIELDS: Record<ServiceType, QueryField[]> = {
   'fuel-fee-personal': ['idNumber', 'plateNumber'],
   'fuel-fee-corporate': ['idNumber', 'plateNumber'],
   'fuel-fee-overdue': ['idNumber', 'plateNumber'],
-  'traffic-fine-personal': ['idNumber', 'birthDate'],
-  'traffic-fine-corporate': ['idNumber', 'plateNumber', 'vehicleType'],
   'compulsory-insurance-fine': ['plateNumber', 'vehicleType'],
   'etc-toll': ['idNumber', 'plateNumber'],
 }

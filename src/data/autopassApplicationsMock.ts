@@ -1,6 +1,6 @@
 import type { AutopassApplication } from '../types/autopass'
 
-// 純 demo 用 mock 資料；涵蓋全部 7 種 serviceType、個人與法人、各種查繳週期（含雙週繳）。
+// 純 demo 用 mock 資料；涵蓋全部 5 種 serviceType、個人與法人、各種查繳週期（含雙週繳）。
 // 每筆 queryData 的 key 對齊 SERVICE_QUERY_FIELDS[serviceType]。
 export const mockApplications: AutopassApplication[] = [
   {
@@ -50,22 +50,6 @@ export const mockApplications: AutopassApplication[] = [
     queryData: { idNumber: 'F234567890', plateNumber: 'MNL-2210' },
     appliedAt: '2026-06-11T11:03:20',
     billingCycle: '月繳',
-  },
-  {
-    id: 'AP-007',
-    userEmail: 'jane.driver@gmail.com',
-    serviceType: 'traffic-fine-personal',
-    queryData: { idNumber: 'A299887766', birthDate: '1990/04/15' },
-    appliedAt: '2026-06-12T08:45:00',
-    billingCycle: '月繳',
-  },
-  {
-    id: 'AP-008',
-    userEmail: 'ops@taxi-corp.com.tw',
-    serviceType: 'traffic-fine-corporate',
-    queryData: { idNumber: '28990011', plateNumber: 'TXC-0099', vehicleType: '汽車' },
-    appliedAt: '2026-06-12T16:20:41',
-    billingCycle: '雙週繳',
   },
   {
     id: 'AP-009',
