@@ -10,15 +10,20 @@ import {
   Box,
   Select,
   Stack,
+  Modal,
+  Button,
 } from '@mantine/core'
 import { IconSearch, IconFilter } from '@tabler/icons-react'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import {
   SERVICE_META,
   SERVICE_QUERY_FIELDS,
   QUERY_FIELD_META,
+  BILLING_CYCLES,
 } from '../types/autopass'
+import type { BillingCycle } from '../types/autopass'
 import { mockApplications } from '../data/autopassApplicationsMock'
+import { useNotification } from '../hooks/useNotification'
 
 const PAGE_SIZE = 10
 
@@ -57,6 +62,14 @@ const cycleBadgeStyles = {
   },
 }
 
+const labelText = {
+  color: '#000000',
+  fontSize: '14px',
+  fontFamily: 'Noto Sans TC',
+  fontWeight: 500,
+  lineHeight: '20px',
+}
+
 function formatDateTime(iso: string): string {
   const d = new Date(iso)
   const pad = (n: number) => String(n).padStart(2, '0')
@@ -68,7 +81,43 @@ export function AutopassApplications() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterService, setFilterService] = useState<string | null>(null)
 
-  const applications = mockApplications
+  // 記憶體 override：編輯查繳週期只在前端生效，重新整理即重置（與全 app 一致）
+  const [cycleOverrides, setCycleOverrides] = useState<
+    Record<string, BillingCycle>
+  >({})
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [draftCycle, setDraftCycle] = useState<BillingCycle | null>(null)
+  const { showSuccess } = useNotification()
+
+  const applications = useMemo(
+    () =>
+      mockApplications.map((a) =>
+        cycleOverrides[a.id]
+          ? { ...a, billingCycle: cycleOverrides[a.id] }
+          : a,
+      ),
+    [cycleOverrides],
+  )
+
+  const editingApp = applications.find((a) => a.id === editingId) ?? null
+
+  const openEdit = (id: string, cycle: BillingCycle) => {
+    setEditingId(id)
+    setDraftCycle(cycle)
+  }
+
+  const closeEdit = () => {
+    setEditingId(null)
+    setDraftCycle(null)
+  }
+
+  const saveEdit = () => {
+    if (editingId && draftCycle) {
+      setCycleOverrides((prev) => ({ ...prev, [editingId]: draftCycle }))
+      showSuccess(`已更新查繳週期為「${draftCycle}」`, '查繳週期已更新')
+      closeEdit()
+    }
+  }
 
   const filtered = applications.filter((app) => {
     const term = searchTerm.trim().toLowerCase()
@@ -252,6 +301,7 @@ export function AutopassApplications() {
                 </Table.Td>
                 <Table.Td>
                   <Text
+                    onClick={() => openEdit(app.id, app.billingCycle)}
                     style={{
                       color: '#228be6',
                       fontSize: '14px',
@@ -317,6 +367,124 @@ export function AutopassApplications() {
           }}
         />
       </Group>
+
+      {/* 編輯查繳週期 Modal */}
+      <Modal
+        opened={editingId !== null}
+        onClose={closeEdit}
+        title=""
+        centered
+        size={420}
+        padding="16px"
+        styles={{
+          content: {
+            background: '#ffffff',
+            boxShadow:
+              '0px 7px 7px -5px rgba(0,0,0,0.04), 0px 10px 15px -5px rgba(0,0,0,0.1), 0px 1px 3px 0px rgba(0,0,0,0.05)',
+            borderRadius: '4px',
+            width: '420px',
+          },
+          header: { display: 'none' },
+          body: { padding: '16px' },
+        }}
+      >
+        <Stack gap="24px">
+          <Title
+            order={4}
+            style={{
+              color: '#000000',
+              fontSize: '16px',
+              fontFamily: 'Noto Sans TC',
+              fontWeight: 700,
+              lineHeight: '24px',
+              margin: 0,
+            }}
+          >
+            編輯查繳週期
+          </Title>
+
+          <Stack gap="16px">
+            {editingApp && (
+              <Stack gap="4px">
+                <Text style={labelText}>帳號</Text>
+                <Text style={cellText}>{editingApp.userEmail}</Text>
+              </Stack>
+            )}
+            {editingApp && (
+              <Stack gap="4px">
+                <Text style={labelText}>服務</Text>
+                <Text style={cellText}>
+                  {SERVICE_META[editingApp.serviceType].label}
+                </Text>
+              </Stack>
+            )}
+            <Stack gap="4px">
+              <Text style={labelText}>查繳週期</Text>
+              <Select
+                data={BILLING_CYCLES}
+                value={draftCycle}
+                onChange={(value) => setDraftCycle(value as BillingCycle | null)}
+                styles={{
+                  input: {
+                    backgroundColor: '#ffffff',
+                    padding: '6px 12px',
+                    border: '1px solid #dee2e6',
+                    borderRadius: '4px',
+                    fontSize: '14px',
+                    fontFamily: 'Noto Sans TC',
+                    fontWeight: 400,
+                    lineHeight: '20px',
+                  },
+                }}
+              />
+            </Stack>
+          </Stack>
+
+          <Group justify="flex-end" gap="16px">
+            <Button
+              variant="outline"
+              onClick={closeEdit}
+              styles={{
+                root: {
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #dee2e6',
+                  borderRadius: '4px',
+                  padding: '6px 16px',
+                  color: '#212529',
+                  fontSize: '14px',
+                  fontFamily: 'Noto Sans TC',
+                  fontWeight: 400,
+                  lineHeight: '20px',
+                  '&:hover': { backgroundColor: '#f8f9fa' },
+                },
+              }}
+            >
+              取消
+            </Button>
+            <Button
+              onClick={saveEdit}
+              disabled={!draftCycle}
+              styles={{
+                root: {
+                  backgroundColor: '#228be6',
+                  border: 'none',
+                  borderRadius: '4px',
+                  padding: '6px 16px',
+                  color: '#ffffff',
+                  fontSize: '14px',
+                  fontFamily: 'Noto Sans TC',
+                  fontWeight: 400,
+                  lineHeight: '20px',
+                  '&:hover': { backgroundColor: '#1c7ed6' },
+                  '&:disabled': { backgroundColor: '#e9ecef', color: '#868e96' },
+                },
+              }}
+            >
+              儲存
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
     </Paper>
   )
 }
