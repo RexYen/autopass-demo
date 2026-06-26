@@ -16,7 +16,6 @@ import {
   Menu,
   Checkbox,
 } from '@mantine/core'
-import type { CSSProperties as MantineCSSProperties } from '@mantine/core'
 import {
   IconChevronLeft,
   IconPlus,
@@ -297,28 +296,7 @@ export function VendorDetail({ vendorName, onBack, isNewVendor = false }: Vendor
 
           {/* Tabs */}
           <Box px="15px">
-            <Box
-              style={{
-                '& .mantine-Tabs-tab': {
-                  padding: '12px',
-                  fontSize: '12px',
-                  fontFamily: 'Noto Sans TC, sans-serif',
-                  fontWeight: 400,
-                  lineHeight: '16px',
-                  border: 'none',
-                  borderBottom: '1px solid #dee2e6',
-                  color: '#adb5bd',
-                },
-                '& .mantine-Tabs-tab[data-active="true"]': {
-                  color: isNewVendor ? '#adb5bd' : '#000000',
-                  borderBottomColor: isNewVendor ? '#dee2e6' : '#000000',
-                },
-                '& .mantine-Tabs-tab[data-disabled="true"]': {
-                  color: '#adb5bd',
-                  cursor: 'default',
-                },
-              } as Record<string, MantineCSSProperties>}
-            >
+            <Box>
               <Tabs defaultValue="active" variant="default">
                 <Tabs.List
                   styles={{
@@ -874,28 +852,7 @@ function ContactInfoSection({ isEmpty = false }: ContactInfoSectionProps) {
 
       {/* Tabs for Personnel Management */}
       <Box px="15px">
-        <Box
-          style={{
-            '& .mantine-Tabs-tab': {
-              padding: '12px',
-              fontSize: '12px',
-              fontFamily: 'Noto Sans TC, sans-serif',
-              fontWeight: 400,
-              lineHeight: '16px',
-              border: 'none',
-              borderBottom: '1px solid #dee2e6',
-              color: '#adb5bd',
-            },
-            '& .mantine-Tabs-tab[data-active="true"]': {
-              color: isEmpty ? '#adb5bd' : '#000000',
-              borderBottomColor: isEmpty ? '#dee2e6' : '#000000',
-            },
-            '& .mantine-Tabs-tab[data-disabled="true"]': {
-              color: '#adb5bd',
-              cursor: 'default',
-            },
-          } as Record<string, MantineCSSProperties>}
-        >
+        <Box>
           <Tabs defaultValue="accountant" variant="default">
             <Tabs.List
               styles={{
