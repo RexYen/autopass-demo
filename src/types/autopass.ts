@@ -2,8 +2,6 @@ export type ServiceType =
   | 'fuel-fee-personal'
   | 'fuel-fee-corporate'
   | 'fuel-fee-overdue'
-  | 'traffic-fine-personal'
-  | 'traffic-fine-corporate'
   | 'compulsory-insurance-fine'
   | 'etc-toll'
 
@@ -40,20 +38,6 @@ export const SERVICE_META: Record<
     platform: '街口支付',
     platformUrl: 'https://www.jkopay.com/',
   },
-  'traffic-fine-personal': {
-    label: '交通罰緩',
-    category: '罰單',
-    cycleHint: '每週三',
-    platform: '街口支付',
-    platformUrl: 'https://www.jkopay.com/',
-  },
-  'traffic-fine-corporate': {
-    label: '交通罰緩',
-    category: '罰單',
-    cycleHint: '每週三',
-    platform: '街口支付',
-    platformUrl: 'https://www.jkopay.com/',
-  },
   'compulsory-insurance-fine': {
     label: '違反強制險罰緩',
     category: '罰單',
@@ -85,8 +69,6 @@ export const SERVICE_QUERY_FIELDS: Record<ServiceType, QueryField[]> = {
   'fuel-fee-personal': ['idNumber', 'plateNumber'],
   'fuel-fee-corporate': ['idNumber', 'plateNumber'],
   'fuel-fee-overdue': ['idNumber', 'plateNumber'],
-  'traffic-fine-personal': ['idNumber', 'birthDate'],
-  'traffic-fine-corporate': ['idNumber', 'plateNumber', 'vehicleType'],
   'compulsory-insurance-fine': ['plateNumber', 'vehicleType'],
   'etc-toll': ['idNumber', 'plateNumber'],
 }
@@ -205,4 +187,20 @@ export interface Ticket {
   invoiceOrders: InvoiceOrder[]
   notes: TicketNote[]
   emailLogs: EmailLog[]
+}
+
+// ── 自動繳申請（營運後台）──────────────────────────────
+// 查繳「頻率」設定，與 Ticket.cycle（週期實例字串，如 "2026/W18"）是不同概念，不可混用。
+export type BillingCycle = '週繳' | '雙週繳' | '月繳' | '年繳'
+
+export const BILLING_CYCLES: BillingCycle[] = ['週繳', '雙週繳', '月繳', '年繳']
+
+// 一筆自動繳「申請」：用戶替某服務開通自動繳，後端再依 billingCycle 週期性產生查繳 ticket。
+export interface AutopassApplication {
+  id: string                                       // AP-xxx
+  userEmail: string                                // 駕駛中心帳號
+  serviceType: ServiceType                         // 申請服務 → SERVICE_META[serviceType].label
+  queryData: Partial<Record<QueryField, string>>   // 申請資料；key 取自 SERVICE_QUERY_FIELDS[serviceType]
+  appliedAt: string                                // 申請時間（ISO 字串）
+  billingCycle: BillingCycle                       // 查繳週期（可編輯）
 }

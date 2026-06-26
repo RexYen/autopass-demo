@@ -9,6 +9,7 @@ import { TaskManagement } from './components/TaskManagement'
 import { Navigation } from './components/Navigation'
 import { AutopassTickets } from './components/AutopassTickets'
 import { TicketPreview } from './components/TicketPreview'
+import { AutopassApplications } from './components/AutopassApplications'
 import { NotificationProvider } from './hooks/NotificationProvider'
 
 function StoreManagementPage() {
@@ -55,6 +56,7 @@ type CurrentView =
   | 'task-management'
   | 'autopass-tickets'
   | 'autopass-history'
+  | 'autopass-applications'
 
 function AppContent() {
   const navigate = useNavigate()
@@ -69,6 +71,7 @@ function AppContent() {
     if (path === '/tasks') return 'task-management'
     if (path === '/autopass/tickets') return 'autopass-tickets'
     if (path === '/autopass/history') return 'autopass-history'
+    if (path === '/autopass/drivingexpense-applications') return 'autopass-applications'
     return 'autopass-tickets'
   }
 
@@ -83,6 +86,7 @@ function AppContent() {
       'task-management': '/tasks',
       'autopass-tickets': '/autopass/tickets',
       'autopass-history': '/autopass/history',
+      'autopass-applications': '/autopass/drivingexpense-applications',
     }
     navigate(viewToPath[view] ?? '/autopass/tickets')
   }
@@ -118,6 +122,7 @@ function AppContent() {
           <Route path="/autopass/tickets" element={<AutopassTickets />} />
           <Route path="/autopass/tickets/:id" element={<Navigate to="/autopass/tickets" replace />} />
           <Route path="/autopass/history" element={<AutopassTickets mode="history" />} />
+          <Route path="/autopass/drivingexpense-applications" element={<AutopassApplications />} />
           <Route path="/preview" element={<TicketPreview />} />
           <Route path="*" element={<Navigate to="/autopass/tickets" replace />} />
         </Routes>

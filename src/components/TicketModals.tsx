@@ -87,8 +87,6 @@ export function QueryResultModal({
   const serviceMeta = SERVICE_META[ticket.serviceType]
   const isEtcToll = ticket.serviceType === 'etc-toll'
   const supportsCounter =
-    ticket.serviceType === 'traffic-fine-personal' ||
-    ticket.serviceType === 'traffic-fine-corporate' ||
     ticket.serviceType === 'compulsory-insurance-fine'
   const numericAmount = Number(amount)
   const numericRetryDays = Number(retryDays)
