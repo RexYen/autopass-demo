@@ -185,7 +185,7 @@ export function Navigation({ currentView, onNavigate }: NavigationProps) {
         />
         <NavLink
           href="#"
-          label="自動繳申請"
+          label="通行費申請單"
           leftSection={<IconFileText size={16} />}
           active={active === 'autopass-applications'}
           onClick={() => {

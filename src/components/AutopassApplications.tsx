@@ -12,8 +12,9 @@ import {
   Stack,
   Modal,
   Button,
+  ActionIcon,
 } from '@mantine/core'
-import { IconSearch, IconFilter } from '@tabler/icons-react'
+import { IconSearch, IconFilter, IconPencil } from '@tabler/icons-react'
 import { useState, useMemo } from 'react'
 import {
   SERVICE_META,
@@ -169,7 +170,7 @@ export function AutopassApplications() {
             fontFamily: 'Noto Sans TC, sans-serif',
           }}
         >
-          自動繳申請
+          通行費申請單
         </Title>
       </Group>
 
@@ -262,11 +263,11 @@ export function AutopassApplications() {
         >
           <Table.Thead>
             <Table.Tr>
-              <Table.Th style={{ width: '22%' }}>駕駛中心帳號</Table.Th>
+              <Table.Th style={{ width: '22%' }}>Email</Table.Th>
               <Table.Th style={{ width: '16%' }}>申請服務</Table.Th>
+              <Table.Th style={{ width: '12%' }}>查繳週期</Table.Th>
               <Table.Th style={{ width: '26%' }}>申請資料</Table.Th>
               <Table.Th style={{ width: '16%' }}>申請時間</Table.Th>
-              <Table.Th style={{ width: '12%' }}>查繳週期</Table.Th>
               <Table.Th style={{ width: '8%' }}>操作</Table.Th>
             </Table.Tr>
           </Table.Thead>
@@ -282,6 +283,11 @@ export function AutopassApplications() {
                   </Text>
                 </Table.Td>
                 <Table.Td>
+                  <Badge variant="light" styles={cycleBadgeStyles}>
+                    {app.billingCycle}
+                  </Badge>
+                </Table.Td>
+                <Table.Td>
                   <Stack gap={2}>
                     {SERVICE_QUERY_FIELDS[app.serviceType].map((field) => (
                       <Text key={field} style={cellTextDim}>
@@ -295,24 +301,15 @@ export function AutopassApplications() {
                   <Text style={cellText}>{formatDateTime(app.appliedAt)}</Text>
                 </Table.Td>
                 <Table.Td>
-                  <Badge variant="light" styles={cycleBadgeStyles}>
-                    {app.billingCycle}
-                  </Badge>
-                </Table.Td>
-                <Table.Td>
-                  <Text
+                  <ActionIcon
+                    variant="transparent"
+                    size={20}
                     onClick={() => openEdit(app.id, app.billingCycle)}
-                    style={{
-                      color: '#228be6',
-                      fontSize: '14px',
-                      lineHeight: '20px',
-                      fontFamily: 'Noto Sans TC, sans-serif',
-                      cursor: 'pointer',
-                      textDecoration: 'underline',
-                    }}
+                    aria-label="編輯查繳週期"
+                    style={{ cursor: 'pointer', minWidth: '20px' }}
                   >
-                    編輯
-                  </Text>
+                    <IconPencil size={18} stroke={1.5} color="#212529" />
+                  </ActionIcon>
                 </Table.Td>
               </Table.Tr>
             ))}
