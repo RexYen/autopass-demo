@@ -16,6 +16,7 @@ import {
   IconChevronDown,
   IconClipboardList,
   IconHistory,
+  IconFileText,
 } from '@tabler/icons-react'
 
 const autopassLogo = '/autopass.png'
@@ -28,6 +29,7 @@ export type NavigationView =
   | 'task-management'
   | 'autopass-tickets'
   | 'autopass-history'
+  | 'autopass-applications'
 
 interface NavigationProps {
   currentView?: string
@@ -51,6 +53,8 @@ export function Navigation({ currentView, onNavigate }: NavigationProps) {
         return 'autopass-tickets'
       case 'autopass-history':
         return 'autopass-history'
+      case 'autopass-applications':
+        return 'autopass-applications'
       case 'welcome':
         return 'none'
       default:
@@ -178,6 +182,17 @@ export function Navigation({ currentView, onNavigate }: NavigationProps) {
             onNavigate?.('autopass-history')
           }}
           styles={navItemStyles(active === 'autopass-history')}
+        />
+        <NavLink
+          href="#"
+          label="自動繳申請"
+          leftSection={<IconFileText size={16} />}
+          active={active === 'autopass-applications'}
+          onClick={() => {
+            setActive('autopass-applications')
+            onNavigate?.('autopass-applications')
+          }}
+          styles={navItemStyles(active === 'autopass-applications')}
         />
       </Stack>
 
