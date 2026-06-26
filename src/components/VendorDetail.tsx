@@ -235,9 +235,6 @@ export function VendorDetail({ vendorName, onBack, isNewVendor = false }: Vendor
                   fontFamily: 'Noto Sans TC',
                   fontWeight: 400,
                   lineHeight: '20px',
-                  '&:hover': {
-                    backgroundColor: 'rgba(34, 139, 230, 0.15)',
-                  },
                 },
               }}
             >
@@ -414,9 +411,6 @@ export function VendorDetail({ vendorName, onBack, isNewVendor = false }: Vendor
                       fontFamily: 'Noto Sans TC',
                       fontWeight: 400,
                       lineHeight: '20px',
-                      '&::placeholder': {
-                        color: '#adb5bd',
-                      },
                     },
                   }}
                 />
@@ -449,9 +443,6 @@ export function VendorDetail({ vendorName, onBack, isNewVendor = false }: Vendor
                       fontFamily: 'Noto Sans TC',
                       fontWeight: 400,
                       lineHeight: '20px',
-                      '&::placeholder': {
-                        color: '#adb5bd',
-                      },
                     },
                   }}
                 />
@@ -554,9 +545,6 @@ export function VendorDetail({ vendorName, onBack, isNewVendor = false }: Vendor
                     fontFamily: 'Noto Sans TC',
                     fontWeight: 400,
                     lineHeight: '20px',
-                    '&:hover': {
-                      backgroundColor: '#f8f9fa',
-                    },
                   },
                 }}
               >
@@ -576,13 +564,6 @@ export function VendorDetail({ vendorName, onBack, isNewVendor = false }: Vendor
                     fontFamily: 'Noto Sans TC',
                     fontWeight: 400,
                     lineHeight: '20px',
-                    '&:hover': {
-                      backgroundColor: '#1c7ed6',
-                    },
-                    '&:disabled': {
-                      backgroundColor: '#e9ecef',
-                      color: '#868e96',
-                    },
                   },
                 }}
               >
@@ -957,8 +938,7 @@ function ContactInfoSection({ isEmpty = false }: ContactInfoSectionProps) {
                     fontWeight: 400, 
                     lineHeight: '20px', 
                     height: '40px',
-                    '&::placeholder': { color: '#ADB5BD' } 
-                  } 
+                  }
                 }}
               />
             </Box>
@@ -994,8 +974,7 @@ function ContactInfoSection({ isEmpty = false }: ContactInfoSectionProps) {
                     fontWeight: 400, 
                     lineHeight: '20px', 
                     height: '40px',
-                    '&::placeholder': { color: '#ADB5BD' } 
-                  } 
+                  }
                 }}
               />
             </Box>
@@ -1567,9 +1546,6 @@ function BankInfoSection({ isEmpty = false }: BankInfoSectionProps) {
                     fontWeight: 400,
                     lineHeight: '20px',
                     height: '32px',
-                    '&::placeholder': {
-                      color: '#adb5bd',
-                    },
                   },
                 }}
               />
@@ -1599,9 +1575,6 @@ function BankInfoSection({ isEmpty = false }: BankInfoSectionProps) {
                     fontWeight: 400,
                     lineHeight: '20px',
                     height: '32px',
-                    '&::placeholder': {
-                      color: '#adb5bd',
-                    },
                   },
                 }}
               />
@@ -1632,9 +1605,6 @@ function BankInfoSection({ isEmpty = false }: BankInfoSectionProps) {
                       fontWeight: 400,
                       lineHeight: '20px',
                       height: '32px',
-                      '&::placeholder': {
-                        color: '#adb5bd',
-                      },
                     },
                   }}
                 />
@@ -1662,9 +1632,6 @@ function BankInfoSection({ isEmpty = false }: BankInfoSectionProps) {
                       fontWeight: 400,
                       lineHeight: '20px',
                       height: '32px',
-                      '&::placeholder': {
-                        color: '#adb5bd',
-                      },
                     },
                   }}
                 />
@@ -1695,9 +1662,6 @@ function BankInfoSection({ isEmpty = false }: BankInfoSectionProps) {
                     fontWeight: 400,
                     lineHeight: '20px',
                     height: '32px',
-                    '&::placeholder': {
-                      color: '#adb5bd',
-                    },
                   },
                 }}
               />
@@ -1727,9 +1691,6 @@ function BankInfoSection({ isEmpty = false }: BankInfoSectionProps) {
                     fontWeight: 400,
                     lineHeight: '20px',
                     height: '32px',
-                    '&::placeholder': {
-                      color: '#adb5bd',
-                    },
                   },
                 }}
               />
@@ -1760,9 +1721,6 @@ function BankInfoSection({ isEmpty = false }: BankInfoSectionProps) {
                     fontWeight: 400,
                     lineHeight: '20px',
                     height: '32px',
-                    '&::placeholder': {
-                      color: '#adb5bd',
-                    },
                   },
                 }}
               />
@@ -1875,9 +1833,6 @@ function BankInfoSection({ isEmpty = false }: BankInfoSectionProps) {
                     fontWeight: 400,
                     lineHeight: '20px',
                     height: '32px',
-                    '&::placeholder': {
-                      color: '#adb5bd',
-                    },
                   },
                 }}
               />
@@ -1907,9 +1862,6 @@ function BankInfoSection({ isEmpty = false }: BankInfoSectionProps) {
                     fontWeight: 400,
                     lineHeight: '20px',
                     height: '32px',
-                    '&::placeholder': {
-                      color: '#adb5bd',
-                    },
                   },
                 }}
               />
@@ -1940,9 +1892,6 @@ function BankInfoSection({ isEmpty = false }: BankInfoSectionProps) {
                       fontWeight: 400,
                       lineHeight: '20px',
                       height: '32px',
-                      '&::placeholder': {
-                        color: '#adb5bd',
-                      },
                     },
                   }}
                 />
@@ -1970,9 +1919,6 @@ function BankInfoSection({ isEmpty = false }: BankInfoSectionProps) {
                       fontWeight: 400,
                       lineHeight: '20px',
                       height: '32px',
-                      '&::placeholder': {
-                        color: '#adb5bd',
-                      },
                     },
                   }}
                 />
@@ -2003,9 +1949,6 @@ function BankInfoSection({ isEmpty = false }: BankInfoSectionProps) {
                     fontWeight: 400,
                     lineHeight: '20px',
                     height: '32px',
-                    '&::placeholder': {
-                      color: '#adb5bd',
-                    },
                   },
                 }}
               />
@@ -2035,9 +1978,6 @@ function BankInfoSection({ isEmpty = false }: BankInfoSectionProps) {
                     fontWeight: 400,
                     lineHeight: '20px',
                     height: '32px',
-                    '&::placeholder': {
-                      color: '#adb5bd',
-                    },
                   },
                 }}
               />
@@ -2068,9 +2008,6 @@ function BankInfoSection({ isEmpty = false }: BankInfoSectionProps) {
                     fontWeight: 400,
                     lineHeight: '20px',
                     height: '32px',
-                    '&::placeholder': {
-                      color: '#adb5bd',
-                    },
                   },
                 }}
               />

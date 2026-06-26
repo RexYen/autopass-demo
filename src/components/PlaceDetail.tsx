@@ -160,7 +160,6 @@ interface OperatingHours {
 }
 
 export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
-  console.log('PlaceDetail 渲染，place:', place);
   const [chargingServices, setChargingServices] = useState<ChargingService[]>([
     // 測試資料 - 模擬多個充電服務
     {
@@ -447,8 +446,7 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
     setIsAddingEVSE(true)
   }
 
-  const handleEditEVSE = (serviceId: string, evseId: string) => {
-    console.log('編輯充電樁', serviceId, evseId)
+  const handleEditEVSE = () => {
     // TODO: 實作充電樁編輯功能
     alert('編輯充電樁功能開發中')
   }
@@ -1146,7 +1144,7 @@ export function PlaceDetail({ place, onBack }: PlaceDetailProps) {
                                         size="sm"
                                         variant="subtle"
                                         color="blue"
-                                        onClick={() => handleEditEVSE(service.id, evse.id)}
+                                        onClick={() => handleEditEVSE()}
                                       >
                                         <IconEdit size={14} />
                                       </ActionIcon>

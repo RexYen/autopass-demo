@@ -28,9 +28,7 @@ function StoreManagementPage() {
         if (name) navigate(`/vendors/${encodeURIComponent(name)}`)
       }}
       onViewPlace={() => navigate('/map')}
-      onViewStore={(storeId) => {
-        console.log('Navigate to store detail:', storeId)
-      }}
+      onViewStore={() => {}}
     />
   )
 }
