@@ -512,11 +512,6 @@ function DocFileCarousel({
           </ActionIcon>
         )}
       </Group>
-      {hasMultiple && (
-        <Text size="sm" c="dimmed" ta="center">
-          可左右滑動或點箭頭切換（{current + 1}/{files.length}）
-        </Text>
-      )}
     </Stack>
   )
 }
@@ -626,14 +621,6 @@ function ReviewModal({
               </Text>
               <Text size="sm" fw={500}>
                 {docLabel}
-              </Text>
-            </Stack>
-            <Stack gap="2px">
-              <Text size="xs" c="dimmed">
-                上傳時間
-              </Text>
-              <Text size="sm" fw={500}>
-                {formatDateTime(upload.uploadedAt)}
               </Text>
             </Stack>
           </Group>
