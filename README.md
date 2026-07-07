@@ -8,6 +8,7 @@ Built with React 19 + TypeScript + Vite, Mantine UI, and React Router. Deployed 
 
 - **通行費自動繳 / 查繳任務** — the main feature: a 代查代繳 ticket workflow (card list, detail Drawer, query-result / confirm-paid / note Modals, and a history view). Full spec: [`drivingexpense-ticket.md`](./drivingexpense-ticket.md).
 - **通行費申請單** (`/autopass/drivingexpense-applications`) — 自動繳申請清單 + 可編輯查繳週期。
+- **行駕照/保單** (`/driver-center/accounts`) — 駕駛中心證件審核頁（行照/駕照/保單上傳資料的檢視與審核，PRD v9.0 4.9 後臺顯示）。
 - **業者管理 / 任務管理 / 圖資管理 / 商店管理** — earlier prototype pages.
 - `/preview` — a reference page showing every ticket-card state and its Modals (not linked in the nav; open by URL).
 
@@ -30,13 +31,13 @@ npm run dev      # http://localhost:5173
 ## Project layout
 
 - `src/components/` — pages & UI components
-- `src/types/autopass.ts` — 查繳 domain types & metadata (single source of truth)
-- `src/data/autopassMock.ts` — mock data
+- `src/types/autopass.ts` — 查繳 domain types & metadata (single source of truth)（駕駛中心域型別在 `src/types/driverCenter.ts`）
+- `src/data/` — mock data（autopassMock / autopassApplicationsMock / driverCenterMock）
 - `src/App.tsx` — routes & app shell
 
 ## Contributing
 
-Changes go through a **Pull Request** — branch off `main`, push, and open a PR. Don't push directly to `main`.
+Changes go through a **Pull Request** — branch off `main`, push, and open a PR. Don't push directly to `main`. CI runs on every PR (lint + type-check/build, plus a production-dependency `npm audit`), so make sure `npm run lint` and `npm run build` pass locally before pushing.
 
 ## Docs
 
