@@ -1,18 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActionIcon,
-  Badge,
   Box,
   Button,
-  Divider,
   Group,
   Modal,
   MultiSelect,
   Pagination,
   Paper,
   Radio,
-  SimpleGrid,
   Stack,
+  Table,
   Tabs,
   Text,
   Textarea,
@@ -24,12 +22,8 @@ import {
   IconChevronLeft,
   IconChevronRight,
   IconClipboardCheck,
-  IconClock,
-  IconEye,
   IconFileTypePdf,
   IconFilter,
-  IconMail,
-  IconNote,
   IconPhoto,
   IconRefresh,
   IconSearch,
@@ -44,14 +38,30 @@ import {
 import { mockDriverDocUploads } from '../data/driverCenterMock'
 import { useNotification } from '../hooks/useNotification'
 
-// 駕駛中心帳號管理 — PRD v9.0「4.9 後臺顯示」
-// 呈現方式比照查繳任務：以「申請證件」為維度（駕照／行照／保單各一個 tab），一卡一組上傳。
-// 檢視檔案以 Modal 開啟且不提供下載入口；審查失敗必填備註。
+// 行駕照/保單（駕駛中心證件審查）— PRD v9.0「4.9 後臺顯示」
+// Tabs 以審查狀態為維度（待審查／審查失敗／審查成功），內容為列表；篩選為證件類型。
+// 一組證件（正＋反面）一列、單一檢視入口，Modal 內左右切換；不提供下載入口；審查失敗必填備註。
 
 const cardShadow =
   '0px 7px 7px -5px rgba(0,0,0,0.04), 0px 10px 15px -5px rgba(0,0,0,0.1), 0px 1px 3px 0px rgba(0,0,0,0.05)'
 
-const PAGE_SIZE = 6
+const PAGE_SIZE = 10
+
+const cellText = {
+  color: '#000000',
+  fontSize: '14px',
+  lineHeight: '20px',
+  fontFamily: 'Noto Sans TC, sans-serif',
+  fontWeight: 400,
+}
+
+const cellTextDim = {
+  color: '#495057',
+  fontSize: '13px',
+  lineHeight: '18px',
+  fontFamily: 'Noto Sans TC, sans-serif',
+  fontWeight: 400,
+}
 
 // PRD 4.9：上傳時間以 YYYY-MM-DD hh:mm:ss 顯示（UTC+8）
 function formatDateTime(iso: string): string {
@@ -64,6 +74,13 @@ function nowIsoStamp(): string {
   const now = new Date()
   const pad = (n: number) => String(n).padStart(2, '0')
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`
+}
+
+// 一組證件一個檢視入口的顯示文字（單檔顯示檔名，多檔合併為「正面/反面照片」）
+function filesLabel(upload: DriverDocUpload): string {
+  return upload.files.length === 1
+    ? `${upload.files[0].label}｜${upload.files[0].fileName}`
+    : `${upload.files.map((f) => f.label).join('/')}照片`
 }
 
 // Tabs 以審查狀態為維度；篩選改為證件類型
@@ -129,6 +146,13 @@ export function DriverCenterAccounts() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const safePage = Math.min(page, totalPages)
   const pageData = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
+  const rangeStart = filtered.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1
+  const rangeEnd = Math.min(safePage * PAGE_SIZE, filtered.length)
+
+  // 依 tab 顯示欄位：待審查無審查時間/備註；備註僅審查失敗；審查成功無操作
+  const showReviewedAt = activeTab !== 'pending'
+  const showNote = activeTab === 'rejected'
+  const showActions = activeTab !== 'approved'
 
   const reviewingUpload = reviewingId
     ? uploads.find((u) => u.id === reviewingId) ?? null
@@ -290,42 +314,137 @@ export function DriverCenterAccounts() {
         </Box>
       </Box>
 
-      {/* Cards */}
-      <Box px="24px" pb="16px" style={{ flex: 1 }}>
+      {/* Table */}
+      <Box style={{ flex: 1, overflow: 'auto', minWidth: 0 }}>
         {pageData.length === 0 ? (
           <Box py="80px" style={{ textAlign: 'center' }}>
             <Text c="dimmed">沒有符合條件的上傳資料</Text>
           </Box>
         ) : (
-          <SimpleGrid cols={{ base: 1, md: 2, xl: 3 }} spacing="20px">
-            {pageData.map((u) => (
-              <DriverDocCard
-                key={u.id}
-                upload={u}
-                onOpenFiles={(uploadId) => setViewerTarget({ uploadId, index: 0 })}
-                onReview={setReviewingId}
-                onReupload={handleReupload}
-              />
-            ))}
-          </SimpleGrid>
+          <Table
+            withTableBorder={false}
+            withRowBorders
+            styles={{
+              table: { backgroundColor: '#ffffff', width: '100%' },
+              thead: { backgroundColor: '#ffffff' },
+              th: {
+                color: '#868e96',
+                fontWeight: 400,
+                fontSize: '14px',
+                lineHeight: '20px',
+                padding: '12px 24px',
+                height: '50px',
+                borderBottom: '1px solid #dee2e6',
+                fontFamily: 'Noto Sans TC, sans-serif',
+              },
+              td: {
+                padding: '12px 24px',
+                height: 'auto',
+                minHeight: '50px',
+                borderBottom: '1px solid #dee2e6',
+                verticalAlign: 'middle',
+                overflow: 'visible',
+              },
+              tr: { backgroundColor: '#ffffff' },
+            }}
+          >
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>Email</Table.Th>
+                <Table.Th>類型</Table.Th>
+                <Table.Th>上傳檔案</Table.Th>
+                <Table.Th>上傳時間</Table.Th>
+                {showReviewedAt && <Table.Th>審查時間</Table.Th>}
+                {showNote && <Table.Th>備註</Table.Th>}
+                {showActions && <Table.Th style={{ width: '1%', whiteSpace: 'nowrap' }}>操作</Table.Th>}
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {pageData.map((u) => (
+                <Table.Tr key={u.id}>
+                  <Table.Td>
+                    <Text style={cellText}>{u.userEmail}</Text>
+                  </Table.Td>
+                  <Table.Td>
+                    <Text style={{ ...cellText, whiteSpace: 'nowrap' }}>
+                      {DRIVER_DOC_META[u.docType].label}
+                    </Text>
+                  </Table.Td>
+                  <Table.Td>
+                    <UnstyledButton
+                      onClick={() => setViewerTarget({ uploadId: u.id, index: 0 })}
+                    >
+                      <Group gap="6px" wrap="nowrap">
+                        {u.files[0].kind === 'pdf' ? (
+                          <IconFileTypePdf size={16} color="#228be6" style={{ flexShrink: 0 }} />
+                        ) : (
+                          <IconPhoto size={16} color="#228be6" style={{ flexShrink: 0 }} />
+                        )}
+                        <Text size="sm" fw={500} c="blue" style={{ whiteSpace: 'nowrap' }}>
+                          {filesLabel(u)}
+                        </Text>
+                      </Group>
+                    </UnstyledButton>
+                  </Table.Td>
+                  <Table.Td>
+                    <Text style={{ ...cellText, whiteSpace: 'nowrap' }}>
+                      {formatDateTime(u.uploadedAt)}
+                    </Text>
+                  </Table.Td>
+                  {showReviewedAt && (
+                    <Table.Td>
+                      <Text style={cellText}>
+                        {u.reviewedAt ? formatDateTime(u.reviewedAt) : '—'}
+                      </Text>
+                    </Table.Td>
+                  )}
+                  {showNote && (
+                    <Table.Td>
+                      <Text style={cellTextDim}>{u.reviewNote ?? '—'}</Text>
+                    </Table.Td>
+                  )}
+                  {showActions && (
+                    <Table.Td>
+                      {u.reviewStatus === 'pending' ? (
+                        <Button
+                          size="xs"
+                          variant="light"
+                          leftSection={<IconClipboardCheck size={14} />}
+                          onClick={() => setReviewingId(u.id)}
+                        >
+                          審查
+                        </Button>
+                      ) : (
+                        <Button
+                          size="xs"
+                          variant="default"
+                          leftSection={<IconRefresh size={14} />}
+                          onClick={() => handleReupload(u.id)}
+                        >
+                          模擬重新上傳
+                        </Button>
+                      )}
+                    </Table.Td>
+                  )}
+                </Table.Tr>
+              ))}
+            </Table.Tbody>
+          </Table>
         )}
       </Box>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <Group
-          justify="space-between"
-          px="24px"
-          py="16px"
-          style={{ borderTop: '1px solid #f1f3f5' }}
-        >
-          <Text size="sm" c="dimmed">
-            顯示第 {(safePage - 1) * PAGE_SIZE + 1} -{' '}
-            {Math.min(safePage * PAGE_SIZE, filtered.length)} 筆，共 {filtered.length} 筆
-          </Text>
-          <Pagination total={totalPages} value={safePage} onChange={setPage} size="sm" />
-        </Group>
-      )}
+      {/* Footer */}
+      <Group
+        justify="space-between"
+        px="24px"
+        py="16px"
+        style={{ borderTop: '1px solid #f1f3f5', flexShrink: 0 }}
+      >
+        <Text size="sm" c="dimmed">
+          顯示 {rangeStart} - {rangeEnd} 筆，共 {filtered.length} 筆
+        </Text>
+        <Pagination total={totalPages} value={safePage} onChange={setPage} size="sm" />
+      </Group>
 
       <FileViewerModal
         upload={viewerUpload}
@@ -344,176 +463,6 @@ export function DriverCenterAccounts() {
         onSubmit={handleReviewSubmit}
       />
     </Paper>
-  )
-}
-
-function DriverDocCard({
-  upload,
-  onOpenFiles,
-  onReview,
-  onReupload,
-}: {
-  upload: DriverDocUpload
-  onOpenFiles: (uploadId: string) => void
-  onReview: (uploadId: string) => void
-  onReupload: (uploadId: string) => void
-}) {
-  const statusMeta = REVIEW_STATUS_META[upload.reviewStatus]
-
-  return (
-    <Paper
-      shadow="0px 1px 3px 0px rgba(0,0,0,0.05), 0px 1px 2px 0px rgba(0,0,0,0.06)"
-      radius="12px"
-      p="20px"
-      style={{
-        backgroundColor: '#fff',
-        border: '1px solid #f1f3f5',
-        display: 'flex',
-        flexDirection: 'column',
-      }}
-    >
-      <Box style={{ flex: 1 }}>
-        <Group justify="space-between" align="center" wrap="nowrap" mb="md" gap="sm">
-          <Text size="sm" fw={600} truncate style={{ flex: 1, minWidth: 0 }}>
-            {DRIVER_DOC_META[upload.docType].label}
-          </Text>
-          <Badge
-            variant="light"
-            size="lg"
-            radius="md"
-            styles={{
-              root: {
-                backgroundColor: statusMeta.bg,
-                color: statusMeta.color,
-                border: 'none',
-                fontWeight: 600,
-                fontSize: 13,
-                paddingLeft: 12,
-                paddingRight: 12,
-                height: 28,
-                flexShrink: 0,
-              },
-            }}
-          >
-            {statusMeta.label}
-          </Badge>
-        </Group>
-
-        <Stack gap="sm">
-          <CardRow icon={<IconMail size={14} />} label="Email">
-            <Text size="sm" fw={500} truncate>
-              {upload.userEmail}
-            </Text>
-          </CardRow>
-          <CardRow icon={<IconClock size={14} />} label="上傳時間">
-            <Text size="sm" fw={500}>
-              {formatDateTime(upload.uploadedAt)}
-            </Text>
-          </CardRow>
-        </Stack>
-
-        <Divider my="md" />
-
-        {/* 上傳檔案：一組證件一個入口，Modal 內左右切換正反面；不提供下載入口（PRD 4.9） */}
-        <UnstyledButton onClick={() => onOpenFiles(upload.id)}>
-          <Group
-            justify="space-between"
-            wrap="nowrap"
-            gap="8px"
-            px="12px"
-            py="8px"
-            style={{ border: '1px solid #e9ecef', borderRadius: 8 }}
-          >
-            <Group gap="8px" wrap="nowrap" style={{ minWidth: 0 }}>
-              {upload.files[0].kind === 'pdf' ? (
-                <IconFileTypePdf size={16} color="#228be6" style={{ flexShrink: 0 }} />
-              ) : (
-                <IconPhoto size={16} color="#228be6" style={{ flexShrink: 0 }} />
-              )}
-              <Text size="sm" fw={500} c="blue" truncate>
-                {upload.files.length === 1
-                  ? `${upload.files[0].label}｜${upload.files[0].fileName}`
-                  : `${upload.files.map((f) => f.label).join('/')}照片`}
-              </Text>
-            </Group>
-            <IconEye size={14} color="#868e96" style={{ flexShrink: 0 }} />
-          </Group>
-        </UnstyledButton>
-
-        {upload.reviewStatus !== 'pending' && upload.reviewedAt && (
-          <Stack gap="xs" mt="md">
-            <CardRow icon={<IconClipboardCheck size={14} />} label="審查時間">
-              <Text size="xs" c="dimmed">
-                {formatDateTime(upload.reviewedAt)}
-              </Text>
-            </CardRow>
-          </Stack>
-        )}
-
-        {upload.reviewStatus === 'rejected' && upload.reviewNote && (
-          <Box
-            mt="sm"
-            px="12px"
-            py="10px"
-            style={{ backgroundColor: 'rgba(250,82,82,0.06)', borderRadius: 8 }}
-          >
-            <Group gap="6px" align="flex-start" wrap="nowrap">
-              <IconNote size={14} color="#c92a2a" style={{ flexShrink: 0, marginTop: 2 }} />
-              <Text size="xs" style={{ color: '#c92a2a' }}>
-                {upload.reviewNote}
-              </Text>
-            </Group>
-          </Box>
-        )}
-      </Box>
-
-      {/* 審查結果送出後不可調整；審查失敗僅能等用戶重新上傳（demo 以按鈕模擬系統偵測） */}
-      {upload.reviewStatus !== 'approved' && (
-        <Group mt="lg" gap="xs" wrap="nowrap">
-          {upload.reviewStatus === 'pending' ? (
-            <Button
-              variant="light"
-              leftSection={<IconClipboardCheck size={16} />}
-              onClick={() => onReview(upload.id)}
-              style={{ flex: 1 }}
-            >
-              審查
-            </Button>
-          ) : (
-            <Button
-              variant="default"
-              leftSection={<IconRefresh size={16} />}
-              onClick={() => onReupload(upload.id)}
-              style={{ flex: 1 }}
-            >
-              模擬重新上傳
-            </Button>
-          )}
-        </Group>
-      )}
-    </Paper>
-  )
-}
-
-function CardRow({
-  icon,
-  label,
-  children,
-}: {
-  icon: React.ReactNode
-  label: string
-  children: React.ReactNode
-}) {
-  return (
-    <Group justify="space-between" wrap="nowrap" align="flex-start" gap="md">
-      <Group gap="6px" wrap="nowrap" style={{ flexShrink: 0 }}>
-        <Box style={{ color: '#868e96', display: 'flex' }}>{icon}</Box>
-        <Text size="sm" c="dimmed">
-          {label}
-        </Text>
-      </Group>
-      <Box style={{ minWidth: 0, flexShrink: 1, textAlign: 'right' }}>{children}</Box>
-    </Group>
   )
 }
 
