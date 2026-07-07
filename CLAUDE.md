@@ -34,7 +34,7 @@ Run from the repo root:
 | `/autopass/history` | `AutopassTickets mode="history"` | 歷史任務 |
 | `/autopass/drivingexpense-applications` | `AutopassApplications` | 通行費申請單（側欄「通行費自動繳」收合群組） |
 | `/autopass/tickets/:id` | — | redirect → `/autopass/tickets`（詳情走 Drawer，無深連結） |
-| `/driver-center/accounts` | `DriverCenterAccounts` | 駕駛中心帳號管理（側欄「駕駛管理」收合群組） |
+| `/driver-center/accounts` | `DriverCenterAccounts` | 駕駛中心帳號管理（側欄「駕駛管理」收合群組，項目名「行駕照/保單」） |
 | `/preview` | `TicketPreview` | 查繳卡片/Modal 狀態參考頁（不掛 nav） |
 | `/vendors`, `/vendors/:name`, `/vendors/new` | `VendorManagement` / `VendorDetail` | 業者管理 |
 | `/tasks` | `TaskManagement` | 任務管理 |

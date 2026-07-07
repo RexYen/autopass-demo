@@ -258,7 +258,7 @@ export function Navigation({ currentView, onNavigate }: NavigationProps) {
         >
           <NavLink
             href="#"
-            label="駕駛中心帳號管理"
+            label="行駕照/保單"
             leftSection={<IconLicense size={16} />}
             active={active === 'driver-accounts'}
             onClick={() => {
