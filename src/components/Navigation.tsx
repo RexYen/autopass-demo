@@ -18,6 +18,7 @@ import {
   IconClipboardList,
   IconHistory,
   IconFileText,
+  IconLicense,
 } from '@tabler/icons-react'
 
 const autopassLogo = '/autopass.png'
@@ -30,6 +31,7 @@ export type NavigationView =
   | 'autopass-tickets'
   | 'autopass-history'
   | 'autopass-applications'
+  | 'driver-accounts'
 
 interface NavigationProps {
   currentView?: string
@@ -56,6 +58,8 @@ export function Navigation({ currentView, onNavigate }: NavigationProps) {
         return 'autopass-history'
       case 'autopass-applications':
         return 'autopass-applications'
+      case 'driver-accounts':
+        return 'driver-accounts'
       default:
         return 'none'
     }
@@ -192,6 +196,34 @@ export function Navigation({ currentView, onNavigate }: NavigationProps) {
             onNavigate?.('autopass-applications')
           }}
           styles={navItemStyles(active === 'autopass-applications')}
+        />
+      </Stack>
+
+      <Divider my="16px" mx="20px" />
+
+      {/* 駕駛中心（PRD v9.0 4.9 後臺顯示） */}
+      <Stack gap={0} px="12px">
+        <Box px="12px" pb="6px">
+          <Text
+            size="xs"
+            c="dimmed"
+            fw={600}
+            style={{ letterSpacing: '0.4px', fontFamily: 'Noto Sans TC, sans-serif' }}
+          >
+            駕駛中心
+          </Text>
+        </Box>
+
+        <NavLink
+          href="#"
+          label="駕駛中心帳號管理"
+          leftSection={<IconLicense size={16} />}
+          active={active === 'driver-accounts'}
+          onClick={() => {
+            setActive('driver-accounts')
+            onNavigate?.('driver-accounts')
+          }}
+          styles={navItemStyles(active === 'driver-accounts')}
         />
       </Stack>
 
