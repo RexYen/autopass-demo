@@ -357,7 +357,10 @@ export function DriverCenterAccounts() {
                   )}
                   {showNote && (
                     <Table.Td>
-                      <Text style={cellTextDim}>{u.reviewNote ?? '—'}</Text>
+                      {/* 單行截斷讓列高與其他 tab 一致；hover 顯示完整備註 */}
+                      <Text style={cellTextDim} truncate title={u.reviewNote}>
+                        {u.reviewNote ?? '—'}
+                      </Text>
                     </Table.Td>
                   )}
                   {showActions && (
@@ -543,14 +546,9 @@ function FileViewerModal({
       centered
       size="auto"
       title={
-        <Group gap="8px" wrap="nowrap">
-          <Text size="sm" fw={700}>
-            {DRIVER_DOC_META[upload.docType].label}｜{file.label}
-          </Text>
-          <Text size="sm" c="dimmed">
-            {file.fileName}
-          </Text>
-        </Group>
+        <Text size="sm" fw={700}>
+          {DRIVER_DOC_META[upload.docType].label}｜{file.label}
+        </Text>
       }
     >
       <DocFileCarousel upload={upload} index={index} onIndexChange={onIndexChange} />
