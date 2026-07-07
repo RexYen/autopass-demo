@@ -308,16 +308,16 @@ export function DriverCenterAccounts() {
           >
             <Table.Thead>
               <Table.Tr>
-                <Table.Th style={{ width: 110 }}>類型</Table.Th>
-                <Table.Th style={{ width: 230 }}>Email</Table.Th>
-                <Table.Th style={{ width: 180 }}>上傳時間</Table.Th>
+                <Table.Th style={{ width: '12%' }}>類型</Table.Th>
+                <Table.Th style={{ width: '24%' }}>Email</Table.Th>
+                <Table.Th style={{ width: '18%' }}>上傳時間</Table.Th>
                 {showReviewedAt && (
-                  <Table.Th style={activeTab === 'rejected' ? { width: 180 } : undefined}>
+                  <Table.Th style={activeTab === 'rejected' ? { width: '18%' } : undefined}>
                     審查時間
                   </Table.Th>
                 )}
                 {showNote && <Table.Th>備註</Table.Th>}
-                {showActions && <Table.Th>操作</Table.Th>}
+                {showActions && <Table.Th style={{ textAlign: 'center' }}>操作</Table.Th>}
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -349,7 +349,7 @@ export function DriverCenterAccounts() {
                     </Table.Td>
                   )}
                   {showActions && (
-                    <Table.Td>
+                    <Table.Td style={{ textAlign: 'center' }}>
                       <Button
                         size="xs"
                         variant="light"
