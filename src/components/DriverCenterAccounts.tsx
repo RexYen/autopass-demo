@@ -25,7 +25,6 @@ import {
   IconFileTypePdf,
   IconFilter,
   IconPhoto,
-  IconRefresh,
   IconSearch,
 } from '@tabler/icons-react'
 import {
@@ -107,9 +106,6 @@ export function DriverCenterAccounts() {
 
   // demo 用 — 審查結果只在前端覆寫，重新整理即重置（與全 app 一致）
   const [reviewOverrides, setReviewOverrides] = useState<Record<string, ReviewOverride>>({})
-  // 審查失敗後偵測到重新上傳：刪除原紀錄（removedIds）並在待審查建立新一筆（extraUploads）
-  const [removedIds, setRemovedIds] = useState<string[]>([])
-  const [extraUploads, setExtraUploads] = useState<DriverDocUpload[]>([])
   const [reviewingId, setReviewingId] = useState<string | null>(null)
   // 檢視器：一組證件一個入口，index 為目前顯示的檔案（正面/反面左右切換）
   const [viewerTarget, setViewerTarget] = useState<{ uploadId: string; index: number } | null>(
@@ -119,10 +115,10 @@ export function DriverCenterAccounts() {
 
   const uploads = useMemo(
     () =>
-      [...extraUploads, ...mockDriverDocUploads]
-        .filter((u) => !removedIds.includes(u.id))
-        .map((u) => (reviewOverrides[u.id] ? { ...u, ...reviewOverrides[u.id] } : u)),
-    [extraUploads, removedIds, reviewOverrides],
+      mockDriverDocUploads.map((u) =>
+        reviewOverrides[u.id] ? { ...u, ...reviewOverrides[u.id] } : u,
+      ),
+    [reviewOverrides],
   )
 
   const counts = useMemo(() => {
@@ -149,10 +145,10 @@ export function DriverCenterAccounts() {
   const rangeStart = filtered.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1
   const rangeEnd = Math.min(safePage * PAGE_SIZE, filtered.length)
 
-  // 依 tab 顯示欄位：待審查無審查時間/備註；備註僅審查失敗；審查成功無操作
+  // 依 tab 顯示欄位：審查時間僅已審查；備註僅審查失敗；操作（審查）僅待審查
   const showReviewedAt = activeTab !== 'pending'
   const showNote = activeTab === 'rejected'
-  const showActions = activeTab !== 'approved'
+  const showActions = activeTab === 'pending'
 
   const reviewingUpload = reviewingId
     ? uploads.find((u) => u.id === reviewingId) ?? null
@@ -194,29 +190,6 @@ export function DriverCenterAccounts() {
       '審查結果已更新',
     )
     setReviewingId(null)
-  }
-
-  // 模擬系統偵測到用戶重新上傳：刪除原審查失敗紀錄，於待審查建立新一筆
-  const handleReupload = (uploadId: string) => {
-    const source = uploads.find((u) => u.id === uploadId)
-    if (!source) return
-    const newId = `DU-${Date.now()}`
-    setExtraUploads((prev) => [
-      {
-        id: newId,
-        userEmail: source.userEmail,
-        docType: source.docType,
-        uploadedAt: nowIsoStamp(),
-        reviewStatus: 'pending',
-        files: source.files.map((f, i) => ({ ...f, id: `${newId}-${i}` })),
-      },
-      ...prev,
-    ])
-    setRemovedIds((prev) => [...prev, uploadId])
-    showSuccess(
-      `已刪除 ${source.userEmail} 的${DRIVER_DOC_META[source.docType].label}審查失敗紀錄，並於待審查建立新資料`,
-      '偵測到重新上傳',
-    )
   }
 
   return (
@@ -325,7 +298,8 @@ export function DriverCenterAccounts() {
             withTableBorder={false}
             withRowBorders
             styles={{
-              table: { backgroundColor: '#ffffff', width: '100%' },
+              // tableLayout fixed + 固定欄寬：讓三個 tab 的共同欄位（類型/Email/檔案/時間）對齊一致
+              table: { backgroundColor: '#ffffff', width: '100%', tableLayout: 'fixed' },
               thead: { backgroundColor: '#ffffff' },
               th: {
                 color: '#868e96',
@@ -350,13 +324,17 @@ export function DriverCenterAccounts() {
           >
             <Table.Thead>
               <Table.Tr>
-                <Table.Th>類型</Table.Th>
-                <Table.Th>Email</Table.Th>
-                <Table.Th>上傳檔案</Table.Th>
-                <Table.Th>上傳時間</Table.Th>
-                {showReviewedAt && <Table.Th>審查時間</Table.Th>}
+                <Table.Th style={{ width: 110 }}>類型</Table.Th>
+                <Table.Th style={{ width: 230 }}>Email</Table.Th>
+                <Table.Th style={{ width: 190 }}>上傳檔案</Table.Th>
+                <Table.Th style={{ width: 180 }}>上傳時間</Table.Th>
+                {showReviewedAt && (
+                  <Table.Th style={activeTab === 'rejected' ? { width: 180 } : undefined}>
+                    審查時間
+                  </Table.Th>
+                )}
                 {showNote && <Table.Th>備註</Table.Th>}
-                {showActions && <Table.Th style={{ width: '1%', whiteSpace: 'nowrap' }}>操作</Table.Th>}
+                {showActions && <Table.Th>操作</Table.Th>}
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -373,6 +351,8 @@ export function DriverCenterAccounts() {
                   <Table.Td>
                     <UnstyledButton
                       onClick={() => setViewerTarget({ uploadId: u.id, index: 0 })}
+                      style={{ width: '100%', minWidth: 0 }}
+                      title={filesLabel(u)}
                     >
                       <Group gap="6px" wrap="nowrap">
                         {u.files[0].kind === 'pdf' ? (
@@ -380,7 +360,7 @@ export function DriverCenterAccounts() {
                         ) : (
                           <IconPhoto size={16} color="#228be6" style={{ flexShrink: 0 }} />
                         )}
-                        <Text size="sm" fw={500} c="blue" style={{ whiteSpace: 'nowrap' }}>
+                        <Text size="sm" fw={500} c="blue" truncate style={{ minWidth: 0 }}>
                           {filesLabel(u)}
                         </Text>
                       </Group>
@@ -393,7 +373,7 @@ export function DriverCenterAccounts() {
                   </Table.Td>
                   {showReviewedAt && (
                     <Table.Td>
-                      <Text style={cellText}>
+                      <Text style={{ ...cellText, whiteSpace: 'nowrap' }}>
                         {u.reviewedAt ? formatDateTime(u.reviewedAt) : '—'}
                       </Text>
                     </Table.Td>
@@ -405,25 +385,14 @@ export function DriverCenterAccounts() {
                   )}
                   {showActions && (
                     <Table.Td>
-                      {u.reviewStatus === 'pending' ? (
-                        <Button
-                          size="xs"
-                          variant="light"
-                          leftSection={<IconClipboardCheck size={14} />}
-                          onClick={() => setReviewingId(u.id)}
-                        >
-                          審查
-                        </Button>
-                      ) : (
-                        <Button
-                          size="xs"
-                          variant="default"
-                          leftSection={<IconRefresh size={14} />}
-                          onClick={() => handleReupload(u.id)}
-                        >
-                          模擬重新上傳
-                        </Button>
-                      )}
+                      <Button
+                        size="xs"
+                        variant="light"
+                        leftSection={<IconClipboardCheck size={14} />}
+                        onClick={() => setReviewingId(u.id)}
+                      >
+                        審查
+                      </Button>
                     </Table.Td>
                   )}
                 </Table.Tr>
