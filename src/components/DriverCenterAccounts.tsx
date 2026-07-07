@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
+  ActionIcon,
   Badge,
   Box,
   Button,
@@ -20,6 +21,8 @@ import {
   UnstyledButton,
 } from '@mantine/core'
 import {
+  IconChevronLeft,
+  IconChevronRight,
   IconClipboardCheck,
   IconClock,
   IconEye,
@@ -35,7 +38,6 @@ import {
   DRIVER_DOC_META,
   DRIVER_DOC_TYPES,
   REVIEW_STATUS_META,
-  type DriverDocFile,
   type DriverDocUpload,
   type ReviewStatus,
 } from '../types/driverCenter'
@@ -92,7 +94,8 @@ export function DriverCenterAccounts() {
   const [removedIds, setRemovedIds] = useState<string[]>([])
   const [extraUploads, setExtraUploads] = useState<DriverDocUpload[]>([])
   const [reviewingId, setReviewingId] = useState<string | null>(null)
-  const [viewerTarget, setViewerTarget] = useState<{ uploadId: string; fileId: string } | null>(
+  // 檢視器：一組證件一個入口，index 為目前顯示的檔案（正面/反面左右切換）
+  const [viewerTarget, setViewerTarget] = useState<{ uploadId: string; index: number } | null>(
     null,
   )
   const { showSuccess } = useNotification()
@@ -133,9 +136,6 @@ export function DriverCenterAccounts() {
 
   const viewerUpload = viewerTarget
     ? uploads.find((u) => u.id === viewerTarget.uploadId) ?? null
-    : null
-  const viewerFile = viewerUpload
-    ? viewerUpload.files.find((f) => f.id === viewerTarget?.fileId) ?? null
     : null
 
   const handleTabChange = (next: ReviewStatus) => {
@@ -302,7 +302,7 @@ export function DriverCenterAccounts() {
               <DriverDocCard
                 key={u.id}
                 upload={u}
-                onOpenFile={(uploadId, fileId) => setViewerTarget({ uploadId, fileId })}
+                onOpenFiles={(uploadId) => setViewerTarget({ uploadId, index: 0 })}
                 onReview={setReviewingId}
                 onReupload={handleReupload}
               />
@@ -329,9 +329,12 @@ export function DriverCenterAccounts() {
 
       <FileViewerModal
         upload={viewerUpload}
-        file={viewerFile}
-        opened={!!viewerFile}
+        index={viewerTarget?.index ?? 0}
+        opened={!!viewerUpload}
         onClose={() => setViewerTarget(null)}
+        onIndexChange={(index) =>
+          setViewerTarget((prev) => (prev ? { ...prev, index } : prev))
+        }
       />
 
       <ReviewModal
@@ -346,12 +349,12 @@ export function DriverCenterAccounts() {
 
 function DriverDocCard({
   upload,
-  onOpenFile,
+  onOpenFiles,
   onReview,
   onReupload,
 }: {
   upload: DriverDocUpload
-  onOpenFile: (uploadId: string, fileId: string) => void
+  onOpenFiles: (uploadId: string) => void
   onReview: (uploadId: string) => void
   onReupload: (uploadId: string) => void
 }) {
@@ -411,33 +414,31 @@ function DriverDocCard({
 
         <Divider my="md" />
 
-        {/* 上傳檔案：點擊以 Modal 檢視，不提供下載入口（PRD 4.9） */}
-        <Stack gap="6px">
-          {upload.files.map((f) => (
-            <UnstyledButton key={f.id} onClick={() => onOpenFile(upload.id, f.id)}>
-              <Group
-                justify="space-between"
-                wrap="nowrap"
-                gap="8px"
-                px="12px"
-                py="8px"
-                style={{ border: '1px solid #e9ecef', borderRadius: 8 }}
-              >
-                <Group gap="8px" wrap="nowrap" style={{ minWidth: 0 }}>
-                  {f.kind === 'pdf' ? (
-                    <IconFileTypePdf size={16} color="#228be6" style={{ flexShrink: 0 }} />
-                  ) : (
-                    <IconPhoto size={16} color="#228be6" style={{ flexShrink: 0 }} />
-                  )}
-                  <Text size="sm" fw={500} c="blue" truncate>
-                    {f.label}｜{f.fileName}
-                  </Text>
-                </Group>
-                <IconEye size={14} color="#868e96" style={{ flexShrink: 0 }} />
-              </Group>
-            </UnstyledButton>
-          ))}
-        </Stack>
+        {/* 上傳檔案：一組證件一個入口，Modal 內左右切換正反面；不提供下載入口（PRD 4.9） */}
+        <UnstyledButton onClick={() => onOpenFiles(upload.id)}>
+          <Group
+            justify="space-between"
+            wrap="nowrap"
+            gap="8px"
+            px="12px"
+            py="8px"
+            style={{ border: '1px solid #e9ecef', borderRadius: 8 }}
+          >
+            <Group gap="8px" wrap="nowrap" style={{ minWidth: 0 }}>
+              {upload.files[0].kind === 'pdf' ? (
+                <IconFileTypePdf size={16} color="#228be6" style={{ flexShrink: 0 }} />
+              ) : (
+                <IconPhoto size={16} color="#228be6" style={{ flexShrink: 0 }} />
+              )}
+              <Text size="sm" fw={500} c="blue" truncate>
+                {upload.files.length === 1
+                  ? `${upload.files[0].label}｜${upload.files[0].fileName}`
+                  : `${upload.files.map((f) => f.label).join('/')}照片`}
+              </Text>
+            </Group>
+            <IconEye size={14} color="#868e96" style={{ flexShrink: 0 }} />
+          </Group>
+        </UnstyledButton>
 
         {upload.reviewStatus !== 'pending' && upload.reviewedAt && (
           <Stack gap="xs" mt="md">
@@ -516,20 +517,31 @@ function CardRow({
   )
 }
 
-// 檔案檢視 Modal：圖片原圖檢視、PDF 以內建 viewer 開啟（demo 以示意頁呈現）。
-// 依 PRD 4.9 決議不提供任何下載入口。
+// 檔案檢視 Modal：一組證件一個檢視器，正反面左右切換（箭頭／觸控滑動）。
+// 圖片原圖檢視、PDF 以內建 viewer 開啟（demo 以示意頁呈現）；依 PRD 4.9 決議不提供任何下載入口。
 function FileViewerModal({
   upload,
-  file,
+  index,
   opened,
   onClose,
+  onIndexChange,
 }: {
   upload: DriverDocUpload | null
-  file: DriverDocFile | null
+  index: number
   opened: boolean
   onClose: () => void
+  onIndexChange: (index: number) => void
 }) {
-  if (!upload || !file) return null
+  const touchStartX = useRef<number | null>(null)
+  if (!upload) return null
+
+  const files = upload.files
+  const current = Math.min(index, files.length - 1)
+  const file = files[current]
+  const hasMultiple = files.length > 1
+  const goPrev = () => onIndexChange((current - 1 + files.length) % files.length)
+  const goNext = () => onIndexChange((current + 1) % files.length)
+
   return (
     <Modal
       opened={opened}
@@ -548,40 +560,69 @@ function FileViewerModal({
       }
     >
       <Stack gap="sm">
-        {file.kind === 'image' ? (
-          <img
-            src={file.url}
-            alt={`${DRIVER_DOC_META[upload.docType].label}${file.label}`}
-            onContextMenu={(e) => e.preventDefault()}
-            style={{
-              display: 'block',
-              maxWidth: 'min(840px, 82vw)',
-              maxHeight: '66vh',
-              borderRadius: 8,
-            }}
-          />
-        ) : (
+        <Group wrap="nowrap" gap="sm" align="center">
+          {hasMultiple && (
+            <ActionIcon variant="default" size="lg" onClick={goPrev} aria-label="上一張">
+              <IconChevronLeft size={18} />
+            </ActionIcon>
+          )}
           <Box
-            style={{
-              backgroundColor: '#495057',
-              padding: 20,
-              borderRadius: 8,
-              maxHeight: '66vh',
-              overflow: 'auto',
+            onTouchStart={(e) => {
+              touchStartX.current = e.touches[0].clientX
+            }}
+            onTouchEnd={(e) => {
+              if (touchStartX.current === null || !hasMultiple) return
+              const dx = e.changedTouches[0].clientX - touchStartX.current
+              if (Math.abs(dx) > 40) (dx > 0 ? goPrev : goNext)()
+              touchStartX.current = null
             }}
           >
-            <img
-              src={file.url}
-              alt={file.fileName}
-              onContextMenu={(e) => e.preventDefault()}
-              style={{
-                display: 'block',
-                width: 'min(560px, 76vw)',
-                margin: '0 auto',
-                boxShadow: '0px 4px 12px rgba(0,0,0,0.3)',
-              }}
-            />
+            {file.kind === 'image' ? (
+              <img
+                src={file.url}
+                alt={`${DRIVER_DOC_META[upload.docType].label}${file.label}`}
+                onContextMenu={(e) => e.preventDefault()}
+                style={{
+                  display: 'block',
+                  maxWidth: 'min(780px, 74vw)',
+                  maxHeight: '62vh',
+                  borderRadius: 8,
+                }}
+              />
+            ) : (
+              <Box
+                style={{
+                  backgroundColor: '#495057',
+                  padding: 20,
+                  borderRadius: 8,
+                  maxHeight: '62vh',
+                  overflow: 'auto',
+                }}
+              >
+                <img
+                  src={file.url}
+                  alt={file.fileName}
+                  onContextMenu={(e) => e.preventDefault()}
+                  style={{
+                    display: 'block',
+                    width: 'min(560px, 70vw)',
+                    margin: '0 auto',
+                    boxShadow: '0px 4px 12px rgba(0,0,0,0.3)',
+                  }}
+                />
+              </Box>
+            )}
           </Box>
+          {hasMultiple && (
+            <ActionIcon variant="default" size="lg" onClick={goNext} aria-label="下一張">
+              <IconChevronRight size={18} />
+            </ActionIcon>
+          )}
+        </Group>
+        {hasMultiple && (
+          <Text size="sm" c="dimmed" ta="center">
+            {file.label}（{current + 1}/{files.length}）— 可左右滑動或點箭頭切換
+          </Text>
         )}
         <Text size="xs" c="dimmed">
           僅供審核檢視，不提供下載
