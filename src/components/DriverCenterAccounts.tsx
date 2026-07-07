@@ -261,7 +261,7 @@ export function DriverCenterAccounts() {
         >
           <Group gap="12px" align="flex-end" wrap="wrap">
             <TextInput
-              placeholder="搜尋 Email 帳號"
+              placeholder="搜尋 Email"
               leftSection={<IconSearch size={16} />}
               value={pendingSearch}
               onChange={(e) => setPendingSearch(e.currentTarget.value)}
@@ -397,7 +397,7 @@ function DriverDocCard({
         </Group>
 
         <Stack gap="sm">
-          <CardRow icon={<IconMail size={14} />} label="帳號">
+          <CardRow icon={<IconMail size={14} />} label="Email">
             <Text size="sm" fw={500} truncate>
               {upload.userEmail}
             </Text>
@@ -635,7 +635,7 @@ function ReviewModal({
       <Stack gap="md">
         <Stack gap="4px">
           <Text size="xs" c="dimmed">
-            帳號
+            Email
           </Text>
           <Text size="sm" fw={500}>
             {upload.userEmail}
