@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Stack, NavLink, Box, Badge } from '@mantine/core'
+import { Stack, NavLink, Box } from '@mantine/core'
 import {
   IconBrandAsana,
   IconAddressBook,
@@ -126,27 +126,6 @@ export function Navigation({ currentView, onNavigate }: NavigationProps) {
             imageRendering: 'crisp-edges',
           }}
         />
-        <Badge
-          variant="light"
-          size="sm"
-          styles={{
-            root: {
-              backgroundColor: 'rgba(34,139,230,0.1)',
-              color: '#228be6',
-              fontSize: '12px',
-              fontWeight: 500,
-              lineHeight: '16px',
-              fontFamily: 'Noto Sans TC, sans-serif',
-              borderRadius: '16px',
-              padding: '2px 12px',
-              border: 'none',
-              flexShrink: 0,
-              whiteSpace: 'nowrap',
-            },
-          }}
-        >
-          v2.1.0
-        </Badge>
       </Box>
 
       {/* 扁平選單（無群組小標）；通行費自動繳與駕駛管理為可收合群組 */}
