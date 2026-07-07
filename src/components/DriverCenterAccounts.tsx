@@ -323,7 +323,13 @@ export function DriverCenterAccounts() {
                 <Table.Th style={{ width: '18%' }}>上傳時間</Table.Th>
                 {showReviewedAt && <Table.Th style={{ width: '18%' }}>審核時間</Table.Th>}
                 {showNote && <Table.Th>備註</Table.Th>}
-                {showActions && <Table.Th style={{ textAlign: 'right' }}>操作</Table.Th>}
+                {showActions && (
+                  <>
+                    {/* 彈性空欄：把窄的操作欄推到列表最右側 */}
+                    <Table.Th aria-hidden />
+                    <Table.Th style={{ width: 110, textAlign: 'center' }}>操作</Table.Th>
+                  </>
+                )}
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -355,8 +361,10 @@ export function DriverCenterAccounts() {
                     </Table.Td>
                   )}
                   {showActions && (
-                    <Table.Td style={{ textAlign: 'right' }}>
-                      {u.reviewStatus === 'pending' ? (
+                    <>
+                      <Table.Td aria-hidden />
+                      <Table.Td style={{ textAlign: 'center' }}>
+                        {u.reviewStatus === 'pending' ? (
                         <Button
                           size="xs"
                           variant="light"
@@ -375,7 +383,8 @@ export function DriverCenterAccounts() {
                           檢視
                         </Button>
                       )}
-                    </Table.Td>
+                      </Table.Td>
+                    </>
                   )}
                 </Table.Tr>
               ))}
