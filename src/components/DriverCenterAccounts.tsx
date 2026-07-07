@@ -27,8 +27,8 @@ import {
   IconFilter,
   IconMail,
   IconNote,
-  IconPencil,
   IconPhoto,
+  IconRefresh,
   IconSearch,
 } from '@tabler/icons-react'
 import {
@@ -58,6 +58,12 @@ function formatDateTime(iso: string): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
 }
 
+function nowIsoStamp(): string {
+  const now = new Date()
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`
+}
+
 // Tabs 以審查狀態為維度；篩選改為證件類型
 const STATUS_TABS: ReviewStatus[] = ['pending', 'rejected', 'approved']
 
@@ -82,6 +88,9 @@ export function DriverCenterAccounts() {
 
   // demo 用 — 審查結果只在前端覆寫，重新整理即重置（與全 app 一致）
   const [reviewOverrides, setReviewOverrides] = useState<Record<string, ReviewOverride>>({})
+  // 審查失敗後偵測到重新上傳：刪除原紀錄（removedIds）並在待審查建立新一筆（extraUploads）
+  const [removedIds, setRemovedIds] = useState<string[]>([])
+  const [extraUploads, setExtraUploads] = useState<DriverDocUpload[]>([])
   const [reviewingId, setReviewingId] = useState<string | null>(null)
   const [viewerTarget, setViewerTarget] = useState<{ uploadId: string; fileId: string } | null>(
     null,
@@ -90,10 +99,10 @@ export function DriverCenterAccounts() {
 
   const uploads = useMemo(
     () =>
-      mockDriverDocUploads.map((u) =>
-        reviewOverrides[u.id] ? { ...u, ...reviewOverrides[u.id] } : u,
-      ),
-    [reviewOverrides],
+      [...extraUploads, ...mockDriverDocUploads]
+        .filter((u) => !removedIds.includes(u.id))
+        .map((u) => (reviewOverrides[u.id] ? { ...u, ...reviewOverrides[u.id] } : u)),
+    [extraUploads, removedIds, reviewOverrides],
   )
 
   const counts = useMemo(() => {
@@ -150,12 +159,9 @@ export function DriverCenterAccounts() {
 
   const handleReviewSubmit = (result: ReviewStatus, note?: string) => {
     if (!reviewingId) return
-    const now = new Date()
-    const pad = (n: number) => String(n).padStart(2, '0')
-    const stamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`
     setReviewOverrides((prev) => ({
       ...prev,
-      [reviewingId]: { reviewStatus: result, reviewNote: note, reviewedAt: stamp },
+      [reviewingId]: { reviewStatus: result, reviewNote: note, reviewedAt: nowIsoStamp() },
     }))
     showSuccess(
       `${reviewingUpload?.userEmail ?? reviewingId} 的${
@@ -164,6 +170,29 @@ export function DriverCenterAccounts() {
       '審查結果已更新',
     )
     setReviewingId(null)
+  }
+
+  // 模擬系統偵測到用戶重新上傳：刪除原審查失敗紀錄，於待審查建立新一筆
+  const handleReupload = (uploadId: string) => {
+    const source = uploads.find((u) => u.id === uploadId)
+    if (!source) return
+    const newId = `DU-${Date.now()}`
+    setExtraUploads((prev) => [
+      {
+        id: newId,
+        userEmail: source.userEmail,
+        docType: source.docType,
+        uploadedAt: nowIsoStamp(),
+        reviewStatus: 'pending',
+        files: source.files.map((f, i) => ({ ...f, id: `${newId}-${i}` })),
+      },
+      ...prev,
+    ])
+    setRemovedIds((prev) => [...prev, uploadId])
+    showSuccess(
+      `已刪除 ${source.userEmail} 的${DRIVER_DOC_META[source.docType].label}審查失敗紀錄，並於待審查建立新資料`,
+      '偵測到重新上傳',
+    )
   }
 
   return (
@@ -275,6 +304,7 @@ export function DriverCenterAccounts() {
                 upload={u}
                 onOpenFile={(uploadId, fileId) => setViewerTarget({ uploadId, fileId })}
                 onReview={setReviewingId}
+                onReupload={handleReupload}
               />
             ))}
           </SimpleGrid>
@@ -318,10 +348,12 @@ function DriverDocCard({
   upload,
   onOpenFile,
   onReview,
+  onReupload,
 }: {
   upload: DriverDocUpload
   onOpenFile: (uploadId: string, fileId: string) => void
   onReview: (uploadId: string) => void
+  onReupload: (uploadId: string) => void
 }) {
   const statusMeta = REVIEW_STATUS_META[upload.reviewStatus]
 
@@ -434,27 +466,30 @@ function DriverDocCard({
         )}
       </Box>
 
-      <Group mt="lg" gap="xs" wrap="nowrap">
-        {upload.reviewStatus === 'pending' ? (
-          <Button
-            variant="light"
-            leftSection={<IconClipboardCheck size={16} />}
-            onClick={() => onReview(upload.id)}
-            style={{ flex: 1 }}
-          >
-            審查
-          </Button>
-        ) : (
-          <Button
-            variant="default"
-            leftSection={<IconPencil size={16} />}
-            onClick={() => onReview(upload.id)}
-            style={{ flex: 1 }}
-          >
-            調整審查結果
-          </Button>
-        )}
-      </Group>
+      {/* 審查結果送出後不可調整；審查失敗僅能等用戶重新上傳（demo 以按鈕模擬系統偵測） */}
+      {upload.reviewStatus !== 'approved' && (
+        <Group mt="lg" gap="xs" wrap="nowrap">
+          {upload.reviewStatus === 'pending' ? (
+            <Button
+              variant="light"
+              leftSection={<IconClipboardCheck size={16} />}
+              onClick={() => onReview(upload.id)}
+              style={{ flex: 1 }}
+            >
+              審查
+            </Button>
+          ) : (
+            <Button
+              variant="default"
+              leftSection={<IconRefresh size={16} />}
+              onClick={() => onReupload(upload.id)}
+              style={{ flex: 1 }}
+            >
+              模擬重新上傳
+            </Button>
+          )}
+        </Group>
+      )}
     </Paper>
   )
 }
@@ -572,11 +607,11 @@ function ReviewModal({
   const [result, setResult] = useState<Exclude<ReviewStatus, 'pending'> | null>(null)
   const [note, setNote] = useState('')
 
-  // 開啟時帶入現況（待審查為空白；調整審查結果時預填原本的結果與備註）
+  // 每次開啟重置（審查結果送出後不可調整，只有待審查會進到這裡）
   useEffect(() => {
     if (upload) {
-      setResult(upload.reviewStatus === 'pending' ? null : upload.reviewStatus)
-      setNote(upload.reviewNote ?? '')
+      setResult(null)
+      setNote('')
     }
   }, [upload])
 
