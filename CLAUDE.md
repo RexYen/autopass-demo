@@ -21,11 +21,11 @@ Run from the repo root:
 
 - Dev server: `npm run dev` (Vite, default http://localhost:5173)
 - Build: `npm run build` (`tsc -b && vite build`)
-- Lint: `npm run lint` (ESLint — should be clean; CI gates lint + build on every PR)
+- Lint: `npm run lint` (ESLint — should be clean; CI gates audit + lint + build on every PR, where audit = `npm audit --omit=dev --audit-level=high`, so a high-severity prod-dependency vulnerability alone fails CI)
 
 ## Architecture
 
-`src/App.tsx` is an `AppShell` + `BrowserRouter`; `src/components/Navigation.tsx` is the side nav. Routes:
+`src/main.tsx` mounts `BrowserRouter`; `src/App.tsx` is the `AppShell` + route table; `src/components/Navigation.tsx` is the side nav. Routes:
 
 | Route | Component | Page |
 | --- | --- | --- |
@@ -53,13 +53,13 @@ Operators manage 代查代繳 task tickets (代查 + 代繳 a user's tolls/fees 
 - `src/components/TicketModals.tsx` — `QueryResultModal` / `ConfirmPaidModal` / `AddNoteModal`.
 - `src/components/AutopassTicketDetail.tsx` — detail Drawer with the Activity timeline.
 - `src/components/TicketPreview.tsx` — `/preview` reference page, reuses the above components.
-- `src/components/AutopassApplications.tsx` — 通行費申請單頁（`/autopass/drivingexpense-applications`），展示 `AutopassApplication` 申請清單與可編輯的查繳週期（`BillingCycle`）。
+- `src/components/AutopassApplications.tsx` — 通行費申請單頁（`/autopass/drivingexpense-applications`），展示 `AutopassApplication` 申請清單與可編輯的查繳週期（`BillingCycle`）；mock 資料在 `src/data/autopassApplicationsMock.ts`。
 
 **Demo convention**: form submits write to override maps (`statusOverrides` / `noteOverrides` / `emailOverrides` / `invoiceOverrides`) inside `AutopassTickets`, merged onto the mock data with `useMemo`. Status flow, 請款, 發信, and排程 are all simulated with toasts; nothing persists.
 
-### 駕駛中心帳號管理 (Driver center accounts)
+### 行駕照/保單 (Driver center accounts)
 
-對應 PRD [駕駛中心] v9.0「4.9 後臺顯示」：營運／審核人員檢視用戶上傳的證件（駕照／行照／保單）並審核。Tabs 以**審核狀態**為維度（待審核／審核失敗／審核成功），內容為**列表**（欄位依 tab 而異：類型／Email／上傳時間／審核時間／備註／操作），篩選為證件類型；一組證件（正＋反面）一列。證件影像**內嵌於審核 Modal**（看圖＋記錄結果一次完成，正反面左右切換、不提供下載入口）；審核成功列另有「檢視」開啟純檢視 Modal；操作欄靠列表右側；審核失敗必填備註。審核結果送出後**不可調整**、已審核列無操作欄；審核失敗後偵測到用戶重新上傳時，系統會刪除原紀錄並在待審核建立新一筆（後端行為，demo 未模擬）。Key files: `src/types/driverCenter.ts`（domain types + `DRIVER_DOC_META` / `REVIEW_STATUS_META`）、`src/data/driverCenterMock.ts`（mock 上傳資料，證件影像為 SVG data URI 佔位）、`src/components/DriverCenterAccounts.tsx`（頁面 + 檢視/審核 Modal，審核結果走 in-memory override）。
+對應 PRD [駕駛中心] v9.0「4.9 後臺顯示」：營運／審核人員檢視用戶上傳的證件（駕照／行照／保單）並審核。Tabs 以**審核狀態**為維度（待審核／審核失敗／審核成功），內容為**列表**（欄位依 tab 而異：類型／Email／上傳時間／審核時間／備註／操作），篩選為 Email 關鍵字搜尋＋證件類型（送出制：按「搜尋」才套用，另有「重設」；列表分頁每頁 10 筆）；一組證件（正＋反面）一列。證件影像**內嵌於審核 Modal**（看圖＋記錄結果一次完成，動線由上而下：圖片 → Email/證件類型 → 審核失敗/審核成功按鈕；正反面左右切換、不提供下載入口）；兩種結果皆有二次確認 Modal，審核失敗於確認時必填原因（列表備註欄顯示）；審核成功列另有「檢視」開啟純檢視 Modal；操作欄靠列表右側。審核結果送出後**不可調整**（審核成功列僅剩「檢視」、審核失敗列無操作欄）；審核失敗後偵測到用戶重新上傳時，系統會刪除原紀錄並在待審核建立新一筆（後端行為，demo 未模擬）。Key files: `src/types/driverCenter.ts`（domain types + `DRIVER_DOC_META` / `REVIEW_STATUS_META`）、`src/data/driverCenterMock.ts`（mock 上傳資料，證件影像為 SVG data URI 佔位）、`src/components/DriverCenterAccounts.tsx`（頁面 + 檢視/審核 Modal，審核結果走 in-memory override）。
 
 ### Other pages
 
