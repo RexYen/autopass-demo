@@ -22,6 +22,7 @@ import {
   IconChevronLeft,
   IconChevronRight,
   IconClipboardCheck,
+  IconEye,
   IconFilter,
   IconSearch,
 } from '@tabler/icons-react'
@@ -99,6 +100,10 @@ export function DriverCenterAccounts() {
   // demo 用 — 審核結果只在前端覆寫，重新整理即重置（與全 app 一致）
   const [reviewOverrides, setReviewOverrides] = useState<Record<string, ReviewOverride>>({})
   const [reviewingId, setReviewingId] = useState<string | null>(null)
+  // 純檢視（審核成功列的「檢視」）：index 為目前顯示的檔案（正反面左右切換）
+  const [viewerTarget, setViewerTarget] = useState<{ uploadId: string; index: number } | null>(
+    null,
+  )
   const { showSuccess } = useNotification()
 
   const uploads = useMemo(
@@ -133,13 +138,18 @@ export function DriverCenterAccounts() {
   const rangeStart = filtered.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1
   const rangeEnd = Math.min(safePage * PAGE_SIZE, filtered.length)
 
-  // 依 tab 顯示欄位：審核時間僅已審核；備註僅審核失敗；操作（審核）僅待審核
+  // 依 tab 顯示欄位：審核時間僅已審核；備註僅審核失敗；
+  // 操作欄靠右：待審核提供「審核」、審核成功提供「檢視」，審核失敗無操作
   const showReviewedAt = activeTab !== 'pending'
   const showNote = activeTab === 'rejected'
-  const showActions = activeTab === 'pending'
+  const showActions = activeTab !== 'rejected'
 
   const reviewingUpload = reviewingId
     ? uploads.find((u) => u.id === reviewingId) ?? null
+    : null
+
+  const viewerUpload = viewerTarget
+    ? uploads.find((u) => u.id === viewerTarget.uploadId) ?? null
     : null
 
   const handleTabChange = (next: ReviewStatus) => {
@@ -311,13 +321,9 @@ export function DriverCenterAccounts() {
                 <Table.Th style={{ width: '12%' }}>類型</Table.Th>
                 <Table.Th style={{ width: '24%' }}>Email</Table.Th>
                 <Table.Th style={{ width: '18%' }}>上傳時間</Table.Th>
-                {showReviewedAt && (
-                  <Table.Th style={activeTab === 'rejected' ? { width: '18%' } : undefined}>
-                    審核時間
-                  </Table.Th>
-                )}
+                {showReviewedAt && <Table.Th style={{ width: '18%' }}>審核時間</Table.Th>}
                 {showNote && <Table.Th>備註</Table.Th>}
-                {showActions && <Table.Th style={{ textAlign: 'center' }}>操作</Table.Th>}
+                {showActions && <Table.Th style={{ textAlign: 'right' }}>操作</Table.Th>}
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -349,15 +355,26 @@ export function DriverCenterAccounts() {
                     </Table.Td>
                   )}
                   {showActions && (
-                    <Table.Td style={{ textAlign: 'center' }}>
-                      <Button
-                        size="xs"
-                        variant="light"
-                        leftSection={<IconClipboardCheck size={14} />}
-                        onClick={() => setReviewingId(u.id)}
-                      >
-                        審核
-                      </Button>
+                    <Table.Td style={{ textAlign: 'right' }}>
+                      {u.reviewStatus === 'pending' ? (
+                        <Button
+                          size="xs"
+                          variant="light"
+                          leftSection={<IconClipboardCheck size={14} />}
+                          onClick={() => setReviewingId(u.id)}
+                        >
+                          審核
+                        </Button>
+                      ) : (
+                        <Button
+                          size="xs"
+                          variant="default"
+                          leftSection={<IconEye size={14} />}
+                          onClick={() => setViewerTarget({ uploadId: u.id, index: 0 })}
+                        >
+                          檢視
+                        </Button>
+                      )}
                     </Table.Td>
                   )}
                 </Table.Tr>
@@ -385,6 +402,16 @@ export function DriverCenterAccounts() {
         opened={!!reviewingUpload}
         onClose={() => setReviewingId(null)}
         onSubmit={handleReviewSubmit}
+      />
+
+      <FileViewerModal
+        upload={viewerUpload}
+        index={viewerTarget?.index ?? 0}
+        opened={!!viewerUpload}
+        onClose={() => setViewerTarget(null)}
+        onIndexChange={(index) =>
+          setViewerTarget((prev) => (prev ? { ...prev, index } : prev))
+        }
       />
     </Paper>
   )
@@ -485,6 +512,46 @@ function DocFileCarousel({
         </Text>
       </Stack>
     </Stack>
+  )
+}
+
+// 純檢視 Modal（審核成功列的「檢視」進入，回看已審核的證件影像）
+function FileViewerModal({
+  upload,
+  index,
+  opened,
+  onClose,
+  onIndexChange,
+}: {
+  upload: DriverDocUpload | null
+  index: number
+  opened: boolean
+  onClose: () => void
+  onIndexChange: (index: number) => void
+}) {
+  if (!upload) return null
+
+  const file = upload.files[Math.min(index, upload.files.length - 1)]
+
+  return (
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      centered
+      size="auto"
+      title={
+        <Group gap="8px" wrap="nowrap">
+          <Text size="sm" fw={700}>
+            {DRIVER_DOC_META[upload.docType].label}｜{file.label}
+          </Text>
+          <Text size="sm" c="dimmed">
+            {file.fileName}
+          </Text>
+        </Group>
+      }
+    >
+      <DocFileCarousel upload={upload} index={index} onIndexChange={onIndexChange} />
+    </Modal>
   )
 }
 
