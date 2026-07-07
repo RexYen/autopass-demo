@@ -9,7 +9,6 @@ import {
   MultiSelect,
   Pagination,
   Paper,
-  Radio,
   Stack,
   Table,
   Tabs,
@@ -557,8 +556,8 @@ function FileViewerModal({
   )
 }
 
-// 審核 Modal：看圖＋記錄結果一次完成 —— 內嵌證件 carousel，
-// 審核成功／審核失敗二擇一，失敗必填備註
+// 審核 Modal：看圖＋記錄結果一次完成 —— 視線動線由上而下：證件圖片 → Email/類型 →
+// 審核成功/審核失敗按鈕；兩者皆需二次確認（失敗於確認時必填原因）
 function ReviewModal({
   upload,
   opened,
@@ -570,14 +569,16 @@ function ReviewModal({
   onClose: () => void
   onSubmit: (result: ReviewStatus, note?: string) => void
 }) {
-  const [result, setResult] = useState<Exclude<ReviewStatus, 'pending'> | null>(null)
+  const [confirmAction, setConfirmAction] = useState<Exclude<ReviewStatus, 'pending'> | null>(
+    null,
+  )
   const [note, setNote] = useState('')
   const [fileIndex, setFileIndex] = useState(0)
 
   // 每次開啟重置（審核結果送出後不可調整，只有待審核會進到這裡）
   useEffect(() => {
     if (upload) {
-      setResult(null)
+      setConfirmAction(null)
       setNote('')
       setFileIndex(0)
     }
@@ -585,72 +586,116 @@ function ReviewModal({
 
   if (!upload) return null
 
-  const canSubmit =
-    result === 'approved' || (result === 'rejected' && note.trim().length > 0)
+  const docLabel = DRIVER_DOC_META[upload.docType].label
 
   return (
-    <Modal
-      opened={opened}
-      onClose={onClose}
-      centered
-      size="auto"
-      title={
-        <Text size="sm" fw={700}>
-          審核證件
-        </Text>
-      }
-    >
-      <Stack gap="md">
-        <Group gap="32px" wrap="wrap">
-          <Stack gap="2px">
-            <Text size="xs" c="dimmed">
-              Email
-            </Text>
-            <Text size="sm" fw={500}>
-              {upload.userEmail}
-            </Text>
-          </Stack>
-          <Stack gap="2px">
-            <Text size="xs" c="dimmed">
-              證件類型
-            </Text>
-            <Text size="sm" fw={500}>
-              {DRIVER_DOC_META[upload.docType].label}
-            </Text>
-          </Stack>
-          <Stack gap="2px">
-            <Text size="xs" c="dimmed">
-              上傳時間
-            </Text>
-            <Text size="sm" fw={500}>
-              {formatDateTime(upload.uploadedAt)}
-            </Text>
-          </Stack>
-        </Group>
+    <>
+      <Modal
+        opened={opened}
+        onClose={onClose}
+        centered
+        size="auto"
+        title={
+          <Text size="sm" fw={700}>
+            審核證件
+          </Text>
+        }
+      >
+        <Stack gap="md">
+          <DocFileCarousel
+            upload={upload}
+            index={fileIndex}
+            onIndexChange={setFileIndex}
+            imageMaxHeight="46vh"
+          />
 
-        <DocFileCarousel
-          upload={upload}
-          index={fileIndex}
-          onIndexChange={setFileIndex}
-          imageMaxHeight="46vh"
-        />
+          <Divider />
 
-        <Divider />
-
-        <Radio.Group
-          label="審核結果"
-          value={result ?? ''}
-          onChange={(v) => setResult(v as Exclude<ReviewStatus, 'pending'>)}
-        >
-          <Group gap="lg" mt="6px">
-            <Radio value="approved" label="審核成功" />
-            <Radio value="rejected" label="審核失敗" />
+          <Group gap="32px" wrap="wrap">
+            <Stack gap="2px">
+              <Text size="xs" c="dimmed">
+                Email
+              </Text>
+              <Text size="sm" fw={500}>
+                {upload.userEmail}
+              </Text>
+            </Stack>
+            <Stack gap="2px">
+              <Text size="xs" c="dimmed">
+                證件類型
+              </Text>
+              <Text size="sm" fw={500}>
+                {docLabel}
+              </Text>
+            </Stack>
+            <Stack gap="2px">
+              <Text size="xs" c="dimmed">
+                上傳時間
+              </Text>
+              <Text size="sm" fw={500}>
+                {formatDateTime(upload.uploadedAt)}
+              </Text>
+            </Stack>
           </Group>
-        </Radio.Group>
 
-        {result === 'rejected' && (
+          <Group justify="flex-end" gap="12px" mt="4px">
+            <Button color="red" variant="light" onClick={() => setConfirmAction('rejected')}>
+              審核失敗
+            </Button>
+            <Button color="teal" onClick={() => setConfirmAction('approved')}>
+              審核成功
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      {/* 二次確認：審核成功 */}
+      <Modal
+        opened={confirmAction === 'approved'}
+        onClose={() => setConfirmAction(null)}
+        centered
+        size={420}
+        zIndex={300}
+        title={
+          <Text size="sm" fw={700}>
+            確認審核成功
+          </Text>
+        }
+      >
+        <Stack gap="md">
+          <Text size="sm">
+            確定將 {upload.userEmail} 的{docLabel}標記為「審核成功」？送出後不可調整。
+          </Text>
+          <Group justify="flex-end" gap="12px">
+            <Button variant="default" onClick={() => setConfirmAction(null)}>
+              取消
+            </Button>
+            <Button color="teal" onClick={() => onSubmit('approved')}>
+              確認
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      {/* 二次確認：審核失敗（必填原因） */}
+      <Modal
+        opened={confirmAction === 'rejected'}
+        onClose={() => setConfirmAction(null)}
+        centered
+        size={420}
+        zIndex={300}
+        title={
+          <Text size="sm" fw={700}>
+            確認審核失敗
+          </Text>
+        }
+      >
+        <Stack gap="md">
+          <Text size="sm">
+            確定將 {upload.userEmail} 的{docLabel}標記為「審核失敗」？送出後不可調整。
+          </Text>
           <Textarea
-            label="備註"
+            label="原因"
             withAsterisk
             placeholder="請說明審核失敗原因（必填），例如照片反光、缺角、證件不符"
             value={note}
@@ -658,23 +703,20 @@ function ReviewModal({
             minRows={3}
             autosize
           />
-        )}
-
-        <Group justify="flex-end" gap="12px" mt="4px">
-          <Button variant="default" onClick={onClose}>
-            取消
-          </Button>
-          <Button
-            disabled={!canSubmit}
-            onClick={() => {
-              if (!result) return
-              onSubmit(result, result === 'rejected' ? note.trim() : undefined)
-            }}
-          >
-            確認
-          </Button>
-        </Group>
-      </Stack>
-    </Modal>
+          <Group justify="flex-end" gap="12px">
+            <Button variant="default" onClick={() => setConfirmAction(null)}>
+              取消
+            </Button>
+            <Button
+              color="red"
+              disabled={note.trim().length === 0}
+              onClick={() => onSubmit('rejected', note.trim())}
+            >
+              確認
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+    </>
   )
 }
