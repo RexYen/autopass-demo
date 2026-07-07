@@ -32,9 +32,9 @@ Run from the repo root:
 | `/` → `/autopass/tickets` | — | default landing |
 | `/autopass/tickets` | `AutopassTickets` | 查繳任務 (**main feature**) |
 | `/autopass/history` | `AutopassTickets mode="history"` | 歷史任務 |
-| `/autopass/drivingexpense-applications` | `AutopassApplications` | 通行費申請單（側欄在「通行費自動繳」群組） |
+| `/autopass/drivingexpense-applications` | `AutopassApplications` | 通行費申請單（側欄「通行費自動繳」收合群組） |
 | `/autopass/tickets/:id` | — | redirect → `/autopass/tickets`（詳情走 Drawer，無深連結） |
-| `/driver-center/accounts` | `DriverCenterAccounts` | 駕駛中心帳號管理（側欄在「駕駛中心」群組） |
+| `/driver-center/accounts` | `DriverCenterAccounts` | 行駕照/保單（駕駛中心證件審核；側欄「駕駛管理」收合群組） |
 | `/preview` | `TicketPreview` | 查繳卡片/Modal 狀態參考頁（不掛 nav） |
 | `/vendors`, `/vendors/:name`, `/vendors/new` | `VendorManagement` / `VendorDetail` | 業者管理 |
 | `/tasks` | `TaskManagement` | 任務管理 |
@@ -59,7 +59,7 @@ Operators manage 代查代繳 task tickets (代查 + 代繳 a user's tolls/fees 
 
 ### 駕駛中心帳號管理 (Driver center accounts)
 
-對應 PRD [駕駛中心] v9.0「4.9 後臺顯示」：營運／審核人員檢視用戶上傳的證件（駕照／行照／保單）並審查。呈現方式比照查繳任務（tabs 以證件類型為維度 + 卡片格線）；檔案以 Modal 檢視、不提供下載入口；審查狀態為 待審查／審查成功／審查失敗，失敗必填備註。Key files: `src/types/driverCenter.ts`（domain types + `DRIVER_DOC_META` / `REVIEW_STATUS_META`）、`src/data/driverCenterMock.ts`（mock 上傳資料，證件影像為 SVG data URI 佔位）、`src/components/DriverCenterAccounts.tsx`（頁面 + 檢視/審查 Modal，審查結果走 in-memory override）。
+對應 PRD [駕駛中心] v9.0「4.9 後臺顯示」：營運／審核人員檢視用戶上傳的證件（駕照／行照／保單）並審核。Tabs 以**審核狀態**為維度（待審核／審核失敗／審核成功），內容為**列表**（欄位依 tab 而異：類型／Email／上傳時間／審核時間／備註／操作），篩選為證件類型；一組證件（正＋反面）一列。證件影像**內嵌於審核 Modal**（看圖＋記錄結果一次完成，正反面左右切換、不提供下載入口）；審核成功列另有「檢視」開啟純檢視 Modal；操作欄靠列表右側；審核失敗必填備註。審核結果送出後**不可調整**、已審核列無操作欄；審核失敗後偵測到用戶重新上傳時，系統會刪除原紀錄並在待審核建立新一筆（後端行為，demo 未模擬）。Key files: `src/types/driverCenter.ts`（domain types + `DRIVER_DOC_META` / `REVIEW_STATUS_META`）、`src/data/driverCenterMock.ts`（mock 上傳資料，證件影像為 SVG data URI 佔位）、`src/components/DriverCenterAccounts.tsx`（頁面 + 檢視/審核 Modal，審核結果走 in-memory override）。
 
 ### Other pages
 
