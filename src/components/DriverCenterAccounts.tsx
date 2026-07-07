@@ -3,6 +3,7 @@ import {
   ActionIcon,
   Box,
   Button,
+  Divider,
   Group,
   Modal,
   MultiSelect,
@@ -16,15 +17,12 @@ import {
   Textarea,
   TextInput,
   Title,
-  UnstyledButton,
 } from '@mantine/core'
 import {
   IconChevronLeft,
   IconChevronRight,
   IconClipboardCheck,
-  IconFileTypePdf,
   IconFilter,
-  IconPhoto,
   IconSearch,
 } from '@tabler/icons-react'
 import {
@@ -39,7 +37,8 @@ import { useNotification } from '../hooks/useNotification'
 
 // 行駕照/保單（駕駛中心證件審查）— PRD v9.0「4.9 後臺顯示」
 // Tabs 以審查狀態為維度（待審查／審查失敗／審查成功），內容為列表；篩選為證件類型。
-// 一組證件（正＋反面）一列、單一檢視入口，Modal 內左右切換；不提供下載入口；審查失敗必填備註。
+// 證件影像內嵌於審查 Modal（看圖＋記錄結果一次完成，正反面左右切換）；
+// 不提供下載入口；審查失敗必填備註、結果送出後不可調整。
 
 const cardShadow =
   '0px 7px 7px -5px rgba(0,0,0,0.04), 0px 10px 15px -5px rgba(0,0,0,0.1), 0px 1px 3px 0px rgba(0,0,0,0.05)'
@@ -75,13 +74,6 @@ function nowIsoStamp(): string {
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`
 }
 
-// 一組證件一個檢視入口的顯示文字（單檔顯示檔名，多檔合併為「正面/反面照片」）
-function filesLabel(upload: DriverDocUpload): string {
-  return upload.files.length === 1
-    ? `${upload.files[0].label}｜${upload.files[0].fileName}`
-    : `${upload.files.map((f) => f.label).join('/')}照片`
-}
-
 // Tabs 以審查狀態為維度；篩選改為證件類型
 const STATUS_TABS: ReviewStatus[] = ['pending', 'rejected', 'approved']
 
@@ -107,10 +99,6 @@ export function DriverCenterAccounts() {
   // demo 用 — 審查結果只在前端覆寫，重新整理即重置（與全 app 一致）
   const [reviewOverrides, setReviewOverrides] = useState<Record<string, ReviewOverride>>({})
   const [reviewingId, setReviewingId] = useState<string | null>(null)
-  // 檢視器：一組證件一個入口，index 為目前顯示的檔案（正面/反面左右切換）
-  const [viewerTarget, setViewerTarget] = useState<{ uploadId: string; index: number } | null>(
-    null,
-  )
   const { showSuccess } = useNotification()
 
   const uploads = useMemo(
@@ -152,10 +140,6 @@ export function DriverCenterAccounts() {
 
   const reviewingUpload = reviewingId
     ? uploads.find((u) => u.id === reviewingId) ?? null
-    : null
-
-  const viewerUpload = viewerTarget
-    ? uploads.find((u) => u.id === viewerTarget.uploadId) ?? null
     : null
 
   const handleTabChange = (next: ReviewStatus) => {
@@ -326,7 +310,6 @@ export function DriverCenterAccounts() {
               <Table.Tr>
                 <Table.Th style={{ width: 110 }}>類型</Table.Th>
                 <Table.Th style={{ width: 230 }}>Email</Table.Th>
-                <Table.Th style={{ width: 190 }}>上傳檔案</Table.Th>
                 <Table.Th style={{ width: 180 }}>上傳時間</Table.Th>
                 {showReviewedAt && (
                   <Table.Th style={activeTab === 'rejected' ? { width: 180 } : undefined}>
@@ -347,24 +330,6 @@ export function DriverCenterAccounts() {
                   </Table.Td>
                   <Table.Td>
                     <Text style={cellText}>{u.userEmail}</Text>
-                  </Table.Td>
-                  <Table.Td>
-                    <UnstyledButton
-                      onClick={() => setViewerTarget({ uploadId: u.id, index: 0 })}
-                      style={{ width: '100%', minWidth: 0 }}
-                      title={filesLabel(u)}
-                    >
-                      <Group gap="6px" wrap="nowrap">
-                        {u.files[0].kind === 'pdf' ? (
-                          <IconFileTypePdf size={16} color="#228be6" style={{ flexShrink: 0 }} />
-                        ) : (
-                          <IconPhoto size={16} color="#228be6" style={{ flexShrink: 0 }} />
-                        )}
-                        <Text size="sm" fw={500} c="blue" truncate style={{ minWidth: 0 }}>
-                          {filesLabel(u)}
-                        </Text>
-                      </Group>
-                    </UnstyledButton>
                   </Table.Td>
                   <Table.Td>
                     <Text style={{ ...cellText, whiteSpace: 'nowrap' }}>
@@ -415,16 +380,6 @@ export function DriverCenterAccounts() {
         <Pagination total={totalPages} value={safePage} onChange={setPage} size="sm" />
       </Group>
 
-      <FileViewerModal
-        upload={viewerUpload}
-        index={viewerTarget?.index ?? 0}
-        opened={!!viewerUpload}
-        onClose={() => setViewerTarget(null)}
-        onIndexChange={(index) =>
-          setViewerTarget((prev) => (prev ? { ...prev, index } : prev))
-        }
-      />
-
       <ReviewModal
         upload={reviewingUpload}
         opened={!!reviewingUpload}
@@ -435,23 +390,20 @@ export function DriverCenterAccounts() {
   )
 }
 
-// 檔案檢視 Modal：一組證件一個檢視器，正反面左右切換（箭頭／觸控滑動）。
-// 圖片原圖檢視、PDF 以內建 viewer 開啟（demo 以示意頁呈現）；依 PRD 4.9 決議不提供任何下載入口。
-function FileViewerModal({
+// 證件檔案 carousel：正反面左右切換（箭頭／觸控滑動）。圖片原圖檢視、PDF 以內建
+// viewer 開啟（demo 以示意頁呈現）；依 PRD 4.9 決議不提供任何下載入口。
+function DocFileCarousel({
   upload,
   index,
-  opened,
-  onClose,
   onIndexChange,
+  imageMaxHeight = '62vh',
 }: {
-  upload: DriverDocUpload | null
+  upload: DriverDocUpload
   index: number
-  opened: boolean
-  onClose: () => void
   onIndexChange: (index: number) => void
+  imageMaxHeight?: string
 }) {
   const touchStartX = useRef<number | null>(null)
-  if (!upload) return null
 
   const files = upload.files
   const current = Math.min(index, files.length - 1)
@@ -461,97 +413,83 @@ function FileViewerModal({
   const goNext = () => onIndexChange((current + 1) % files.length)
 
   return (
-    <Modal
-      opened={opened}
-      onClose={onClose}
-      centered
-      size="auto"
-      title={
-        <Group gap="8px" wrap="nowrap">
-          <Text size="sm" fw={700}>
-            {DRIVER_DOC_META[upload.docType].label}｜{file.label}
-          </Text>
-          <Text size="sm" c="dimmed">
-            {file.fileName}
-          </Text>
-        </Group>
-      }
-    >
-      <Stack gap="sm">
-        <Group wrap="nowrap" gap="sm" align="center">
-          {hasMultiple && (
-            <ActionIcon variant="default" size="lg" onClick={goPrev} aria-label="上一張">
-              <IconChevronLeft size={18} />
-            </ActionIcon>
-          )}
-          <Box
-            onTouchStart={(e) => {
-              touchStartX.current = e.touches[0].clientX
-            }}
-            onTouchEnd={(e) => {
-              if (touchStartX.current === null || !hasMultiple) return
-              const dx = e.changedTouches[0].clientX - touchStartX.current
-              if (Math.abs(dx) > 40) (dx > 0 ? goPrev : goNext)()
-              touchStartX.current = null
-            }}
-          >
-            {file.kind === 'image' ? (
+    <Stack gap="sm">
+      <Group wrap="nowrap" gap="sm" align="center" justify="center">
+        {hasMultiple && (
+          <ActionIcon variant="default" size="lg" onClick={goPrev} aria-label="上一張">
+            <IconChevronLeft size={18} />
+          </ActionIcon>
+        )}
+        <Box
+          onTouchStart={(e) => {
+            touchStartX.current = e.touches[0].clientX
+          }}
+          onTouchEnd={(e) => {
+            if (touchStartX.current === null || !hasMultiple) return
+            const dx = e.changedTouches[0].clientX - touchStartX.current
+            if (Math.abs(dx) > 40) (dx > 0 ? goPrev : goNext)()
+            touchStartX.current = null
+          }}
+        >
+          {file.kind === 'image' ? (
+            <img
+              src={file.url}
+              alt={`${DRIVER_DOC_META[upload.docType].label}${file.label}`}
+              onContextMenu={(e) => e.preventDefault()}
+              style={{
+                display: 'block',
+                maxWidth: 'min(640px, 74vw)',
+                maxHeight: imageMaxHeight,
+                borderRadius: 8,
+              }}
+            />
+          ) : (
+            <Box
+              style={{
+                backgroundColor: '#495057',
+                padding: 20,
+                borderRadius: 8,
+                maxHeight: imageMaxHeight,
+                overflow: 'auto',
+              }}
+            >
               <img
                 src={file.url}
-                alt={`${DRIVER_DOC_META[upload.docType].label}${file.label}`}
+                alt={file.fileName}
                 onContextMenu={(e) => e.preventDefault()}
                 style={{
                   display: 'block',
-                  maxWidth: 'min(780px, 74vw)',
-                  maxHeight: '62vh',
-                  borderRadius: 8,
+                  width: 'min(480px, 70vw)',
+                  margin: '0 auto',
+                  boxShadow: '0px 4px 12px rgba(0,0,0,0.3)',
                 }}
               />
-            ) : (
-              <Box
-                style={{
-                  backgroundColor: '#495057',
-                  padding: 20,
-                  borderRadius: 8,
-                  maxHeight: '62vh',
-                  overflow: 'auto',
-                }}
-              >
-                <img
-                  src={file.url}
-                  alt={file.fileName}
-                  onContextMenu={(e) => e.preventDefault()}
-                  style={{
-                    display: 'block',
-                    width: 'min(560px, 70vw)',
-                    margin: '0 auto',
-                    boxShadow: '0px 4px 12px rgba(0,0,0,0.3)',
-                  }}
-                />
-              </Box>
-            )}
-          </Box>
-          {hasMultiple && (
-            <ActionIcon variant="default" size="lg" onClick={goNext} aria-label="下一張">
-              <IconChevronRight size={18} />
-            </ActionIcon>
+            </Box>
           )}
-        </Group>
+        </Box>
+        {hasMultiple && (
+          <ActionIcon variant="default" size="lg" onClick={goNext} aria-label="下一張">
+            <IconChevronRight size={18} />
+          </ActionIcon>
+        )}
+      </Group>
+      <Stack gap="2px">
         {hasMultiple && (
           <Text size="sm" c="dimmed" ta="center">
             {file.label}（{current + 1}/{files.length}）— 可左右滑動或點箭頭切換
           </Text>
         )}
-        <Text size="xs" c="dimmed">
+        <Text size="xs" c="dimmed" ta="center">
           僅供審核檢視，不提供下載
           {file.kind === 'pdf' && '；正式版 PDF 以瀏覽器內建檢視器開啟，demo 以示意頁呈現'}
         </Text>
       </Stack>
-    </Modal>
+    </Stack>
   )
 }
 
-// 審查 Modal：審查成功／審查失敗二擇一，失敗必填備註
+// 審查 Modal：看圖＋記錄結果一次完成 —— 內嵌證件 carousel，
+// 審查成功／審查失敗二擇一，失敗必填備註
 function ReviewModal({
   upload,
   opened,
@@ -565,12 +503,14 @@ function ReviewModal({
 }) {
   const [result, setResult] = useState<Exclude<ReviewStatus, 'pending'> | null>(null)
   const [note, setNote] = useState('')
+  const [fileIndex, setFileIndex] = useState(0)
 
   // 每次開啟重置（審查結果送出後不可調整，只有待審查會進到這裡）
   useEffect(() => {
     if (upload) {
       setResult(null)
       setNote('')
+      setFileIndex(0)
     }
   }, [upload])
 
@@ -584,7 +524,7 @@ function ReviewModal({
       opened={opened}
       onClose={onClose}
       centered
-      size={460}
+      size="auto"
       title={
         <Text size="sm" fw={700}>
           審查證件
@@ -592,30 +532,41 @@ function ReviewModal({
       }
     >
       <Stack gap="md">
-        <Stack gap="4px">
-          <Text size="xs" c="dimmed">
-            Email
-          </Text>
-          <Text size="sm" fw={500}>
-            {upload.userEmail}
-          </Text>
-        </Stack>
-        <Stack gap="4px">
-          <Text size="xs" c="dimmed">
-            證件類型
-          </Text>
-          <Text size="sm" fw={500}>
-            {DRIVER_DOC_META[upload.docType].label}
-          </Text>
-        </Stack>
-        <Stack gap="4px">
-          <Text size="xs" c="dimmed">
-            上傳時間
-          </Text>
-          <Text size="sm" fw={500}>
-            {formatDateTime(upload.uploadedAt)}
-          </Text>
-        </Stack>
+        <Group gap="32px" wrap="wrap">
+          <Stack gap="2px">
+            <Text size="xs" c="dimmed">
+              Email
+            </Text>
+            <Text size="sm" fw={500}>
+              {upload.userEmail}
+            </Text>
+          </Stack>
+          <Stack gap="2px">
+            <Text size="xs" c="dimmed">
+              證件類型
+            </Text>
+            <Text size="sm" fw={500}>
+              {DRIVER_DOC_META[upload.docType].label}
+            </Text>
+          </Stack>
+          <Stack gap="2px">
+            <Text size="xs" c="dimmed">
+              上傳時間
+            </Text>
+            <Text size="sm" fw={500}>
+              {formatDateTime(upload.uploadedAt)}
+            </Text>
+          </Stack>
+        </Group>
+
+        <DocFileCarousel
+          upload={upload}
+          index={fileIndex}
+          onIndexChange={setFileIndex}
+          imageMaxHeight="46vh"
+        />
+
+        <Divider />
 
         <Radio.Group
           label="審查結果"

@@ -59,7 +59,7 @@ Operators manage 代查代繳 task tickets (代查 + 代繳 a user's tolls/fees 
 
 ### 駕駛中心帳號管理 (Driver center accounts)
 
-對應 PRD [駕駛中心] v9.0「4.9 後臺顯示」：營運／審核人員檢視用戶上傳的證件（駕照／行照／保單）並審查。Tabs 以**審查狀態**為維度（待審查／審查失敗／審查成功），內容為**列表**（欄位依 tab 而異：Email／類型／上傳檔案／上傳時間／審查時間／備註／操作），篩選為證件類型；一組證件（正＋反面）一列，檔案以 Modal 檢視並可左右切換正反面、不提供下載入口；審查失敗必填備註。審查結果送出後**不可調整**、已審查列無操作欄；審查失敗後偵測到用戶重新上傳時，系統會刪除原紀錄並在待審查建立新一筆（後端行為，demo 未模擬）。Key files: `src/types/driverCenter.ts`（domain types + `DRIVER_DOC_META` / `REVIEW_STATUS_META`）、`src/data/driverCenterMock.ts`（mock 上傳資料，證件影像為 SVG data URI 佔位）、`src/components/DriverCenterAccounts.tsx`（頁面 + 檢視/審查 Modal，審查結果走 in-memory override）。
+對應 PRD [駕駛中心] v9.0「4.9 後臺顯示」：營運／審核人員檢視用戶上傳的證件（駕照／行照／保單）並審查。Tabs 以**審查狀態**為維度（待審查／審查失敗／審查成功），內容為**列表**（欄位依 tab 而異：類型／Email／上傳時間／審查時間／備註／操作），篩選為證件類型；一組證件（正＋反面）一列。證件影像**內嵌於審查 Modal**（看圖＋記錄結果一次完成，正反面左右切換、不提供下載入口）；審查失敗必填備註。審查結果送出後**不可調整**、已審查列無操作欄；審查失敗後偵測到用戶重新上傳時，系統會刪除原紀錄並在待審查建立新一筆（後端行為，demo 未模擬）。Key files: `src/types/driverCenter.ts`（domain types + `DRIVER_DOC_META` / `REVIEW_STATUS_META`）、`src/data/driverCenterMock.ts`（mock 上傳資料，證件影像為 SVG data URI 佔位）、`src/components/DriverCenterAccounts.tsx`（頁面 + 檢視/審查 Modal，審查結果走 in-memory override）。
 
 ### Other pages
 
