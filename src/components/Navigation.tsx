@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Stack,
   NavLink,
@@ -22,7 +23,6 @@ import {
 const autopassLogo = '/autopass.png'
 
 export type NavigationView =
-  | 'welcome'
   | 'vendor-list'
   | 'map-management'
   | 'store-management'
@@ -37,6 +37,7 @@ interface NavigationProps {
 }
 
 export function Navigation({ currentView, onNavigate }: NavigationProps) {
+  const navigate = useNavigate()
   const getActiveKey = useCallback(() => {
     switch (currentView) {
       case 'vendor-list':
@@ -55,8 +56,6 @@ export function Navigation({ currentView, onNavigate }: NavigationProps) {
         return 'autopass-history'
       case 'autopass-applications':
         return 'autopass-applications'
-      case 'welcome':
-        return 'none'
       default:
         return 'none'
     }
@@ -97,7 +96,7 @@ export function Navigation({ currentView, onNavigate }: NavigationProps) {
       <Box
         mx="12px"
         mb="0"
-        onClick={() => onNavigate?.('welcome')}
+        onClick={() => navigate('/')}
         style={{
           height: '56px',
           display: 'flex',
