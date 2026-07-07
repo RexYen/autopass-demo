@@ -1,5 +1,5 @@
 // 駕駛中心域型別 — 對應 PRD [駕駛中心] v9.0 行照、駕照、保單資料上傳「4.9 後臺顯示」。
-// 後台以「帳號 × 證件類型」為一組呈現上傳資料，供營運／審核人員檢視與審查。
+// 後台以「帳號 × 證件類型」為一組呈現上傳資料，供營運／審核人員檢視與審核。
 
 export type DriverDocType = 'driver-license' | 'vehicle-license' | 'insurance'
 
@@ -15,16 +15,16 @@ export const DRIVER_DOC_META: Record<DriverDocType, { label: string }> = {
   insurance: { label: '車輛保單' },
 }
 
-// 審查狀態：待審查 / 審查成功 / 審查失敗（審查失敗時必填備註）
+// 審核狀態：待審核 / 審核成功 / 審核失敗（審核失敗時必填備註）
 export type ReviewStatus = 'pending' | 'approved' | 'rejected'
 
 export const REVIEW_STATUS_META: Record<
   ReviewStatus,
   { label: string; color: string; bg: string }
 > = {
-  pending: { label: '待審查', color: '#495057', bg: 'rgba(134,142,150,0.15)' },
-  approved: { label: '審查成功', color: '#0b7c4d', bg: 'rgba(18,184,134,0.15)' },
-  rejected: { label: '審查失敗', color: '#c92a2a', bg: 'rgba(250,82,82,0.12)' },
+  pending: { label: '待審核', color: '#495057', bg: 'rgba(134,142,150,0.15)' },
+  approved: { label: '審核成功', color: '#0b7c4d', bg: 'rgba(18,184,134,0.15)' },
+  rejected: { label: '審核失敗', color: '#c92a2a', bg: 'rgba(250,82,82,0.12)' },
 }
 
 export interface DriverDocFile {
@@ -42,7 +42,7 @@ export interface DriverDocUpload {
   docType: DriverDocType
   uploadedAt: string // ISO；列表以 YYYY-MM-DD hh:mm:ss 顯示
   reviewStatus: ReviewStatus
-  reviewNote?: string // 審查失敗時必填
+  reviewNote?: string // 審核失敗時必填
   reviewedAt?: string
   files: DriverDocFile[]
 }

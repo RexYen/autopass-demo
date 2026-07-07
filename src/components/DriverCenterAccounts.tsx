@@ -35,10 +35,10 @@ import {
 import { mockDriverDocUploads } from '../data/driverCenterMock'
 import { useNotification } from '../hooks/useNotification'
 
-// 行駕照/保單（駕駛中心證件審查）— PRD v9.0「4.9 後臺顯示」
-// Tabs 以審查狀態為維度（待審查／審查失敗／審查成功），內容為列表；篩選為證件類型。
-// 證件影像內嵌於審查 Modal（看圖＋記錄結果一次完成，正反面左右切換）；
-// 不提供下載入口；審查失敗必填備註、結果送出後不可調整。
+// 行駕照/保單（駕駛中心證件審核）— PRD v9.0「4.9 後臺顯示」
+// Tabs 以審核狀態為維度（待審核／審核失敗／審核成功），內容為列表；篩選為證件類型。
+// 證件影像內嵌於審核 Modal（看圖＋記錄結果一次完成，正反面左右切換）；
+// 不提供下載入口；審核失敗必填備註、結果送出後不可調整。
 
 const cardShadow =
   '0px 7px 7px -5px rgba(0,0,0,0.04), 0px 10px 15px -5px rgba(0,0,0,0.1), 0px 1px 3px 0px rgba(0,0,0,0.05)'
@@ -74,7 +74,7 @@ function nowIsoStamp(): string {
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`
 }
 
-// Tabs 以審查狀態為維度；篩選改為證件類型
+// Tabs 以審核狀態為維度；篩選改為證件類型
 const STATUS_TABS: ReviewStatus[] = ['pending', 'rejected', 'approved']
 
 const DOC_TYPE_OPTIONS = DRIVER_DOC_TYPES.map((type) => ({
@@ -96,7 +96,7 @@ export function DriverCenterAccounts() {
   const [typeFilter, setTypeFilter] = useState<string[]>([])
   const [page, setPage] = useState(1)
 
-  // demo 用 — 審查結果只在前端覆寫，重新整理即重置（與全 app 一致）
+  // demo 用 — 審核結果只在前端覆寫，重新整理即重置（與全 app 一致）
   const [reviewOverrides, setReviewOverrides] = useState<Record<string, ReviewOverride>>({})
   const [reviewingId, setReviewingId] = useState<string | null>(null)
   const { showSuccess } = useNotification()
@@ -133,7 +133,7 @@ export function DriverCenterAccounts() {
   const rangeStart = filtered.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1
   const rangeEnd = Math.min(safePage * PAGE_SIZE, filtered.length)
 
-  // 依 tab 顯示欄位：審查時間僅已審查；備註僅審查失敗；操作（審查）僅待審查
+  // 依 tab 顯示欄位：審核時間僅已審核；備註僅審核失敗；操作（審核）僅待審核
   const showReviewedAt = activeTab !== 'pending'
   const showNote = activeTab === 'rejected'
   const showActions = activeTab === 'pending'
@@ -171,7 +171,7 @@ export function DriverCenterAccounts() {
       `${reviewingUpload?.userEmail ?? reviewingId} 的${
         reviewingUpload ? DRIVER_DOC_META[reviewingUpload.docType].label : '證件'
       }已標記為「${REVIEW_STATUS_META[result].label}」`,
-      '審查結果已更新',
+      '審核結果已更新',
     )
     setReviewingId(null)
   }
@@ -203,7 +203,7 @@ export function DriverCenterAccounts() {
         </Title>
       </Group>
 
-      {/* Tabs：以審查狀態為維度 */}
+      {/* Tabs：以審核狀態為維度 */}
       <Box px="24px">
         <Tabs
           value={activeTab}
@@ -313,7 +313,7 @@ export function DriverCenterAccounts() {
                 <Table.Th style={{ width: '18%' }}>上傳時間</Table.Th>
                 {showReviewedAt && (
                   <Table.Th style={activeTab === 'rejected' ? { width: '18%' } : undefined}>
-                    審查時間
+                    審核時間
                   </Table.Th>
                 )}
                 {showNote && <Table.Th>備註</Table.Th>}
@@ -356,7 +356,7 @@ export function DriverCenterAccounts() {
                         leftSection={<IconClipboardCheck size={14} />}
                         onClick={() => setReviewingId(u.id)}
                       >
-                        審查
+                        審核
                       </Button>
                     </Table.Td>
                   )}
@@ -488,8 +488,8 @@ function DocFileCarousel({
   )
 }
 
-// 審查 Modal：看圖＋記錄結果一次完成 —— 內嵌證件 carousel，
-// 審查成功／審查失敗二擇一，失敗必填備註
+// 審核 Modal：看圖＋記錄結果一次完成 —— 內嵌證件 carousel，
+// 審核成功／審核失敗二擇一，失敗必填備註
 function ReviewModal({
   upload,
   opened,
@@ -505,7 +505,7 @@ function ReviewModal({
   const [note, setNote] = useState('')
   const [fileIndex, setFileIndex] = useState(0)
 
-  // 每次開啟重置（審查結果送出後不可調整，只有待審查會進到這裡）
+  // 每次開啟重置（審核結果送出後不可調整，只有待審核會進到這裡）
   useEffect(() => {
     if (upload) {
       setResult(null)
@@ -527,7 +527,7 @@ function ReviewModal({
       size="auto"
       title={
         <Text size="sm" fw={700}>
-          審查證件
+          審核證件
         </Text>
       }
     >
@@ -569,13 +569,13 @@ function ReviewModal({
         <Divider />
 
         <Radio.Group
-          label="審查結果"
+          label="審核結果"
           value={result ?? ''}
           onChange={(v) => setResult(v as Exclude<ReviewStatus, 'pending'>)}
         >
           <Group gap="lg" mt="6px">
-            <Radio value="approved" label="審查成功" />
-            <Radio value="rejected" label="審查失敗" />
+            <Radio value="approved" label="審核成功" />
+            <Radio value="rejected" label="審核失敗" />
           </Group>
         </Radio.Group>
 
@@ -583,7 +583,7 @@ function ReviewModal({
           <Textarea
             label="備註"
             withAsterisk
-            placeholder="請說明審查失敗原因（必填），例如照片反光、缺角、證件不符"
+            placeholder="請說明審核失敗原因（必填），例如照片反光、缺角、證件不符"
             value={note}
             onChange={(e) => setNote(e.currentTarget.value)}
             minRows={3}
