@@ -307,8 +307,9 @@ export function DriverCenterAccounts() {
               },
               td: {
                 padding: '12px 24px',
-                height: 'auto',
-                minHeight: '50px',
+                // 固定列高：有按鈕（審核/檢視）與純文字的列一致，三個 tab 不跳動
+                // （55 = 按鈕 30 + 上下 padding 24 + 底框 1，border-box）
+                height: '55px',
                 borderBottom: '1px solid #dee2e6',
                 verticalAlign: 'middle',
                 overflow: 'visible',
