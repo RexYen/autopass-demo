@@ -46,7 +46,6 @@ function VendorDetailPage() {
 }
 
 type CurrentView =
-  | 'welcome'
   | 'vendor-list'
   | 'vendor-detail'
   | 'map-management'
@@ -77,7 +76,6 @@ function AppContent() {
 
   const handleNavigate = (view: Exclude<CurrentView, 'vendor-detail'>) => {
     const viewToPath: Record<string, string> = {
-      welcome: '/',
       'vendor-list': '/vendors',
       'map-management': '/map',
       'store-management': '/stores',
