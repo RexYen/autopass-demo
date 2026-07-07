@@ -1,13 +1,6 @@
 import React, { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import {
-  Stack,
-  NavLink,
-  Box,
-  Badge,
-  Text,
-  Divider,
-} from '@mantine/core'
+import { Stack, NavLink, Box, Badge } from '@mantine/core'
 import {
   IconBrandAsana,
   IconAddressBook,
@@ -19,6 +12,8 @@ import {
   IconHistory,
   IconFileText,
   IconLicense,
+  IconRoad,
+  IconSteeringWheel,
 } from '@tabler/icons-react'
 
 const autopassLogo = '/autopass.png'
@@ -37,6 +32,9 @@ interface NavigationProps {
   currentView?: string
   onNavigate?: (view: NavigationView) => void
 }
+
+// 通行費自動繳收合群組內的 active key（決定群組預設是否展開）
+const AUTOPASS_KEYS = ['autopass-tickets', 'autopass-history', 'autopass-applications']
 
 export function Navigation({ currentView, onNavigate }: NavigationProps) {
   const navigate = useNavigate()
@@ -76,7 +74,7 @@ export function Navigation({ currentView, onNavigate }: NavigationProps) {
       borderRadius: 4,
       padding: '12px',
       height: '50px',
-      width: '216px',
+      width: '100%',
       display: 'flex',
       alignItems: 'center',
       marginBottom: 0,
@@ -151,97 +149,8 @@ export function Navigation({ currentView, onNavigate }: NavigationProps) {
         </Badge>
       </Box>
 
-      {/* 通行費自動繳（新功能放最前面） */}
+      {/* 扁平選單（無群組小標）；通行費自動繳與駕駛管理為可收合群組 */}
       <Stack gap={0} px="12px" mt="8px">
-        <Box px="12px" pb="6px">
-          <Text
-            size="xs"
-            c="dimmed"
-            fw={600}
-            style={{ letterSpacing: '0.4px', fontFamily: 'Noto Sans TC, sans-serif' }}
-          >
-            通行費自動繳
-          </Text>
-        </Box>
-
-        <NavLink
-          href="#"
-          label="查繳任務"
-          leftSection={<IconClipboardList size={16} />}
-          active={active === 'autopass-tickets'}
-          onClick={() => {
-            setActive('autopass-tickets')
-            onNavigate?.('autopass-tickets')
-          }}
-          styles={navItemStyles(active === 'autopass-tickets')}
-        />
-        <NavLink
-          href="#"
-          label="歷史任務"
-          leftSection={<IconHistory size={16} />}
-          active={active === 'autopass-history'}
-          onClick={() => {
-            setActive('autopass-history')
-            onNavigate?.('autopass-history')
-          }}
-          styles={navItemStyles(active === 'autopass-history')}
-        />
-        <NavLink
-          href="#"
-          label="通行費申請單"
-          leftSection={<IconFileText size={16} />}
-          active={active === 'autopass-applications'}
-          onClick={() => {
-            setActive('autopass-applications')
-            onNavigate?.('autopass-applications')
-          }}
-          styles={navItemStyles(active === 'autopass-applications')}
-        />
-      </Stack>
-
-      <Divider my="16px" mx="20px" />
-
-      {/* 駕駛中心（PRD v9.0 4.9 後臺顯示） */}
-      <Stack gap={0} px="12px">
-        <Box px="12px" pb="6px">
-          <Text
-            size="xs"
-            c="dimmed"
-            fw={600}
-            style={{ letterSpacing: '0.4px', fontFamily: 'Noto Sans TC, sans-serif' }}
-          >
-            駕駛中心
-          </Text>
-        </Box>
-
-        <NavLink
-          href="#"
-          label="駕駛中心帳號管理"
-          leftSection={<IconLicense size={16} />}
-          active={active === 'driver-accounts'}
-          onClick={() => {
-            setActive('driver-accounts')
-            onNavigate?.('driver-accounts')
-          }}
-          styles={navItemStyles(active === 'driver-accounts')}
-        />
-      </Stack>
-
-      <Divider my="16px" mx="20px" />
-
-      {/* 既有：場站營運（保留作為其他系統入口） */}
-      <Stack gap={0} px="12px">
-        <Box px="12px" pb="6px">
-          <Text
-            size="xs"
-            c="dimmed"
-            fw={600}
-            style={{ letterSpacing: '0.4px', fontFamily: 'Noto Sans TC, sans-serif' }}
-          >
-            場站營運
-          </Text>
-        </Box>
-
         <NavLink
           href="#"
           label="任務管理"
@@ -295,6 +204,70 @@ export function Navigation({ currentView, onNavigate }: NavigationProps) {
           onClick={() => setActive('finance')}
           styles={navItemStyles(active === 'finance')}
         />
+
+        {/* 通行費自動繳（可收合） */}
+        <NavLink
+          label="通行費自動繳"
+          leftSection={<IconRoad size={16} />}
+          childrenOffset={16}
+          defaultOpened={AUTOPASS_KEYS.includes(getActiveKey())}
+          styles={navItemStyles(false)}
+        >
+          <NavLink
+            href="#"
+            label="查繳任務"
+            leftSection={<IconClipboardList size={16} />}
+            active={active === 'autopass-tickets'}
+            onClick={() => {
+              setActive('autopass-tickets')
+              onNavigate?.('autopass-tickets')
+            }}
+            styles={navItemStyles(active === 'autopass-tickets')}
+          />
+          <NavLink
+            href="#"
+            label="歷史任務"
+            leftSection={<IconHistory size={16} />}
+            active={active === 'autopass-history'}
+            onClick={() => {
+              setActive('autopass-history')
+              onNavigate?.('autopass-history')
+            }}
+            styles={navItemStyles(active === 'autopass-history')}
+          />
+          <NavLink
+            href="#"
+            label="通行費申請單"
+            leftSection={<IconFileText size={16} />}
+            active={active === 'autopass-applications'}
+            onClick={() => {
+              setActive('autopass-applications')
+              onNavigate?.('autopass-applications')
+            }}
+            styles={navItemStyles(active === 'autopass-applications')}
+          />
+        </NavLink>
+
+        {/* 駕駛管理（可收合） */}
+        <NavLink
+          label="駕駛管理"
+          leftSection={<IconSteeringWheel size={16} />}
+          childrenOffset={16}
+          defaultOpened={getActiveKey() === 'driver-accounts'}
+          styles={navItemStyles(false)}
+        >
+          <NavLink
+            href="#"
+            label="駕駛中心帳號管理"
+            leftSection={<IconLicense size={16} />}
+            active={active === 'driver-accounts'}
+            onClick={() => {
+              setActive('driver-accounts')
+              onNavigate?.('driver-accounts')
+            }}
+            styles={navItemStyles(active === 'driver-accounts')}
+          />
+        </NavLink>
       </Stack>
     </Stack>
   )
