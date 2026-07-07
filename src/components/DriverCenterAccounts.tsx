@@ -36,7 +36,6 @@ import {
   DRIVER_DOC_TYPES,
   REVIEW_STATUS_META,
   type DriverDocFile,
-  type DriverDocType,
   type DriverDocUpload,
   type ReviewStatus,
 } from '../types/driverCenter'
@@ -59,9 +58,12 @@ function formatDateTime(iso: string): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
 }
 
-const STATUS_OPTIONS = Object.entries(REVIEW_STATUS_META).map(([value, meta]) => ({
-  value,
-  label: meta.label,
+// Tabs 以審查狀態為維度；篩選改為證件類型
+const STATUS_TABS: ReviewStatus[] = ['pending', 'rejected', 'approved']
+
+const DOC_TYPE_OPTIONS = DRIVER_DOC_TYPES.map((type) => ({
+  value: type,
+  label: DRIVER_DOC_META[type].label,
 }))
 
 type ReviewOverride = {
@@ -71,11 +73,11 @@ type ReviewOverride = {
 }
 
 export function DriverCenterAccounts() {
-  const [activeTab, setActiveTab] = useState<DriverDocType>('driver-license')
+  const [activeTab, setActiveTab] = useState<ReviewStatus>('pending')
   const [pendingSearch, setPendingSearch] = useState('')
   const [search, setSearch] = useState('')
-  const [pendingStatusFilter, setPendingStatusFilter] = useState<string[]>([])
-  const [statusFilter, setStatusFilter] = useState<string[]>([])
+  const [pendingTypeFilter, setPendingTypeFilter] = useState<string[]>([])
+  const [typeFilter, setTypeFilter] = useState<string[]>([])
   const [page, setPage] = useState(1)
 
   // demo 用 — 審查結果只在前端覆寫，重新整理即重置（與全 app 一致）
@@ -95,12 +97,9 @@ export function DriverCenterAccounts() {
   )
 
   const counts = useMemo(() => {
-    const c = { 'driver-license': 0, 'vehicle-license': 0, insurance: 0 } as Record<
-      DriverDocType,
-      number
-    >
+    const c = { pending: 0, rejected: 0, approved: 0 } as Record<ReviewStatus, number>
     uploads.forEach((u) => {
-      c[u.docType] += 1
+      c[u.reviewStatus] += 1
     })
     return c
   }, [uploads])
@@ -108,12 +107,12 @@ export function DriverCenterAccounts() {
   const filtered = useMemo(() => {
     const kw = search.trim().toLowerCase()
     return uploads.filter((u) => {
-      if (u.docType !== activeTab) return false
-      if (statusFilter.length > 0 && !statusFilter.includes(u.reviewStatus)) return false
+      if (u.reviewStatus !== activeTab) return false
+      if (typeFilter.length > 0 && !typeFilter.includes(u.docType)) return false
       if (kw && !u.userEmail.toLowerCase().includes(kw)) return false
       return true
     })
-  }, [uploads, activeTab, statusFilter, search])
+  }, [uploads, activeTab, typeFilter, search])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const safePage = Math.min(page, totalPages)
@@ -130,22 +129,22 @@ export function DriverCenterAccounts() {
     ? viewerUpload.files.find((f) => f.id === viewerTarget?.fileId) ?? null
     : null
 
-  const handleTabChange = (next: DriverDocType) => {
+  const handleTabChange = (next: ReviewStatus) => {
     setActiveTab(next)
     setPage(1)
   }
 
   const handleSearchSubmit = () => {
     setSearch(pendingSearch)
-    setStatusFilter(pendingStatusFilter)
+    setTypeFilter(pendingTypeFilter)
     setPage(1)
   }
 
   const handleResetFilters = () => {
     setPendingSearch('')
     setSearch('')
-    setPendingStatusFilter([])
-    setStatusFilter([])
+    setPendingTypeFilter([])
+    setTypeFilter([])
     setPage(1)
   }
 
@@ -194,11 +193,11 @@ export function DriverCenterAccounts() {
         </Title>
       </Group>
 
-      {/* Tabs：以申請證件為維度 */}
+      {/* Tabs：以審查狀態為維度 */}
       <Box px="24px">
         <Tabs
           value={activeTab}
-          onChange={(v) => v && handleTabChange(v as DriverDocType)}
+          onChange={(v) => v && handleTabChange(v as ReviewStatus)}
           styles={{
             list: { borderBottom: '1px solid #e9ecef' },
             tab: {
@@ -210,11 +209,11 @@ export function DriverCenterAccounts() {
           }}
         >
           <Tabs.List>
-            {DRIVER_DOC_TYPES.map((type) => (
-              <Tabs.Tab key={type} value={type}>
-                {DRIVER_DOC_META[type].label}
+            {STATUS_TABS.map((status) => (
+              <Tabs.Tab key={status} value={status}>
+                {REVIEW_STATUS_META[status].label}
                 <Text component="span" size="xs" c="dimmed" ml="6px">
-                  {counts[type]}
+                  {counts[status]}
                 </Text>
               </Tabs.Tab>
             ))}
@@ -241,10 +240,10 @@ export function DriverCenterAccounts() {
               styles={{ input: { borderRadius: 4, height: 40, fontSize: 14 } }}
             />
             <MultiSelect
-              placeholder={pendingStatusFilter.length === 0 ? '所有審查狀態' : undefined}
-              data={STATUS_OPTIONS}
-              value={pendingStatusFilter}
-              onChange={setPendingStatusFilter}
+              placeholder={pendingTypeFilter.length === 0 ? '篩選類型' : undefined}
+              data={DOC_TYPE_OPTIONS}
+              value={pendingTypeFilter}
+              onChange={setPendingTypeFilter}
               clearable
               leftSection={<IconFilter size={14} />}
               style={{ flex: '0 1 400px', minWidth: 220 }}
