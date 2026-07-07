@@ -25,7 +25,6 @@ const cardImage = (title: string, corner: string, accent: string): string =>
   <rect x="312" y="276" width="400" height="22" rx="11" fill="#e9ecef"/>
   <rect x="312" y="330" width="300" height="22" rx="11" fill="#e9ecef"/>
   <rect x="312" y="384" width="360" height="22" rx="11" fill="#e9ecef"/>
-  <text x="420" y="286" font-family="Noto Sans TC, sans-serif" font-size="64" font-weight="700" fill="#adb5bd" opacity="0.35" transform="rotate(-18 420 286)">示意樣本 SAMPLE</text>
   <text x="752" y="468" font-family="Noto Sans TC, sans-serif" font-size="24" font-weight="500" fill="#868e96" text-anchor="end">${corner}</text>
 </svg>`)
 
@@ -44,7 +43,6 @@ const pdfPageImage = (title: string): string =>
   <rect x="56" y="620" width="500" height="16" rx="8" fill="#e9ecef"/>
   <rect x="56" y="660" width="528" height="16" rx="8" fill="#e9ecef"/>
   <rect x="56" y="700" width="440" height="16" rx="8" fill="#e9ecef"/>
-  <text x="320" y="480" font-family="Noto Sans TC, sans-serif" font-size="52" font-weight="700" fill="#adb5bd" opacity="0.35" text-anchor="middle" transform="rotate(-18 320 480)">示意樣本 SAMPLE</text>
 </svg>`)
 
 const DOC_ACCENT: Record<DriverDocType, string> = {

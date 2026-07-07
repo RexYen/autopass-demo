@@ -327,7 +327,7 @@ export function DriverCenterAccounts() {
                   <>
                     {/* 彈性空欄：把窄的操作欄推到列表最右側 */}
                     <Table.Th aria-hidden />
-                    <Table.Th style={{ width: 110, textAlign: 'center' }}>操作</Table.Th>
+                    <Table.Th style={{ width: 190, textAlign: 'center' }}>操作</Table.Th>
                   </>
                 )}
               </Table.Tr>
@@ -509,17 +509,11 @@ function DocFileCarousel({
           </ActionIcon>
         )}
       </Group>
-      <Stack gap="2px">
-        {hasMultiple && (
-          <Text size="sm" c="dimmed" ta="center">
-            {file.label}（{current + 1}/{files.length}）— 可左右滑動或點箭頭切換
-          </Text>
-        )}
-        <Text size="xs" c="dimmed" ta="center">
-          僅供審核檢視，不提供下載
-          {file.kind === 'pdf' && '；正式版 PDF 以瀏覽器內建檢視器開啟，demo 以示意頁呈現'}
+      {hasMultiple && (
+        <Text size="sm" c="dimmed" ta="center">
+          可左右滑動或點箭頭切換（{current + 1}/{files.length}）
         </Text>
-      </Stack>
+      )}
     </Stack>
   )
 }
