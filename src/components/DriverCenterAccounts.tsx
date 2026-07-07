@@ -350,8 +350,8 @@ export function DriverCenterAccounts() {
           >
             <Table.Thead>
               <Table.Tr>
-                <Table.Th>Email</Table.Th>
                 <Table.Th>類型</Table.Th>
+                <Table.Th>Email</Table.Th>
                 <Table.Th>上傳檔案</Table.Th>
                 <Table.Th>上傳時間</Table.Th>
                 {showReviewedAt && <Table.Th>審查時間</Table.Th>}
@@ -363,12 +363,12 @@ export function DriverCenterAccounts() {
               {pageData.map((u) => (
                 <Table.Tr key={u.id}>
                   <Table.Td>
-                    <Text style={cellText}>{u.userEmail}</Text>
-                  </Table.Td>
-                  <Table.Td>
                     <Text style={{ ...cellText, whiteSpace: 'nowrap' }}>
                       {DRIVER_DOC_META[u.docType].label}
                     </Text>
+                  </Table.Td>
+                  <Table.Td>
+                    <Text style={cellText}>{u.userEmail}</Text>
                   </Table.Td>
                   <Table.Td>
                     <UnstyledButton
