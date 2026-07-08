@@ -433,7 +433,6 @@ Ticket {
 - [ ] 服務層 capability（臨櫃支援／eTag 原因／平台可否外連）散落元件內字串比較，可考慮收進 `SERVICE_META`（散點清單見 §5.5）
 - [ ] `counter-only` / `online-mixed` 無 mock 票與 Preview fixture（§5.4）——改相關 UI 目前只能手動走 Modal 驗證
 - [ ] 三份 mock（ticket／申請單／駕駛中心）用戶批次與時序未對齊，跨頁串不出同一批用戶的故事線（`autopassMock.ts` 檔頭有註記）
-- [ ] 用字確認：服務名「罰鍰」已依法規用字修正（原為「罰緩」），若 PRD／產品文案刻意用別的寫法請回報並統一
 
 ## 8. 開發指令
 
