@@ -12,7 +12,7 @@ export const SERVICE_META: Record<
   {
     label: string
     category: ServiceCategory
-    cycleHint: string
+    cycleHint: string // 開徵週期提示（PRD 第三章）；目前無 UI 消費端，保留作資料參考
     platform: string
     platformUrl: string
   }
@@ -32,14 +32,14 @@ export const SERVICE_META: Record<
     platformUrl: 'https://www.jkopay.com/',
   },
   'fuel-fee-overdue': {
-    label: '汽燃費逾期罰緩',
+    label: '汽燃費逾期罰鍰',
     category: '罰單',
     cycleHint: '每週三',
     platform: '街口支付',
     platformUrl: 'https://www.jkopay.com/',
   },
   'compulsory-insurance-fine': {
-    label: '違反強制險罰緩',
+    label: '違反強制險罰鍰',
     category: '罰單',
     cycleHint: '每週三',
     platform: '街口支付',
@@ -54,14 +54,13 @@ export const SERVICE_META: Record<
   },
 }
 
-export type QueryField = 'idNumber' | 'plateNumber' | 'birthDate' | 'vehicleType' | 'fullName'
+export type QueryField = 'idNumber' | 'plateNumber' | 'birthDate' | 'vehicleType'
 
-export const QUERY_FIELD_META: Record<QueryField, { label: string; mask: 'id' | 'none' }> = {
-  idNumber: { label: '證件號碼／統編', mask: 'id' },
-  plateNumber: { label: '車牌號碼', mask: 'none' },
-  birthDate: { label: '出生年月日', mask: 'none' },
-  vehicleType: { label: '車種', mask: 'none' },
-  fullName: { label: '車主名稱', mask: 'none' },
+export const QUERY_FIELD_META: Record<QueryField, { label: string }> = {
+  idNumber: { label: '證件號碼／統編' },
+  plateNumber: { label: '車牌號碼' },
+  birthDate: { label: '出生年月日' },
+  vehicleType: { label: '車種' },
 }
 
 // 對照 PRD 第三章查繳週期表
@@ -89,6 +88,7 @@ export const TERMINAL_STATUSES: TicketStatus[] = [
   'invoice-failed',
 ]
 
+// group 僅為狀態機分類註記（對照 spec 5.1），無 UI 消費端
 export const STATUS_META: Record<
   TicketStatus,
   { label: string; group: '待查' | '查詢' | '請款' | '繳款' | '例外'; color: string; bg: string }
@@ -152,7 +152,7 @@ export interface TicketNote {
 
 export interface EmailLog {
   id: string
-  triggerStatus: TicketStatus | 'service-activated'
+  triggerStatus: TicketStatus
   template: string             // 對應 4.6 模板名
   subject: string
   sentAt: string

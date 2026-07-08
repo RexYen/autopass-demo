@@ -36,9 +36,7 @@ import { mockDriverDocUploads } from '../data/driverCenterMock'
 import { useNotification } from '../hooks/useNotification'
 
 // 行駕照/保單（駕駛中心證件審核）— PRD v9.0「4.9 後臺顯示」
-// Tabs 以審核狀態為維度（待審核／審核失敗／審核成功），內容為列表；篩選為證件類型。
-// 證件影像內嵌於審核 Modal（看圖＋記錄結果一次完成，正反面左右切換）；
-// 不提供下載入口；審核失敗必填備註、結果送出後不可調整。
+// 行為 spec 的單一事實來源在 CLAUDE.md「行駕照/保單」段落，勿在此重複維護細節。
 
 const cardShadow =
   '0px 7px 7px -5px rgba(0,0,0,0.04), 0px 10px 15px -5px rgba(0,0,0,0.1), 0px 1px 3px 0px rgba(0,0,0,0.05)'

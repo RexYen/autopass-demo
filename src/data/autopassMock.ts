@@ -1,5 +1,9 @@
 import type { Ticket } from '../types/autopass'
 
+// 注意：本檔 ticket 用戶（*.example.com）與 autopassApplicationsMock／driverCenterMock 共用的
+// 申請單帳號是「不同批」示範用戶——Email 無交集、時序也未對齊（ticket 建立時間早於申請時間）。
+// 要跨頁串同一批用戶的故事線，需先對齊三份 mock（見 drivingexpense-ticket.md §7）。
+// A123456789 為教科書式示範證號，於多處 mock／fixture 重複出現，並非指同一人。
 export const mockTickets: Ticket[] = [
   // ─── ETC 通行費 ────────────────────────────────────────────
   {
@@ -339,7 +343,7 @@ export const mockTickets: Ticket[] = [
     emailLogs: [],
   },
 
-  // ─── 汽燃費逾期罰緩 ────────────────────────────────────────
+  // ─── 汽燃費逾期罰鍰 ────────────────────────────────────────
   {
     id: 'T-2026050019',
     userId: 'U-10707',
@@ -456,7 +460,7 @@ export const mockTickets: Ticket[] = [
       {
         id: 'N-10',
         author: 'Zoe',
-        content: '查詢不到逾期罰緩記錄，已請用戶再次確認繳費期限',
+        content: '查詢不到逾期罰鍰記錄，已請用戶再次確認繳費期限',
         createdAt: '2026-05-06 08:47',
       },
     ],
@@ -472,7 +476,7 @@ export const mockTickets: Ticket[] = [
     ],
   },
 
-  // ─── 違反強制險罰緩 ────────────────────────────────────────
+  // ─── 違反強制險罰鍰 ────────────────────────────────────────
   {
     id: 'T-2026050024',
     userId: 'U-11201',
@@ -686,6 +690,7 @@ export const mockTickets: Ticket[] = [
     cycle: '2026/W18',
     amount: 1500,
     status: 'invoice-failed',
+    outcome: 'online-full',
     createdAt: '2026-05-06 06:00',
     updatedAt: '2026-05-06 17:00',
     driverInfo: {
