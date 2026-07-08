@@ -1,5 +1,7 @@
 # 自動繳申請清單（營運後台）Implementation Plan
 
+> **[已歸檔] 本文件為 2026-06-26 的實作計畫紀錄，功能已於 PR #33 完成——請勿依此執行任務**（checkbox 未勾選是當時未回寫，不代表未完成）。現行行為以程式碼與 `drivingexpense-ticket.md` §4.5 為準。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 在 autopass-demo 新增一個營運後台頁面「自動繳申請」，顯示自動繳申請清單，並可逐筆編輯查繳週期（記憶體變更、即時生效）。
