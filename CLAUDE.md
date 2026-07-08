@@ -89,3 +89,6 @@ Key files: `src/types/driverCenter.ts`（domain types + `DRIVER_DOC_META` / `REV
 - **Toast 兩種用法並存**（底層都是 Mantine notifications，`App.tsx` 同時掛 `<Notifications>` 與 `NotificationProvider`）：查繳主功能（`AutopassTickets` / `TicketModals` / `TicketPreview`）直接 `notifications.show`；其餘頁面用 `hooks/useNotification` 的 `showSuccess` 等（包自製 `Notification` 樣式）。新程式碼**跟隨所在頁面的既有用法**，勿引入第三種。
 - demo 不做欄位遮罩，證件號碼／統編明碼顯示（原 `utils/mask.ts` 已移除）。
 - `docs/superpowers/` 下的 plan / spec 是**歷史實作紀錄，非現行 spec**——現行行為以程式碼、`drivingexpense-ticket.md` 與本檔為準，勿依其中的程式碼區塊或 checkbox 行事。
+- **新程式碼從最小實作開始**：不做未被要求的彈性／設定項、不為單一使用場景抽象化——這是 demo prototype，每一行都該對應到需求。
+- **改動要外科手術式**：每行 diff 都能對應到本次任務；過程中發現的無關問題（死碼、怪寫法）**回報而不順手改**，讓它進獨立 PR。
+- **驗證迴圈**固定為：`npm run typecheck` → `npm run lint` → `npm run build` → dev server 肉眼走過受影響頁面（本 repo 無測試框架，為刻意取捨）。
