@@ -14,6 +14,8 @@ Built with React 19 + TypeScript + Vite, Mantine UI, and React Router. Deployed 
 
 ## Getting started
 
+Requires **Node 22** (matches CI; declared in `.nvmrc` / `engines`).
+
 ```bash
 npm install
 npm run dev      # http://localhost:5173
@@ -24,6 +26,7 @@ npm run dev      # http://localhost:5173
 | Command | What it does |
 | --- | --- |
 | `npm run dev` | Start the Vite dev server |
+| `npm run typecheck` | Type-check only (`tsc -b`, no bundling — fastest check) |
 | `npm run build` | Type-check and build for production (`tsc -b && vite build`) |
 | `npm run lint` | Run ESLint |
 | `npm run preview` | Preview the production build locally |
@@ -31,15 +34,17 @@ npm run dev      # http://localhost:5173
 ## Project layout
 
 - `src/components/` — pages & UI components
-- `src/types/autopass.ts` — 查繳 domain types & metadata (single source of truth)（駕駛中心域型別在 `src/types/driverCenter.ts`）
+- `src/types/autopass.ts` — 查繳 domain types & metadata (single source of truth)（駕駛中心域型別在 `src/types/driverCenter.ts`、通知在 `src/types/notification.ts`）
 - `src/data/` — mock data（autopassMock / autopassApplicationsMock / driverCenterMock）
+- `src/hooks/` — 全站通知 context / hook（`useNotification`）
 - `src/App.tsx` — routes & app shell
 
 ## Contributing
 
-Changes go through a **Pull Request** — branch off `main`, push, and open a PR. Don't push directly to `main`. CI runs on every PR (lint + type-check/build, plus a production-dependency `npm audit`), so make sure `npm run lint` and `npm run build` pass locally before pushing.
+Changes go through a **Pull Request** — branch off `main`, push, and open a PR. Don't push directly to `main`. CI runs on every PR (lint + type-check/build, plus a production-dependency `npm audit`), so make sure `npm run lint` and `npm run build` pass locally before pushing. Merging to `main` auto-deploys the live demo via Vercel; PRs get preview deployments.
 
 ## Docs
 
 - [`drivingexpense-ticket.md`](./drivingexpense-ticket.md) — 查繳 (通行費自動繳) feature spec & implementation notes
 - [`CLAUDE.md`](./CLAUDE.md) — guidance for AI coding agents working in this repo
+- `docs/superpowers/` — 歷史實作計畫／設計紀錄（**非現行 spec**，僅供追溯；現行行為以程式碼與上列文件為準）

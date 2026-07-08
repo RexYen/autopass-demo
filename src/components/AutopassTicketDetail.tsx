@@ -333,7 +333,7 @@ type ActivityEvent =
       at: string
       subject: string
       template: string
-      triggerStatus: TicketStatus | 'service-activated'
+      triggerStatus: TicketStatus
       status: 'sent' | 'failed'
     }
 
@@ -630,8 +630,7 @@ function ActivityBody({
 // Helpers
 // =====================================================
 
-function statusLabel(s: TicketStatus | 'service-activated'): string {
-  if (s === 'service-activated') return '啟用服務'
+function statusLabel(s: TicketStatus): string {
   return STATUS_META[s].label
 }
 

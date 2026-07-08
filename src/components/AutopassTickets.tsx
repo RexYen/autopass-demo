@@ -50,10 +50,10 @@ type TabValue =
 const TABS: { value: TabValue; label: string; types: ServiceType[] }[] = [
   { value: 'etc-toll', label: 'ETC 通行費', types: ['etc-toll'] },
   { value: 'fuel-fee', label: '汽燃費', types: ['fuel-fee-personal', 'fuel-fee-corporate'] },
-  { value: 'fuel-fee-overdue', label: '汽燃費逾期罰緩', types: ['fuel-fee-overdue'] },
+  { value: 'fuel-fee-overdue', label: '汽燃費逾期罰鍰', types: ['fuel-fee-overdue'] },
   {
     value: 'compulsory-insurance-fine',
-    label: '違反強制險罰緩',
+    label: '違反強制險罰鍰',
     types: ['compulsory-insurance-fine'],
   },
 ]

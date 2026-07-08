@@ -24,3 +24,6 @@ dist-ssr
 *.sw?
 .vercel
 .playwright-mcp/
+
+# Claude Code — 個人機器的本地設定（共用設定日後可用 .claude/settings.json 進版控）
+.claude/settings.local.json
