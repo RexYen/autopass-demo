@@ -14,7 +14,7 @@ import {
   Button,
   ActionIcon,
 } from '@mantine/core'
-import { IconSearch, IconFilter, IconPencil } from '@tabler/icons-react'
+import { IconSearch, IconPencil } from '@tabler/icons-react'
 import { useState, useMemo } from 'react'
 import {
   SERVICE_META,
@@ -72,6 +72,7 @@ export function AutopassApplications() {
   const [currentPage, setCurrentPage] = useState(1)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterService, setFilterService] = useState<string | null>(null)
+  const [filterCycle, setFilterCycle] = useState<BillingCycle | null>(null)
 
   // 記憶體 override：編輯查繳週期只在前端生效，重新整理即重置（與全 app 一致）
   const [cycleOverrides, setCycleOverrides] = useState<
@@ -111,16 +112,25 @@ export function AutopassApplications() {
     }
   }
 
+  const resetFilters = () => {
+    setSearchTerm('')
+    setFilterService(null)
+    setFilterCycle(null)
+    setCurrentPage(1)
+  }
+
   const filtered = applications
     .filter((app) => {
       const term = searchTerm.trim().toLowerCase()
       const matchesSearch =
         !term ||
         app.userEmail.toLowerCase().includes(term) ||
-        app.plateNumber.toLowerCase().includes(term)
+        app.plateNumber.toLowerCase().includes(term) ||
+        app.idNumber.toLowerCase().includes(term)
       const matchesService =
         !filterService || SERVICE_META[app.serviceType].label === filterService
-      return matchesSearch && matchesService
+      const matchesCycle = !filterCycle || app.billingCycle === filterCycle
+      return matchesSearch && matchesService && matchesCycle
     })
     // 申請日期 近→遠（PRD v9.1.1 §2.1）；appliedAt 為 ISO 字串，字典序即時間序
     .sort((a, b) => b.appliedAt.localeCompare(a.appliedAt))
@@ -172,14 +182,14 @@ export function AutopassApplications() {
       <Box px="20px" pb="24px" style={{ flexShrink: 0 }}>
         <Group gap="16px" align="end">
           <TextInput
-            placeholder="搜尋 Email 或車牌"
+            placeholder="搜尋 Email、車牌號碼、證件號碼或統編"
             leftSection={<IconSearch size={16} />}
             value={searchTerm}
             onChange={(event) => {
               setSearchTerm(event.currentTarget.value)
               setCurrentPage(1)
             }}
-            style={{ maxWidth: '321px', width: '100%' }}
+            style={{ maxWidth: '390px', width: '100%' }}
             styles={{
               input: {
                 borderColor: '#dee2e6',
@@ -191,7 +201,7 @@ export function AutopassApplications() {
             }}
           />
           <Select
-            placeholder="服務別"
+            placeholder="請選擇服務類型"
             data={SERVICE_LABELS}
             value={filterService}
             onChange={(value) => {
@@ -199,8 +209,7 @@ export function AutopassApplications() {
               setCurrentPage(1)
             }}
             clearable
-            leftSection={<IconFilter size={16} />}
-            style={{ width: '200px' }}
+            style={{ width: '240px' }}
             styles={{
               input: {
                 borderColor: '#dee2e6',
@@ -211,6 +220,43 @@ export function AutopassApplications() {
               },
             }}
           />
+          <Select
+            placeholder="請選擇查繳週期"
+            data={BILLING_CYCLES}
+            value={filterCycle}
+            onChange={(value) => {
+              setFilterCycle(value as BillingCycle | null)
+              setCurrentPage(1)
+            }}
+            clearable
+            style={{ width: '240px' }}
+            styles={{
+              input: {
+                borderColor: '#dee2e6',
+                borderRadius: '4px',
+                height: '40px',
+                fontSize: '14px',
+                lineHeight: '20px',
+              },
+            }}
+          />
+          <Button
+            variant="default"
+            onClick={resetFilters}
+            styles={{
+              root: {
+                height: '40px',
+                borderColor: '#dee2e6',
+                borderRadius: '4px',
+                color: '#212529',
+                fontSize: '14px',
+                fontWeight: 400,
+                fontFamily: 'Noto Sans TC, sans-serif',
+              },
+            }}
+          >
+            重設
+          </Button>
         </Group>
       </Box>
 
