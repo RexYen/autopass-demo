@@ -14,7 +14,7 @@ import {
   Button,
   ActionIcon,
 } from '@mantine/core'
-import { IconSearch, IconPencil } from '@tabler/icons-react'
+import { IconSearch, IconEdit } from '@tabler/icons-react'
 import { useState, useMemo } from 'react'
 import {
   SERVICE_META,
@@ -60,6 +60,14 @@ const labelText = {
   fontFamily: 'Noto Sans TC',
   fontWeight: 500,
   lineHeight: '20px',
+}
+
+const subtitleText = {
+  color: '#868e96',
+  fontSize: '13px',
+  fontFamily: 'Noto Sans TC, sans-serif',
+  fontWeight: 400,
+  lineHeight: '18px',
 }
 
 function formatDateTime(iso: string): string {
@@ -350,7 +358,7 @@ export function AutopassApplications() {
                         aria-label="編輯查繳週期"
                         style={{ cursor: 'pointer', minWidth: '20px' }}
                       >
-                        <IconPencil size={18} stroke={1.5} color="#212529" />
+                        <IconEdit size={18} stroke={1.5} color="#212529" />
                       </ActionIcon>
                     )}
                   </Group>
@@ -424,55 +432,47 @@ export function AutopassApplications() {
         }}
       >
         <Stack gap="24px">
-          <Title
-            order={4}
-            style={{
-              color: '#000000',
-              fontSize: '16px',
-              fontFamily: 'Noto Sans TC',
-              fontWeight: 700,
-              lineHeight: '24px',
-              margin: 0,
-            }}
-          >
-            編輯查繳週期
-          </Title>
+          <Stack gap="6px">
+            <Title
+              order={4}
+              style={{
+                color: '#000000',
+                fontSize: '16px',
+                fontFamily: 'Noto Sans TC',
+                fontWeight: 700,
+                lineHeight: '24px',
+                margin: 0,
+              }}
+            >
+              編輯查繳週期
+            </Title>
+            {editingApp && (
+              <Text style={subtitleText}>
+                {editingApp.userEmail} ·{' '}
+                {SERVICE_META[editingApp.serviceType].label}
+              </Text>
+            )}
+          </Stack>
 
-          <Stack gap="16px">
-            {editingApp && (
-              <Stack gap="4px">
-                <Text style={labelText}>帳號</Text>
-                <Text style={cellText}>{editingApp.userEmail}</Text>
-              </Stack>
-            )}
-            {editingApp && (
-              <Stack gap="4px">
-                <Text style={labelText}>服務</Text>
-                <Text style={cellText}>
-                  {SERVICE_META[editingApp.serviceType].label}
-                </Text>
-              </Stack>
-            )}
-            <Stack gap="4px">
-              <Text style={labelText}>查繳週期</Text>
-              <Select
-                data={BILLING_CYCLES}
-                value={draftCycle}
-                onChange={(value) => setDraftCycle(value as BillingCycle | null)}
-                styles={{
-                  input: {
-                    backgroundColor: '#ffffff',
-                    padding: '6px 12px',
-                    border: '1px solid #dee2e6',
-                    borderRadius: '4px',
-                    fontSize: '14px',
-                    fontFamily: 'Noto Sans TC',
-                    fontWeight: 400,
-                    lineHeight: '20px',
-                  },
-                }}
-              />
-            </Stack>
+          <Stack gap="4px">
+            <Text style={labelText}>查繳週期</Text>
+            <Select
+              data={BILLING_CYCLES}
+              value={draftCycle}
+              onChange={(value) => setDraftCycle(value as BillingCycle | null)}
+              styles={{
+                input: {
+                  backgroundColor: '#ffffff',
+                  padding: '6px 12px',
+                  border: '1px solid #dee2e6',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  fontFamily: 'Noto Sans TC',
+                  fontWeight: 400,
+                  lineHeight: '20px',
+                },
+              }}
+            />
           </Stack>
 
           <Group justify="flex-end" gap="16px">
