@@ -190,17 +190,21 @@ export interface Ticket {
 }
 
 // ── 自動繳申請（營運後台）──────────────────────────────
-// 查繳「頻率」設定，與 Ticket.cycle（週期實例字串，如 "2026/W18"）是不同概念，不可混用。
-export type BillingCycle = '週繳' | '雙週繳' | '月繳' | '年繳'
+// 查繳「頻率」設定；所有申請皆有值，僅 ETC 通行費開放編輯（PRD v9.1.1 §2.5，預設每月兩次）。
+// 與 Ticket.cycle（週期實例字串，如 "2026/W18"）是不同概念，不可混用。
+export type BillingCycle = '每月兩次' | '每週'
 
-export const BILLING_CYCLES: BillingCycle[] = ['週繳', '雙週繳', '月繳', '年繳']
+export const BILLING_CYCLES: BillingCycle[] = ['每月兩次', '每週']
 
 // 一筆自動繳「申請」：用戶替某服務開通自動繳，後端再依 billingCycle 週期性產生查繳 ticket。
+// 車牌／證件號碼／車種／查繳週期為每筆申請的固定資料（必有值，UI 不出現「—」）。
 export interface AutopassApplication {
-  id: string                                       // AP-xxx
-  userEmail: string                                // 駕駛中心帳號
-  serviceType: ServiceType                         // 申請服務 → SERVICE_META[serviceType].label
-  queryData: Partial<Record<QueryField, string>>   // 申請資料；key 取自 SERVICE_QUERY_FIELDS[serviceType]
-  appliedAt: string                                // 申請時間（ISO 字串）
-  billingCycle: BillingCycle                       // 查繳週期（可編輯）
+  id: string                   // AP-xxx
+  userEmail: string            // 駕駛中心帳號
+  serviceType: ServiceType     // 申請服務 → SERVICE_META[serviceType].label
+  plateNumber: string          // 車牌號碼
+  idNumber: string             // 證件號碼／統編（個人身分證或法人統編）
+  vehicleType: VehicleType     // 車種
+  appliedAt: string            // 申請時間（ISO 字串）
+  billingCycle: BillingCycle   // 查繳週期；僅 etc-toll 開放編輯
 }

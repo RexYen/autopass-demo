@@ -18,7 +18,6 @@ import { IconSearch, IconFilter, IconPencil } from '@tabler/icons-react'
 import { useState, useMemo } from 'react'
 import {
   SERVICE_META,
-  SERVICE_QUERY_FIELDS,
   QUERY_FIELD_META,
   BILLING_CYCLES,
 } from '../types/autopass'
@@ -37,14 +36,6 @@ const cellText = {
   color: '#000000',
   fontSize: '14px',
   lineHeight: '20px',
-  fontFamily: 'Noto Sans TC, sans-serif',
-  fontWeight: 400,
-}
-
-const cellTextDim = {
-  color: '#495057',
-  fontSize: '13px',
-  lineHeight: '18px',
   fontFamily: 'Noto Sans TC, sans-serif',
   fontWeight: 400,
 }
@@ -120,16 +111,19 @@ export function AutopassApplications() {
     }
   }
 
-  const filtered = applications.filter((app) => {
-    const term = searchTerm.trim().toLowerCase()
-    const matchesSearch =
-      !term ||
-      app.userEmail.toLowerCase().includes(term) ||
-      (app.queryData.plateNumber ?? '').toLowerCase().includes(term)
-    const matchesService =
-      !filterService || SERVICE_META[app.serviceType].label === filterService
-    return matchesSearch && matchesService
-  })
+  const filtered = applications
+    .filter((app) => {
+      const term = searchTerm.trim().toLowerCase()
+      const matchesSearch =
+        !term ||
+        app.userEmail.toLowerCase().includes(term) ||
+        app.plateNumber.toLowerCase().includes(term)
+      const matchesService =
+        !filterService || SERVICE_META[app.serviceType].label === filterService
+      return matchesSearch && matchesService
+    })
+    // 申請日期 近→遠（PRD v9.1.1 §2.1）；appliedAt 為 ISO 字串，字典序即時間序
+    .sort((a, b) => b.appliedAt.localeCompare(a.appliedAt))
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const safePage = Math.min(currentPage, totalPages)
@@ -262,11 +256,18 @@ export function AutopassApplications() {
           <Table.Thead>
             <Table.Tr>
               <Table.Th style={{ width: '22%' }}>Email</Table.Th>
-              <Table.Th style={{ width: '16%' }}>申請服務</Table.Th>
-              <Table.Th style={{ width: '12%' }}>查繳週期</Table.Th>
-              <Table.Th style={{ width: '26%' }}>申請資料</Table.Th>
-              <Table.Th style={{ width: '16%' }}>申請時間</Table.Th>
-              <Table.Th style={{ width: '8%' }}>操作</Table.Th>
+              <Table.Th style={{ width: '11%' }}>
+                {QUERY_FIELD_META.plateNumber.label}
+              </Table.Th>
+              <Table.Th style={{ width: '8%' }}>
+                {QUERY_FIELD_META.vehicleType.label}
+              </Table.Th>
+              <Table.Th style={{ width: '14%' }}>
+                {QUERY_FIELD_META.idNumber.label}
+              </Table.Th>
+              <Table.Th style={{ width: '13%' }}>申請服務</Table.Th>
+              <Table.Th style={{ width: '14%' }}>查繳週期</Table.Th>
+              <Table.Th style={{ width: '18%' }}>申請時間</Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
@@ -276,38 +277,40 @@ export function AutopassApplications() {
                   <Text style={cellText}>{app.userEmail}</Text>
                 </Table.Td>
                 <Table.Td>
+                  <Text style={cellText}>{app.plateNumber}</Text>
+                </Table.Td>
+                <Table.Td>
+                  <Text style={cellText}>{app.vehicleType}</Text>
+                </Table.Td>
+                <Table.Td>
+                  <Text style={cellText}>{app.idNumber}</Text>
+                </Table.Td>
+                <Table.Td>
                   <Text style={cellText}>
                     {SERVICE_META[app.serviceType].label}
                   </Text>
                 </Table.Td>
                 <Table.Td>
-                  <Badge variant="light" styles={cycleBadgeStyles}>
-                    {app.billingCycle}
-                  </Badge>
-                </Table.Td>
-                <Table.Td>
-                  <Stack gap={2}>
-                    {SERVICE_QUERY_FIELDS[app.serviceType].map((field) => (
-                      <Text key={field} style={cellTextDim}>
-                        {QUERY_FIELD_META[field].label}：
-                        {app.queryData[field] ?? '—'}
-                      </Text>
-                    ))}
-                  </Stack>
+                  <Group gap="4px" wrap="nowrap">
+                    <Badge variant="light" styles={cycleBadgeStyles}>
+                      {app.billingCycle}
+                    </Badge>
+                    {/* 僅 ETC 開放週期設定（PRD v9.1.1 §2.5），編輯入口內嵌於週期旁 */}
+                    {app.serviceType === 'etc-toll' && (
+                      <ActionIcon
+                        variant="transparent"
+                        size={20}
+                        onClick={() => openEdit(app.id, app.billingCycle)}
+                        aria-label="編輯查繳週期"
+                        style={{ cursor: 'pointer', minWidth: '20px' }}
+                      >
+                        <IconPencil size={18} stroke={1.5} color="#212529" />
+                      </ActionIcon>
+                    )}
+                  </Group>
                 </Table.Td>
                 <Table.Td>
                   <Text style={cellText}>{formatDateTime(app.appliedAt)}</Text>
-                </Table.Td>
-                <Table.Td>
-                  <ActionIcon
-                    variant="transparent"
-                    size={20}
-                    onClick={() => openEdit(app.id, app.billingCycle)}
-                    aria-label="編輯查繳週期"
-                    style={{ cursor: 'pointer', minWidth: '20px' }}
-                  >
-                    <IconPencil size={18} stroke={1.5} color="#212529" />
-                  </ActionIcon>
                 </Table.Td>
               </Table.Tr>
             ))}
